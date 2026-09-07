@@ -145,10 +145,10 @@ async def main(args):
             if not await canvas.count():canvas=page.locator('[data-app="paint"] canvas').first
             b=await canvas.bounding_box()
             await page.mouse.move(b['x']+50,b['y']+55);await page.mouse.down();await page.mouse.move(b['x']+180,b['y']+140,steps=20);await page.mouse.up()
-            # Trigger save without awaiting the pending dialog promise.
-            await page.evaluate("void testWindow.save()")
+            # Start Save, answer its dialog, then await the actual file operation.
+            await page.evaluate("()=>{window.paintSaveOperation=testWindow.save();}")
             d=page.get_by_role('dialog');await d.locator('input').fill('/Pictures/Test drawing.png');await d.get_by_role('button',name='Save',exact=True).click()
-            await page.wait_for_timeout(180)
+            await page.evaluate('window.paintSaveOperation')
             return await js("const f=await OS.fs.read('/Pictures/Test drawing.png');assert(f.content instanceof Blob&&f.size>1000);const sig=new Uint8Array(await f.content.slice(0,8).arrayBuffer());assert(sig[0]===137&&sig[1]===80);return 'Pointer drawing saved as a real PNG ('+f.size+' bytes)';")
         await check('Paint pointer drawing and real PNG save',paint)
         async def photos():
@@ -225,7 +225,14 @@ async def main(args):
             return await js("assert(!document.querySelector('.lock-screen'));return 'Visual lock and resume';")
         await check('Visual lock resumes without losing windows',lock)
         async def responsive():
-            await clean();await page.set_viewport_size({'width':390,'height':844});await page.evaluate('Aster.toggleStart()');await page.wait_for_timeout(100)
+            await clean()
+            # A resize dismisses panels. Observe that real event before clicking Start.
+            await page.evaluate("()=>{window.testResizeObserved=false;window.addEventListener('resize',()=>{window.testResizeObserved=true;},{once:true});}")
+            await page.set_viewport_size({'width':390,'height':844})
+            await page.wait_for_function('window.testResizeObserved && innerWidth===390')
+            await page.evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
+            await page.locator('#start-button').click()
+            await page.locator('.start-menu').wait_for(state='visible')
             r=await page.locator('.start-menu').bounding_box();assert r['x']>=0 and r['x']+r['width']<=391,r
             await page.screenshot(path=str(ROOT/'tests'/'mobile.png'))
             await page.set_viewport_size({'width':1440,'height':960});await clean()
