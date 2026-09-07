@@ -11,7 +11,7 @@ from playwright.async_api import async_playwright
 ROOT=Path(__file__).resolve().parents[1]
 REPORT=ROOT/'tests'/'results.json'
 
-async def load(page, inject=False, port=8766):
+async def load(page, inject=False, port=8766, url=None):
     if inject:
         html=(ROOT/'index.html').read_text()
         html=re.sub(r'<script\b[^>]*src="[^"]+"[^>]*>\s*</script>','',html)
@@ -19,10 +19,10 @@ async def load(page, inject=False, port=8766):
         await page.set_content(html)
         await page.add_style_tag(content=(ROOT/'src/styles.css').read_text())
         await page.evaluate('window.ASTER_STANDALONE=true')
-        for name in ['core','renderer','windows','apps-files','apps-creative','apps-tools','apps-system','shell']:
+        for name in ['core','renderer','windows','apps-files','apps-creative','apps-tools','apps-system','win32/gdi','apps-win32','shell']:
             await page.add_script_tag(content=(ROOT/f'src/{name}.js').read_text())
     else:
-        await page.goto(f'http://localhost:{port}',wait_until='networkidle')
+        await page.goto(url or f'http://localhost:{port}',wait_until='networkidle')
     await page.wait_for_function('window.Aster?.booted',timeout=30000)
     await page.evaluate('Promise.all([...Aster.windows.values()].map(w=>w.ready))')
 
@@ -37,7 +37,7 @@ async def main(args):
         page=await context.new_page();page.set_default_timeout(7000)
         page.on('pageerror',lambda e:errors.append(str(e)))
         page.on('console',lambda m:console.append({'level':m.type,'text':m.text}))
-        await load(page,args.inject)
+        await load(page,args.inject,url=args.url)
         async def check(name, action):
             t=time.perf_counter()
             try:
@@ -57,7 +57,7 @@ async def main(args):
         async def launch(app,options=None):
             await clean()
             return await page.evaluate('async ([app,o])=>{const w=Aster.launch(app,o);await w.ready;window.testWindow=w;if(w.body.querySelector(".app-error"))throw Error(w.body.innerText);return w.id}',[app,options or {}])
-        await check('Boot and 18 registered built-in apps',lambda:js("assert(OS.apps.size===18);assert(OS.windows.size===1);assert(document.querySelector('#taskbar button'));return OS.metrics.mode;"))
+        await check('Boot and 19 registered built-in apps',lambda:js("assert(OS.apps.size===19);assert(OS.windows.size===1);assert(document.querySelector('#taskbar button'));return OS.metrics.mode;"))
         await check('Virtual file CRUD, subtree copy, move, recycle, restore',lambda:js("""
             assert(OS.fs.normalize('/Documents/../Projects/./a')==='/Projects/a');
             await OS.fs.mkdir('/Documents/Test Suite');await OS.fs.mkdir('/Documents/Test Suite/nested');
@@ -225,10 +225,7 @@ async def main(args):
             return await js("assert(!document.querySelector('.lock-screen'));return 'Visual lock and resume';")
         await check('Visual lock resumes without losing windows',lock)
         async def responsive():
-            await clean();await page.set_viewport_size({'width':390,'height':844})
-            # Let the resize handler dismiss panels before opening Start.
-            await page.evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))')
-            await page.evaluate('Aster.toggleStart()');await page.wait_for_timeout(100)
+            await clean();await page.set_viewport_size({'width':390,'height':844});await page.evaluate('Aster.toggleStart()');await page.wait_for_timeout(100)
             r=await page.locator('.start-menu').bounding_box();assert r['x']>=0 and r['x']+r['width']<=391,r
             await page.screenshot(path=str(ROOT/'tests'/'mobile.png'))
             await page.set_viewport_size({'width':1440,'height':960});await clean()
@@ -252,9 +249,9 @@ async def main(args):
     return 1 if any(r['status']=='FAIL' for r in results) else 0
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--inject',action='store_true');parser.add_argument('--browser');parser.add_argument('--webgpu',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--inject',action='store_true');parser.add_argument('--browser');parser.add_argument('--webgpu',action='store_true');parser.add_argument('--url');args=parser.parse_args()
     server=None
-    if not args.inject:
+    if not args.inject and not args.url:
         server=ThreadingHTTPServer(('127.0.0.1',8766),partial(SimpleHTTPRequestHandler,directory=str(ROOT)))
         threading.Thread(target=server.serve_forever,daemon=True).start()
     try: raise SystemExit(asyncio.run(main(args)))

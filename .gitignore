@@ -4,3 +4,5 @@ __pycache__/
 _site/
 .DS_Store
 Thumbs.db
+tests/win32/artifacts/
+tests/win32/native-artifacts/

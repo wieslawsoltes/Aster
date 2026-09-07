@@ -552,7 +552,7 @@
             OS.notify('Temporary session only', 'Persistent browser storage is unavailable. Export your work before closing this page.', 'warning');
         if (!await OS.db.get('welcomed')) {
             await OS.db.set('welcomed', true);
-            setTimeout(() => OS.notify('Welcome to your new workspace', 'Open Start to explore 18 built-in apps. ' + (OS.db.mode === 'IndexedDB' ? 'Your virtual files are saved in this browser.' : 'Export your work before closing this temporary session.'), 'info', { label: 'Meet Aster', fn: () => OS.launch('welcome') }), 800);
+            setTimeout(() => OS.notify('Welcome to your new workspace', 'Open Start to explore 19 built-in apps. ' + (OS.db.mode === 'IndexedDB' ? 'Your virtual files are saved in this browser.' : 'Export your work before closing this temporary session.'), 'info', { label: 'Meet Aster', fn: () => OS.launch('welcome') }), 800);
         }
         return OS;
     })().catch(error => { console.error('Aster startup:', error); const boot = $('#boot'); if (boot) {

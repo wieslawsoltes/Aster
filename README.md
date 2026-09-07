@@ -1,8 +1,8 @@
 # Aster Desktop
 
-**Your space. Your pace.** An independent, Windows 11–inspired browser desktop built with plain HTML, CSS, JavaScript, and WGSL. Eighteen built-in apps, a shared file system, a window manager, and an implemented WebGPU graphics path. No runtime framework, package manager, external font, CDN, account, or backend is required.
+**Your space. Your pace.** An independent, Windows 11–inspired browser desktop built with plain HTML, CSS, JavaScript, and WGSL. Nineteen built-in apps, a shared file system, a window manager, and an implemented WebGPU graphics path. No runtime framework, package manager, external font, CDN, account, or backend is required.
 
-Aster is a browser desktop, **not a bootable operating system, Windows emulator, or native executable runtime**. It does not run `.exe`, `.msi`, PowerShell, kernel drivers, or Windows services. Imported HTML/JavaScript apps run in isolated browser frames.
+Aster is a browser desktop, **not a bootable operating system or a general Windows replacement**. The experimental **Win32 Lab** runs a limited subset of real **32-bit x86 PE executables entirely in the browser**, using an original WebAssembly CPU interpreter, a JavaScript Windows API facade and WebGPU GDI rendering. No Wine, Docker, companion, OS image, native executable launch or streamed desktop is involved. Most existing Windows software is not yet compatible. See [the tested scope and instructions](docs/browser-win32.md). Imported HTML/JavaScript apps continue to use isolated browser frames.
 
 ## Start
 
@@ -67,6 +67,7 @@ Appearance settings include light/dark/system themes, four original procedural r
 | Settings | Six working sections covering system preferences, personalization, app management, storage/backup, accessibility, and capability information. |
 | Task Manager | Actual Aster window instances, end-task with unsaved-change checks, renderer statistics, available browser heap information, and storage information. It cannot manage host-OS processes. |
 | App Center | Built-in app catalog, launch, desktop shortcuts, HTML app installation, and custom-launcher removal. No external store or paid app downloads. |
+| Win32 Lab | Open a PE32 EXE, run compiled samples, inspect imports and CPU metrics, draw GDI primitives with WebGPU, operate EDIT/BUTTON controls, and persist/download a per-executable private C: drive. Explicit limited compatibility. |
 | Welcome | Desktop orientation, app shortcuts, customization entry points, and clear operating boundaries. |
 
 ## Shared files and local folders

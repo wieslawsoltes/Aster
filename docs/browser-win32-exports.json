@@ -1,0 +1,697 @@
+{
+  "version": 1,
+  "notice": "Implemented facade exports have limited semantics; see browser-win32.md. This is not full API conformance.",
+  "count": 115,
+  "exports": [
+    {
+      "dll": "kernel32.dll",
+      "name": "ExitProcess",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetLastError",
+      "arguments": 0,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetLastError",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetTickCount",
+      "arguments": 0,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "QueryPerformanceFrequency",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "QueryPerformanceCounter",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "Sleep",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetCurrentProcessId",
+      "arguments": 0,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetCurrentThreadId",
+      "arguments": 0,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "IsDebuggerPresent",
+      "arguments": 0,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetProcessHeap",
+      "arguments": 0,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "HeapAlloc",
+      "arguments": 3,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "HeapFree",
+      "arguments": 3,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "HeapSize",
+      "arguments": 3,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GlobalAlloc",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GlobalFree",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GlobalLock",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GlobalUnlock",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LocalAlloc",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LocalFree",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LocalLock",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LocalUnlock",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetModuleHandleA",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetModuleHandleW",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LoadLibraryA",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LoadLibraryW",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetProcAddress",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetCommandLineA",
+      "arguments": 0,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetCommandLineW",
+      "arguments": 0,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetModuleFileNameA",
+      "arguments": 3,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetModuleFileNameW",
+      "arguments": 3,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "OutputDebugStringA",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "OutputDebugStringW",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrlenA",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrlenW",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrcpyA",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrcpyW",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrcmpA",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrcmpW",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CreateFileA",
+      "arguments": 7,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CreateFileW",
+      "arguments": 7,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "ReadFile",
+      "arguments": 5,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "WriteFile",
+      "arguments": 5,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetStdHandle",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CloseHandle",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetFileSize",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetFilePointer",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "RegisterClassA",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "RegisterClassW",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "RegisterClassExA",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "RegisterClassExW",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreateWindowExA",
+      "arguments": 12,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreateWindowExW",
+      "arguments": 12,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "ShowWindow",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "UpdateWindow",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DestroyWindow",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "PostQuitMessage",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DefWindowProcA",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetMessageA",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "PeekMessageA",
+      "arguments": 5,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DispatchMessageA",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "PostMessageA",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DefWindowProcW",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetMessageW",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "PeekMessageW",
+      "arguments": 5,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DispatchMessageW",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "PostMessageW",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "TranslateMessage",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetWindowTextA",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetWindowTextW",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindowTextA",
+      "arguments": 3,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindowTextW",
+      "arguments": 3,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindowTextLengthA",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindowTextLengthW",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "MessageBoxA",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "MessageBoxW",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetClientRect",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "InvalidateRect",
+      "arguments": 3,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "ValidateRect",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetTimer",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "KillTimer",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetDC",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "ReleaseDC",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "BeginPaint",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "EndPaint",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "FillRect",
+      "arguments": 3,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "CreateSolidBrush",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "CreatePen",
+      "arguments": 3,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "GetStockObject",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "SelectObject",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "DeleteObject",
+      "arguments": 1,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "SetTextColor",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "SetBkColor",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "SetBkMode",
+      "arguments": 2,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "TextOutA",
+      "arguments": 5,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "TextOutW",
+      "arguments": 5,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "GetTextExtentPoint32A",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "GetTextExtentPoint32W",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "CreateFontA",
+      "arguments": 14,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "CreateFontW",
+      "arguments": 14,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "MoveToEx",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "LineTo",
+      "arguments": 3,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "Rectangle",
+      "arguments": 5,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "Ellipse",
+      "arguments": 5,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "SetPixel",
+      "arguments": 4,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "GdiFlush",
+      "arguments": 0,
+      "convention": "stdcall"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strlen",
+      "arguments": 1,
+      "convention": "cdecl"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strcmp",
+      "arguments": 2,
+      "convention": "cdecl"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "memcpy",
+      "arguments": 3,
+      "convention": "cdecl"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "memmove",
+      "arguments": 3,
+      "convention": "cdecl"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "memset",
+      "arguments": 3,
+      "convention": "cdecl"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "malloc",
+      "arguments": 1,
+      "convention": "cdecl"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "free",
+      "arguments": 1,
+      "convention": "cdecl"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "puts",
+      "arguments": 1,
+      "convention": "cdecl"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "exit",
+      "arguments": 1,
+      "convention": "cdecl"
+    }
+  ]
+}

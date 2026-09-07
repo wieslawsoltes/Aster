@@ -105,7 +105,7 @@
     };
     OS.icon = (name, size = 20, cls = '') => `<svg class="icon ${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.file}</svg>`;
     OS.appIcon = (id, size = 32) => {
-        const spec = { files: ['folder', 'gold'], browser: ['globe', 'teal'], notepad: ['file', 'blue'], terminal: ['terminal', 'charcoal'], paint: ['paint', 'violet'], photos: ['image', 'blue'], media: ['play', 'coral'], calculator: ['calculator', 'slate'], settings: ['settings', 'slate'], calendar: ['calendar', 'blue'], clock: ['clock', 'slate'], tasks: ['check', 'blue'], taskmanager: ['gpu', 'teal'], store: ['store', 'blue'], code: ['code', 'violet'], mines: ['bug', 'green'], welcome: ['spark', 'blue'], snips: ['cut', 'coral'], trash: ['trash', 'slate'] };
+        const spec = { files: ['folder', 'gold'], browser: ['globe', 'teal'], notepad: ['file', 'blue'], terminal: ['terminal', 'charcoal'], paint: ['paint', 'violet'], photos: ['image', 'blue'], media: ['play', 'coral'], calculator: ['calculator', 'slate'], settings: ['settings', 'slate'], calendar: ['calendar', 'blue'], clock: ['clock', 'slate'], tasks: ['check', 'blue'], taskmanager: ['gpu', 'teal'], store: ['store', 'blue'], code: ['code', 'violet'], mines: ['bug', 'green'], welcome: ['spark', 'blue'], win32: ['gpu', 'violet'], snips: ['cut', 'coral'], trash: ['trash', 'slate'] };
         const [icon, color] = spec[id] || ['code', 'violet'];
         return `<span class="app-icon app-icon-${color}" style="--icon-size:${size}px">${OS.icon(icon, Math.round(size * .72))}</span>`;
     };
@@ -120,6 +120,7 @@
         } });
     OS.appForFile = (path, mime = '') => {
         const ext = path.split('.').pop().toLowerCase();
+        if (ext === 'exe') return 'win32';
         if (mime.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'avif'].includes(ext))
             return 'photos';
         if (mime.startsWith('audio/') || mime.startsWith('video/') || ['mp3', 'wav', 'ogg', 'mp4', 'webm', 'm4a', 'flac'].includes(ext))

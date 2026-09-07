@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the standalone Aster HTML. Python standard library only."""
 from pathlib import Path
-import argparse, base64, re
+import argparse, base64, re, json
 
 ROOT=Path(__file__).resolve().parent
 
@@ -12,6 +12,8 @@ def build(destination:Path)->None:
     html=re.sub(r'<link\s+rel="manifest"[^>]*>','',html)
     icon=base64.b64encode((ROOT/'assets/icon.svg').read_bytes()).decode('ascii')
     html=html.replace('href="assets/icon.svg"','href="data:image/svg+xml;base64,'+icon+'"')
+    assets={str(p.relative_to(ROOT)):base64.b64encode(p.read_bytes()).decode('ascii') for p in sorted((ROOT/'src/win32').rglob('*')) if p.is_file() and p.name != 'gdi.js'}
+    html=html.replace('</head>','<script>window.ASTER_WIN32_ASSETS='+json.dumps(assets,separators=(',',':'))+';</script>\n</head>')
     html=html.replace('</head>','<script>window.ASTER_STANDALONE=true;</script>\n</head>')
     def inline(match:re.Match)->str:
         relative=match.group(1)
