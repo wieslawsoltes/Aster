@@ -42,6 +42,16 @@ for(const[name,change,pattern]of[
  ['Truncated headers',(b,v,pe,opt)=>v.setUint16(pe+20,0xffff,true),/Truncated/]
 ])await check('PE rejection: '+name,async()=>{const r=await runtime();assert.throws(()=>r.load(mutate('hello',change)),pattern);});
 await check('Unknown import is listed and prevents any guest execution',async()=>{const b=Uint8Array.from(exe('hello')),needle=Buffer.from('MessageBoxW');const at=Buffer.from(b).indexOf(needle);assert(at>0);b.set(Buffer.from('MissingCall'),at);const r=await runtime();assert.throws(()=>r.load(b),/Unsupported imports/);assert(r.image.missing.includes('user32.dll!MissingCall'));assert.equal(r.cpu.instruction_count(),0);});
+await check('Worker publishes a real loader failure before its exit notification',async()=>{
+ const vm=require('node:vm'),events=[],bad=Uint8Array.from(exe('hello'));
+ const at=Buffer.from(bad).indexOf(Buffer.from('MessageBoxW'));assert(at>0);bad.set(Buffer.from('MissingCall'),at);
+ const sandbox={AsterWin32:{Runtime},Uint8Array,postMessage:e=>events.push(e),setInterval:()=>0,onmessage:null};
+ vm.createContext(sandbox);vm.runInContext(fs.readFileSync(root+'/src/win32/worker.js','utf8'),sandbox);
+ await sandbox.onmessage({data:{type:'start',wasm:moduleCache,exe:bad.buffer,name:'invalid.exe',files:[]}});
+ const error=events.findIndex(e=>e.type==='error'),exit=events.findIndex(e=>e.type==='exit');
+ assert(error>=0);assert(exit>error);assert.match(events[error].message,/MissingCall/);assert.equal(events[error].stats.instructions,0);
+ return {order:events.map(e=>e.type),executedInstructions:0};
+});
 await check('Path traversal, UNC, device and alternate-drive paths are denied',async()=>{const r=await runtime();for(const p of['../secret','C:\\..\\secret','D:\\x','\\\\host\\share','NUL','folder/COM1.txt','a:b','x.','a\0b'])assert.throws(()=>r.path(p),p);assert.equal(r.path('C:\\Data\\Note.txt'),'data/note.txt');});
 await check('File budgets and private-drive isolation',async()=>{const r=await runtime(),other=await runtime();r.addFile('note.txt',new Uint8Array([1,2]));assert.equal(other.files.size,0);assert.throws(()=>r.addFile('big.bin',new Uint8Array(8*1024*1024+1)),/quota/);});
 await check('Unicode MessageBoxW resumes x86 code with the selected result',async()=>{let r,title;r=await runtime(e=>{if(e.type==='messagebox'){title=e.text;r.event({type:'response',id:e.id,value:2});}});r.load(exe('hello'));await r.run();assert.equal(r.exitCode,2);assert(title.includes('Zażółć'));});

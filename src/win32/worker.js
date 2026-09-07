@@ -16,7 +16,13 @@ function savedFiles(force=false){
     const files=[];for(const path of (force?process.files.keys():process.dirtyFiles)){const bytes=process.files.get(path).slice();files.push({path,bytes});}
     process.dirtyFiles.clear();postMessage({type:'files',files,revision:process.fileRevision},files.map(f=>f.bytes.buffer));flushing=false;
 }
-function crash(error){releaseCredits();savedFiles();process?.exit(1);postMessage({type:'error',message:String(error.message||error),stats:process?.stats()});}
+function crash(error){
+    releaseCredits();savedFiles();
+    // Preserve the failure diagnostic before exit handling schedules Stop.
+    // Otherwise the main thread may mark the session halted and suppress it.
+    postMessage({type:'error',message:String(error.message||error),stats:process?.stats()});
+    process?.exit(1);
+}
 onmessage=async({data})=>{
     try{
         if(data.type==='ack'){const resolve=credits.get(data.credit);if(resolve){credits.delete(data.credit);resolve();}return;}

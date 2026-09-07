@@ -79,7 +79,7 @@ class Session {
         }else if(e.type==='stats'||e.type==='idle'){this.stats=e;this.metrics();if(e.type==='idle'&&!this.readyMs){this.readyMs=performance.now()-this.started;this.nodes.phase.textContent='Running locally · '+this.name;}}
         else if(e.type==='exit'){this.stats=e.stats;this.exitCode=e.code;this.nodes.phase.textContent='Exited with code '+e.code;this.nodes.stop.disabled=true;this.nodes.run.disabled=false;this.nodes.sampleRun.disabled=false;this.metrics();setTimeout(()=>this.stop(),0);}
         else if(e.type==='stopped'){this.stopAck?.();}
-        else if(e.type==='error')this.error(Error(e.message));
+        else if(e.type==='error'){this.stats=e.stats||this.stats;this.error(Error(e.message));}
     }
     fit(){if(!this.board)return;const rect=this.nodes.stage.getBoundingClientRect(),scale=Math.min(1,(rect.width-24)/this.width,(rect.height-24)/this.height);this.board.style.transform=`translate(-50%,-50%) scale(${Math.max(.2,scale)})`;}
     bindInput(canvas){
