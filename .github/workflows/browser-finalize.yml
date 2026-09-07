@@ -11,25 +11,53 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
-      - name: Apply source-verified edits and rebuild offline HTML
+      - name: Apply explicit source fixes
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import base64, hashlib, json, zlib
-          packed = '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'
-          raw = zlib.decompress(base64.b64decode(packed, validate=True))
-          assert hashlib.sha256(raw).hexdigest() == 'f0d6c0b5f5cca90966f3434c2883bc6b09128715fd8cfcb7b4ad6b03151c7b77'
-          updates = json.loads(raw)
-          for update in updates:
-              path = Path(update['path'])
-              text = path.read_text()
-              assert hashlib.sha256(text.encode()).hexdigest() == update['before'], str(path)
-              for op in reversed(update['ops']):
-                  text = text[:op['start']] + op['text'] + text[op['end']:]
-              assert hashlib.sha256(text.encode()).hexdigest() == update['after'], str(path)
-              path.write_text(text)
+          import hashlib
+          hashes = {
+              'src/win32/gdi.js': 'b335c75ba5017b88d34713eaa52ab2e3d639f3f229f2031def67200c18582e40',
+              'src/apps-win32.js': '47fc936add4988f101a0212ca8d9a436d7c6f3a1d6236cef0c86fc96b5bc1d11',
+              'src/apps-system.js': 'b967fef6226a6a0845d2ad285acc6ba5432920f59dd1b79ebc61a38eb1d82795',
+              'README.md': '917b638fb49a3fdb62f28427261e9ae8e6192c407e189532250e9c09ec02e5dd',
+              'tests/win32/browser.py': '1fdf3a118b80ef99667794dffed4fc7494af7034bf0434883060550a4d91c5d9'
+          }
+          sources = {}
+          for name, expected in hashes.items():
+              data = Path(name).read_bytes()
+              assert hashlib.sha256(data).hexdigest() == expected, name
+              sources[name] = data.decode()
+          def replace(name, old, new, count=1):
+              assert sources[name].count(old) == count, (name, old)
+              sources[name] = sources[name].replace(old, new)
+          replace('src/win32/gdi.js', 'var filter:sampler;', 'var gdiSampler:sampler;', 2)
+          replace('src/win32/gdi.js', '(atlas,filter,', '(atlas,gdiSampler,')
+          replace('src/win32/gdi.js', '(image,filter,', '(image,gdiSampler,')
+          replace('src/apps-win32.js', 'error(error){if(this.failed)return;this.failed=true;', "error(error){if(this.failed)return;console.error('Win32 runtime:',error);this.failed=true;")
+          replace('src/apps-win32.js', "        if(this.closed&&e.type!=='files'&&e.type!=='stopped')return;", "        if((this.closed||this.failed)&&!['files','stopped','error'].includes(e.type))return;")
+          replace('src/apps-system.js', 'Native Windows executables, drivers, installers, and operating-system services are not supported.', 'Win32 Lab runs a limited subset of 32-bit Windows executables in a browser worker. Drivers, installers, native host execution, and operating-system services are not supported.')
+          replace('src/apps-system.js', 'It does not boot a computer, emulate Windows, run EXE/MSI programs, or control your real network, power, or operating-system accounts.', 'It does not boot a computer or replace Windows. Win32 Lab emulates a small subset of x86/Win32 for compatible PE32 EXEs; MSI installers and host-system control remain unsupported.')
+          replace('src/apps-system.js', 'Aster is a web desktop, not a bootable OS: it does not run native Windows programs or replace your real system.', 'Aster is a web desktop, not a bootable OS. Win32 Lab runs a limited set of 32-bit Windows programs locally in the browser; it does not replace your real system.')
+          replace('README.md', 'Native Windows applications and host system commands are unsupported.', 'Host system commands and unrestricted native Windows execution are unsupported. Win32 Lab is a separate, limited PE32 compatibility runtime with a bounded worker and a private drive; see docs/browser-win32.md.')
+          replace('tests/win32/browser.py', "        page.on('pageerror',lambda e:report['errors'].append(str(e)))", "        page.on('pageerror',lambda e:report['errors'].append(str(e)))\n        page.on('console',lambda m: print('BROWSER',m.text,flush=True) if m.type=='error' else None)")
+          replace('tests/win32/browser.py', "try:page.screenshot(path=str(OUT/'failure.png'))", "try:\n                    report['failureState']=page.evaluate('({phase:document.querySelector(\".win32-status\")?.innerText,log:document.querySelector(\".win32-diagnostics pre\")?.textContent,session:window.w?.win32Session?{failed:w.win32Session.failed,closed:w.win32Session.closed,key:w.win32Session.key,worker:!!w.win32Session.worker,renderer:w.win32Session.renderer?.stats(),stats:w.win32Session.stats}:null})');page.screenshot(path=str(OUT/'failure.png'))")
+          needle = "            check('SHA-256 application-drive identity',lambda:assert_digest(page))"
+          probe = '''
+                      if args.gpu:
+                          def pipeline_probe():
+                              return page.evaluate("""async()=>{const el=document.createElement('div');document.body.append(el);const g=new AsterGDI(el,64,64,{requireGPU:true});try{await g.init();g.enqueue([{op:'rect',x:0,y:0,w:64,h:64,color:[12,34,56,255]}]);const pixel=await g.pixel(10,10);if(pixel.join(',')!=='12,34,56,255')throw Error('WebGPU pixel mismatch: '+pixel);return g.stats();}finally{g.destroy();el.remove();}}""")
+                          check('WebGPU pipeline initializes and renders a verified pixel',pipeline_probe)'''
+          # Strip the workflow-source indentation, then put the block inside try.
+          import textwrap
+          probe = textwrap.indent(textwrap.dedent(probe).strip(), '            ')
+          replace('tests/win32/browser.py', needle, needle + '\n' + probe)
+          for name, text in sources.items():
+              Path(name).write_text(text)
+              print('Updated', name, hashlib.sha256(text.encode()).hexdigest())
           PY
           for file in src/*.js src/win32/*.js sw.js; do node --check "$file"; done
+          python3 -m py_compile tests/win32/browser.py
           python3 build.py
       - name: Commit verified source fixes
         run: |
