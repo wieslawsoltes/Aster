@@ -41,6 +41,7 @@ jobs:
         run: |
           for file in src/*.js src/win32/*.js sw.js; do node --check "$file"; done
           node tests/win32/unit.cjs
+          node tests/win32/backpressure.cjs
           python build.py
           xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/browser.py --gpu --headed
           cp tests/win32/artifacts/browser-results.json tests/win32/artifacts/browser-shipped-results.json
@@ -53,6 +54,7 @@ jobs:
         run: |
           python native/win32/build.py
           node tests/win32/unit.cjs
+          node tests/win32/backpressure.cjs
           python build.py
           xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/browser.py --gpu --headed
       - name: Regress the browser desktop
