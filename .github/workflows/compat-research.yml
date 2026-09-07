@@ -1,0 +1,48 @@
+name: Collect Win32 compatibility candidates
+on:
+  push:
+    branches: [feat/browser-win32]
+    paths: ['.github/workflows/compat-research.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  collect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Archive tracked source and retrieve upstream test candidates without executing them
+        run: |
+          mkdir -p /tmp/aster-research/fixtures
+          git archive --format=zip HEAD -o /tmp/aster-research/source.zip
+          git rev-parse HEAD > /tmp/aster-research/commit.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import urllib.request, hashlib, json
+          root=Path('/tmp/aster-research/fixtures')
+          urls={
+            '7za920.zip':'https://www.7-zip.org/a/7za920.zip',
+            '7zr2603.exe':'https://github.com/ip7z/7zip/releases/download/26.03/7zr.exe',
+            'tcc-0.9.27-win32-bin.zip':'https://download.savannah.gnu.org/releases/tinycc/tcc-0.9.27-win32-bin.zip',
+            'puttygen-0.85.exe':'https://the.earth.li/~sgtatham/putty/0.85/w32/puttygen.exe'
+          }
+          report={}
+          for name,url in urls.items():
+              try:
+                  request=urllib.request.Request(url,headers={'User-Agent':'Aster-compatibility-research'})
+                  with urllib.request.urlopen(request,timeout=40) as r:
+                      data=r.read(16*1024*1024+1)
+                  assert len(data)<=16*1024*1024
+                  (root/name).write_bytes(data)
+                  report[name]={'url':url,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+              except Exception as exc:
+                  report[name]={'url':url,'error':str(exc)}
+          (root/'provenance.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aster-compat-research
+          path: /tmp/aster-research/
+          retention-days: 3
