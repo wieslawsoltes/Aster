@@ -24,6 +24,7 @@ def main(args):
         browser=p.chromium.launch(**options);context=browser.new_context(viewport={'width':1440,'height':1000},service_workers='block',accept_downloads=True)
         page=context.new_page();page.set_default_timeout(15000)
         page.on('pageerror',lambda e:report['errors'].append(str(e)))
+        page.on('console',lambda m: print('BROWSER',m.text,flush=True) if m.type=='error' else None)
         page.on('request',lambda r:report['requests'].append({'url':r.url,'method':r.method}))
         page.add_init_script('window.ASTER_WIN32_REQUIRE_GPU='+str(args.gpu).lower())
         def boot():
@@ -35,7 +36,8 @@ def main(args):
             try:detail=fn();report['tests'].append({'name':name,'status':'PASS','ms':(time.perf_counter()-start)*1000,'detail':detail});print('PASS',name,flush=True)
             except Exception as e:
                 report['tests'].append({'name':name,'status':'FAIL','error':str(e)});print('FAIL',name,str(e),flush=True)
-                try:page.screenshot(path=str(OUT/'failure.png'))
+                try:
+                    report['failureState']=page.evaluate('({phase:document.querySelector(".win32-status")?.innerText,log:document.querySelector(".win32-diagnostics pre")?.textContent,session:window.w?.win32Session?{failed:w.win32Session.failed,closed:w.win32Session.closed,key:w.win32Session.key,worker:!!w.win32Session.worker,renderer:w.win32Session.renderer?.stats(),stats:w.win32Session.stats}:null})');page.screenshot(path=str(OUT/'failure.png'))
                 except Exception:pass
                 raise
         def sample(name):
@@ -52,6 +54,10 @@ def main(args):
         try:
             boot();report['environment']=page.evaluate('({ua:navigator.userAgent,secure:isSecureContext,storage:Aster.db.mode,gpuAPI:!!navigator.gpu})')
             check('SHA-256 application-drive identity',lambda:assert_digest(page))
+            if args.gpu:
+                def pipeline_probe():
+                    return page.evaluate("""async()=>{const el=document.createElement('div');document.body.append(el);const g=new AsterGDI(el,64,64,{requireGPU:true});try{await g.init();g.enqueue([{op:'rect',x:0,y:0,w:64,h:64,color:[12,34,56,255]}]);const pixel=await g.pixel(10,10);if(pixel.join(',')!=='12,34,56,255')throw Error('WebGPU pixel mismatch: '+pixel);return g.stats();}finally{g.destroy();el.remove();}}""")
+                check('WebGPU pipeline initializes and renders a verified pixel',pipeline_probe)
             def hello():
                 sample('hello');page.wait_for_selector('.win32-messagebox');assert 'Zażółć' in page.locator('.win32-messagebox').inner_text();page.get_by_role('button',name='Cancel',exact=True).click();page.wait_for_function('w.win32Session.exitCode===2');stopped();return page.evaluate('w.win32Session.stats')
             check('PE32 MessageBoxW executes and resumes with Cancel result',hello)

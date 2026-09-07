@@ -3657,7 +3657,7 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                     heading('Files and permissions');
                     main.append(row('folder', 'Connect a local folder', 'A permission prompt lets you choose which real folder Aster can read and write.', OS.el('button', { class: 'secondary', text: 'Choose folder', onclick: OS.guard(async () => { const path = await OS.fs.mount(); OS.launch('files', { path }); }) })), row('cut', 'Screen capture', 'Only captures a screen, window, or tab you explicitly choose.', OS.el('button', { class: 'secondary', text: 'Open Snips', onclick: () => OS.launch('snips') })));
                     heading('App behavior');
-                    main.append(OS.el('div', { class: 'card', html: '<h3>Built for the browser</h3><p class="muted" style="font-size:12px;line-height:1.8;margin:0">Built-in apps share Aster’s virtual file system. Imported HTML apps run in isolated frames without direct access to your desktop data. They may still make network requests. Only run code you trust. Native Windows executables, drivers, installers, and operating-system services are not supported.</p>' }));
+                    main.append(OS.el('div', { class: 'card', html: '<h3>Built for the browser</h3><p class="muted" style="font-size:12px;line-height:1.8;margin:0">Built-in apps share Aster’s virtual file system. Imported HTML apps run in isolated frames without direct access to your desktop data. They may still make network requests. Only run code you trust. Win32 Lab runs a limited subset of 32-bit Windows executables in a browser worker. Drivers, installers, native host execution, and operating-system services are not supported.</p>' }));
                     if (OS.customApps.length) {
                         heading('Your apps');
                         for (const app of OS.customApps)
@@ -3700,7 +3700,7 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                     const facts = [['Version', OS.version], ['Renderer', OS.metrics.mode], ['GPU adapter', info.description || [info.vendor, info.architecture].filter(Boolean).join(' · ') || 'Not exposed by this browser'], ['Storage', OS.db.mode], ['Secure context', window.isSecureContext ? 'Yes' : 'No'], ['Local folder picker', window.showDirectoryPicker ? 'Available' : 'Not available — use file import'], ['Screen capture', navigator.mediaDevices?.getDisplayMedia ? 'Available with permission' : 'Not available'], ['Time zone', Intl.DateTimeFormat().resolvedOptions().timeZone], ['Browser platform', navigator.platform || 'Not exposed']];
                     main.append(OS.el('div', { class: 'card', html: `<table class="shortcut-table">${facts.map(([a, b]) => `<tr><td>${esc(a)}</td><td style="text-align:left;word-break:break-word">${esc(b)}</td></tr>`).join('')}</table>` }));
                     heading('A desktop, not a kernel');
-                    main.append(OS.el('div', { class: 'card', html: '<p class="muted" style="font-size:12px;line-height:1.85;margin:0">Aster is a web application. It does not boot a computer, emulate Windows, run EXE/MSI programs, or control your real network, power, or operating-system accounts. Its terminal is a virtual shell. Its lock screen is a visual cover, not an authentication boundary.<br><br>The project uses original icons, graphics, code, and branding. It is not affiliated with, endorsed by, or distributed by Microsoft. Windows is a Microsoft trademark.</p>' }));
+                    main.append(OS.el('div', { class: 'card', html: '<p class="muted" style="font-size:12px;line-height:1.85;margin:0">Aster is a web application. It does not boot a computer or replace Windows. Win32 Lab emulates a small subset of x86/Win32 for compatible PE32 EXEs; MSI installers and host-system control remain unsupported. Its terminal is a virtual shell. Its lock screen is a visual cover, not an authentication boundary.<br><br>The project uses original icons, graphics, code, and branding. It is not affiliated with, endorsed by, or distributed by Microsoft. Windows is a Microsoft trademark.</p>' }));
                     heading('Local by design');
                     main.append(OS.el('p', { class: 'muted', text: 'No sign-in, analytics, external fonts, or CDN dependencies are built in. Your files stay in this browser unless you explicitly download, export, connect a folder, browse a website, or run app code that accesses a network.', style: 'font-size:11px;line-height:1.8' }));
                 }
@@ -3841,7 +3841,7 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
             for (const [id, title, description] of [['files', 'Make yourself at home', 'Organize files, connect a local folder, and keep things close.'], ['notepad', 'Catch a thought', 'Write, edit, find, replace, and save real text documents.'], ['paint', 'Color outside the lines', 'Draw, paint, edit images, and export your creations.'], ['code', 'Build something yours', 'Write HTML, CSS, and JavaScript. Run it as your own app.']])
                 grid.append(OS.el('button', { class: 'welcome-card', html: OS.appIcon(id, 35) + `<div><h3>${title}</h3><p>${description}</p></div>`, onclick: () => OS.launch(id) }));
             page.append(grid, OS.el('div', { class: 'row', style: 'flex-wrap:wrap;margin-bottom:25px' }, OS.el('button', { class: 'primary', html: OS.icon('paint', 16) + 'Make it yours', onclick: () => OS.launch('settings', { section: 'personalization' }) }), OS.el('button', { class: 'secondary', html: OS.icon('store', 16) + 'Explore all apps', onclick: () => OS.launch('store') })));
-            page.append(OS.el('div', { class: 'welcome-foot', html: '<strong style="color:var(--text)">A couple of things to know.</strong><br>Drag windows by their title bars. Hover over Maximize for snap layouts. Use Task View for more desktops. Press <kbd>Ctrl</kbd> + <kbd>Space</kbd> to find anything.<br><br>Your virtual files live in this browser, not in the cloud. Export a backup in Settings to keep them safe. Aster is a web desktop, not a bootable OS: it does not run native Windows programs or replace your real system.<br><br><span class="eyebrow" style="font-size:9px">INDEPENDENTLY BUILT · PLAIN HTML / CSS / JAVASCRIPT / WGSL</span>' }));
+            page.append(OS.el('div', { class: 'welcome-foot', html: '<strong style="color:var(--text)">A couple of things to know.</strong><br>Drag windows by their title bars. Hover over Maximize for snap layouts. Use Task View for more desktops. Press <kbd>Ctrl</kbd> + <kbd>Space</kbd> to find anything.<br><br>Your virtual files live in this browser, not in the cloud. Export a backup in Settings to keep them safe. Aster is a web desktop, not a bootable OS. Win32 Lab runs a limited set of 32-bit Windows programs locally in the browser; it does not replace your real system.<br><br><span class="eyebrow" style="font-size:9px">INDEPENDENTLY BUILT · PLAIN HTML / CSS / JAVASCRIPT / WGSL</span>' }));
             w.body.append(page);
         }
     });
@@ -3863,7 +3863,7 @@ struct Vertex { @builtin(position) position:vec4f, @location(0) local:vec2f,
 @group(0) @binding(0) var<storage,read> primitives:array<Primitive>;
 @group(0) @binding(1) var<uniform> viewport:vec4f;
 @group(0) @binding(2) var atlas:texture_2d<f32>;
-@group(0) @binding(3) var filter:sampler;
+@group(0) @binding(3) var gdiSampler:sampler;
 @vertex fn vs(@builtin(vertex_index) vertex:u32,@builtin(instance_index) instance:u32)->Vertex {
  var corners=array<vec2f,6>(vec2f(0,0),vec2f(1,0),vec2f(0,1),vec2f(0,1),vec2f(1,0),vec2f(1,1));
  let q=corners[vertex];let p=primitives[instance];let kind=u32(p.extra.x);
@@ -3876,15 +3876,15 @@ struct Vertex { @builtin(position) position:vec4f, @location(0) local:vec2f,
  var alpha=v.color.a;
  if(v.kind==1u||v.kind==4u){let p=v.local*2-1;if(dot(p,p)>1){discard;}
   if(v.kind==4u){let inner=max(v.data.xy-vec2f(2*v.data.z),vec2f(0.001));let q=p*v.data.xy/inner;if(dot(q,q)<1){discard;}}}
- if(v.kind==2u){alpha*=textureSampleLevel(atlas,filter,v.uv,0).a;}
+ if(v.kind==2u){alpha*=textureSampleLevel(atlas,gdiSampler,v.uv,0).a;}
  return vec4f(v.color.rgb*alpha,alpha);
 }`;
 const BLIT=`
 struct V { @builtin(position) position:vec4f, @location(0) uv:vec2f }
 @group(0) @binding(0) var image:texture_2d<f32>;
-@group(0) @binding(1) var filter:sampler;
+@group(0) @binding(1) var gdiSampler:sampler;
 @vertex fn vs(@builtin(vertex_index) i:u32)->V { var points=array<vec2f,3>(vec2f(-1,-1),vec2f(3,-1),vec2f(-1,3));let p=points[i];var v:V;v.position=vec4f(p,0,1);v.uv=p*vec2f(0.5,-0.5)+vec2f(0.5,0.5);return v; }
-@fragment fn fs(v:V)->@location(0) vec4f { return textureSampleLevel(image,filter,v.uv,0); }`;
+@fragment fn fs(v:V)->@location(0) vec4f { return textureSampleLevel(image,gdiSampler,v.uv,0); }`;
 const css=c=>`rgba(${c[0]},${c[1]},${c[2]},${(c[3]??255)/255})`;
 class GDIRenderer {
     constructor(container,width,height,options={}) {
@@ -4046,9 +4046,9 @@ class Session {
         this.nodes.stage.replaceChildren();this.nodes.log.textContent='';this.nodes.phase.textContent='Loading '+name+'…';this.nodes.stop.disabled=false;this.nodes.run.disabled=true;this.nodes.sampleRun.disabled=true;
         this.renderFiles();
     }
-    error(error){if(this.failed)return;this.failed=true;this.nodes.phase.textContent='Stopped: '+error.message;this.nodes.log.textContent+='\n'+error.message;this.nodes.details.open=true;this.nodes.run.disabled=false;this.nodes.sampleRun.disabled=false;this.nodes.stop.disabled=true;this.worker?.terminate();this.worker=null;if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);this.renderer?.destroy();}
+    error(error){if(this.failed)return;console.error('Win32 runtime:',error);this.failed=true;this.nodes.phase.textContent='Stopped: '+error.message;this.nodes.log.textContent+='\n'+error.message;this.nodes.details.open=true;this.nodes.run.disabled=false;this.nodes.sampleRun.disabled=false;this.nodes.stop.disabled=true;this.worker?.terminate();this.worker=null;if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);this.renderer?.destroy();}
     async receive(e){
-        if(this.closed&&e.type!=='files'&&e.type!=='stopped')return;
+        if((this.closed||this.failed)&&!['files','stopped','error'].includes(e.type))return;
         if(e.type==='loaded'){this.image=e.image;this.nodes.log.textContent=JSON.stringify({name:e.name,...e.image,supportedAPIs:e.supportedAPIs},null,2);this.nodes.phase.textContent='Running '+e.name;}
         else if(e.type==='window'){
             if(!e.parent){

@@ -104,7 +104,7 @@ Open App Center and choose the HTML import action, or create a project in Code S
 
 Frames allow scripts, forms, modal dialogs, and downloads, but deliberately omit `allow-same-origin`. Imported apps cannot directly access `parent.Aster`, the parent DOM, or the workspace database. They are not granted local directory handles. Code Studio's console bridge validates both the frame source and a per-preview token.
 
-This is not a malware-analysis sandbox or a CPU/memory quota system. Imported apps can request network resources and execute arbitrary JavaScript inside their frame; run sources you trust. Native Windows applications and host system commands are unsupported.
+This is not a malware-analysis sandbox or a CPU/memory quota system. Imported apps can request network resources and execute arbitrary JavaScript inside their frame; run sources you trust. Host system commands and unrestricted native Windows execution are unsupported. Win32 Lab is a separate, limited PE32 compatibility runtime with a bounded worker and a private drive; see docs/browser-win32.md.
 
 ## Keyboard shortcuts
 

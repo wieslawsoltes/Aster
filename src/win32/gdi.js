@@ -11,7 +11,7 @@ struct Vertex { @builtin(position) position:vec4f, @location(0) local:vec2f,
 @group(0) @binding(0) var<storage,read> primitives:array<Primitive>;
 @group(0) @binding(1) var<uniform> viewport:vec4f;
 @group(0) @binding(2) var atlas:texture_2d<f32>;
-@group(0) @binding(3) var filter:sampler;
+@group(0) @binding(3) var gdiSampler:sampler;
 @vertex fn vs(@builtin(vertex_index) vertex:u32,@builtin(instance_index) instance:u32)->Vertex {
  var corners=array<vec2f,6>(vec2f(0,0),vec2f(1,0),vec2f(0,1),vec2f(0,1),vec2f(1,0),vec2f(1,1));
  let q=corners[vertex];let p=primitives[instance];let kind=u32(p.extra.x);
@@ -24,15 +24,15 @@ struct Vertex { @builtin(position) position:vec4f, @location(0) local:vec2f,
  var alpha=v.color.a;
  if(v.kind==1u||v.kind==4u){let p=v.local*2-1;if(dot(p,p)>1){discard;}
   if(v.kind==4u){let inner=max(v.data.xy-vec2f(2*v.data.z),vec2f(0.001));let q=p*v.data.xy/inner;if(dot(q,q)<1){discard;}}}
- if(v.kind==2u){alpha*=textureSampleLevel(atlas,filter,v.uv,0).a;}
+ if(v.kind==2u){alpha*=textureSampleLevel(atlas,gdiSampler,v.uv,0).a;}
  return vec4f(v.color.rgb*alpha,alpha);
 }`;
 const BLIT=`
 struct V { @builtin(position) position:vec4f, @location(0) uv:vec2f }
 @group(0) @binding(0) var image:texture_2d<f32>;
-@group(0) @binding(1) var filter:sampler;
+@group(0) @binding(1) var gdiSampler:sampler;
 @vertex fn vs(@builtin(vertex_index) i:u32)->V { var points=array<vec2f,3>(vec2f(-1,-1),vec2f(3,-1),vec2f(-1,3));let p=points[i];var v:V;v.position=vec4f(p,0,1);v.uv=p*vec2f(0.5,-0.5)+vec2f(0.5,0.5);return v; }
-@fragment fn fs(v:V)->@location(0) vec4f { return textureSampleLevel(image,filter,v.uv,0); }`;
+@fragment fn fs(v:V)->@location(0) vec4f { return textureSampleLevel(image,gdiSampler,v.uv,0); }`;
 const css=c=>`rgba(${c[0]},${c[1]},${c[2]},${(c[3]??255)/255})`;
 class GDIRenderer {
     constructor(container,width,height,options={}) {

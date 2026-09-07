@@ -40,9 +40,9 @@ class Session {
         this.nodes.stage.replaceChildren();this.nodes.log.textContent='';this.nodes.phase.textContent='Loading '+name+'…';this.nodes.stop.disabled=false;this.nodes.run.disabled=true;this.nodes.sampleRun.disabled=true;
         this.renderFiles();
     }
-    error(error){if(this.failed)return;this.failed=true;this.nodes.phase.textContent='Stopped: '+error.message;this.nodes.log.textContent+='\n'+error.message;this.nodes.details.open=true;this.nodes.run.disabled=false;this.nodes.sampleRun.disabled=false;this.nodes.stop.disabled=true;this.worker?.terminate();this.worker=null;if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);this.renderer?.destroy();}
+    error(error){if(this.failed)return;console.error('Win32 runtime:',error);this.failed=true;this.nodes.phase.textContent='Stopped: '+error.message;this.nodes.log.textContent+='\n'+error.message;this.nodes.details.open=true;this.nodes.run.disabled=false;this.nodes.sampleRun.disabled=false;this.nodes.stop.disabled=true;this.worker?.terminate();this.worker=null;if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);this.renderer?.destroy();}
     async receive(e){
-        if(this.closed&&e.type!=='files'&&e.type!=='stopped')return;
+        if((this.closed||this.failed)&&!['files','stopped','error'].includes(e.type))return;
         if(e.type==='loaded'){this.image=e.image;this.nodes.log.textContent=JSON.stringify({name:e.name,...e.image,supportedAPIs:e.supportedAPIs},null,2);this.nodes.phase.textContent='Running '+e.name;}
         else if(e.type==='window'){
             if(!e.parent){
