@@ -2,7 +2,8 @@
 Normal: python tests/win32/browser.py --gpu
 Restricted test environment: --inject --browser /usr/bin/chromium (no GPU/durable claims).
 """
-import argparse, hashlib, json, threading, time
+import argparse, hashlib, io, json, sys, threading, time
+from PIL import Image
 from functools import partial
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
@@ -18,8 +19,9 @@ def main(args):
     report={'tests':[],'errors':[],'requests':[],'mode':'injected opaque-origin' if args.inject else 'HTTP + file standalone','gpuRequired':args.gpu}
     with sync_playwright() as p:
         flags=['--no-sandbox']
-        if args.gpu: flags+=['--enable-unsafe-webgpu','--use-webgpu-adapter=swiftshader','--use-angle=swiftshader','--enable-unsafe-swiftshader']
-        options={'headless':True,'args':flags}
+        if args.gpu: flags+=['--enable-unsafe-webgpu']
+        if args.gpu and sys.platform.startswith('linux'): flags+=['--enable-features=Vulkan','--use-angle=vulkan','--use-vulkan=swiftshader','--use-webgpu-adapter=swiftshader','--disable-vulkan-surface']
+        options={'headless':not args.headed,'args':flags}
         if args.browser:options['executable_path']=args.browser
         browser=p.chromium.launch(**options);context=browser.new_context(viewport={'width':1440,'height':1000},service_workers='block',accept_downloads=True)
         page=context.new_page();page.set_default_timeout(15000)
@@ -84,7 +86,7 @@ def main(args):
                 pixel=page.evaluate('w.win32Session.renderer.pixel(400,340)');assert pixel==[69,203,166,255],pixel
                 g=page.evaluate('w.win32Session.renderer.stats()');assert g['errors']==[]
                 if args.gpu:assert g['glyphs']>10 and g['drawCalls']==g['frames']*2
-                page.screenshot(path=str(OUT/'win32-gdi.png'));detail={'renderer':g,'cpu':page.evaluate('w.win32Session.stats'),'readyMs':page.evaluate('w.win32Session.readyMs'),'clickedPixel':pixel};stop();return detail
+                png=page.screenshot(path=str(OUT/'win32-gdi.png'));image=Image.open(io.BytesIO(png)).convert('RGB');screen=image.getpixel((round(box['x']+400*box['width']/680),round(box['y']+340*box['height']/460)));assert list(screen)==pixel[:3],('Presented canvas differs from GPU readback',screen,pixel);detail={'renderer':g,'cpu':page.evaluate('w.win32Session.stats'),'readyMs':page.evaluate('w.win32Session.readyMs'),'clickedPixel':pixel,'screenshotPixel':list(screen)};stop();return detail
             check('GDI primitives, text, mouse and WM_TIMER use the actual render target',graphics)
             def compute():
                 sample('compute');page.wait_for_function('w.win32Session.files.has("checksum.txt")');stopped();assert bytes(page.evaluate('Array.from(w.win32Session.files.get("checksum.txt"))')).decode()=='4248471154\n';return page.evaluate('w.win32Session.stats')
@@ -119,4 +121,4 @@ def assert_requests(requests,url):
     assert all(r['method']=='GET' and (r['url'].startswith(url) or r['url'].startswith('blob:') or r['url'].startswith('data:')) for r in requests),requests
     return str(len(requests))+' local/static GET requests; no POST, WebSocket or remote host'
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--gpu',action='store_true');parser.add_argument('--inject',action='store_true');parser.add_argument('--browser');main(parser.parse_args())
+    parser=argparse.ArgumentParser();parser.add_argument('--gpu',action='store_true');parser.add_argument('--headed',action='store_true');parser.add_argument('--inject',action='store_true');parser.add_argument('--browser');main(parser.parse_args())

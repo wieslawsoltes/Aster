@@ -54,9 +54,9 @@ class GDIRenderer {
             d.pushErrorScope('validation');
             const module=d.createShaderModule({code:SHADER});
             this.pipeline=d.createRenderPipeline({layout:'auto',vertex:{module,entryPoint:'vs'},fragment:{module,entryPoint:'fs',targets:[{format:'rgba8unorm',blend:{color:{srcFactor:'one',dstFactor:'one-minus-src-alpha'},alpha:{srcFactor:'one',dstFactor:'one-minus-src-alpha'}}}]},primitive:{topology:'triangle-list'}});
-            const blit=d.createShaderModule({code:BLIT});this.blitPipeline=d.createRenderPipeline({layout:'auto',vertex:{module:blit,entryPoint:'vs'},fragment:{module:blit,entryPoint:'fs',targets:[{format:'rgba8unorm'}]},primitive:{topology:'triangle-list'}});
+            this.presentFormat=navigator.gpu.getPreferredCanvasFormat();const blit=d.createShaderModule({code:BLIT});this.blitPipeline=d.createRenderPipeline({layout:'auto',vertex:{module:blit,entryPoint:'vs'},fragment:{module:blit,entryPoint:'fs',targets:[{format:this.presentFormat}]},primitive:{topology:'triangle-list'}});
             const compileError=await d.popErrorScope();if(compileError)throw Error(compileError.message);
-            this.context=this.canvas.getContext('webgpu');this.context.configure({device:d,format:'rgba8unorm',alphaMode:'opaque'});
+            this.context=this.canvas.getContext('webgpu');this.context.configure({device:d,format:this.presentFormat,alphaMode:'opaque'});
             this.target=d.createTexture({size:[this.width,this.height],format:'rgba8unorm',usage:GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_SRC});
             this.atlas=d.createTexture({size:[2048,2048],format:'rgba8unorm',usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST});
             this.sampler=d.createSampler({minFilter:'nearest',magFilter:'nearest'});
@@ -137,7 +137,7 @@ class GDIRenderer {
         }
         this.options.onFrame?.(this.stats());
     }
-    stats() {return {mode:this.mode,frames:this.frames,drawCalls:this.drawCalls,primitives:this.primitives,glyphs:this.glyphs.size,errors:this.errors.slice()};}
+    stats() {return {mode:this.mode,adapter:this.adapter?{vendor:this.adapter.info?.vendor,architecture:this.adapter.info?.architecture,description:this.adapter.info?.description}:null,frames:this.frames,drawCalls:this.drawCalls,primitives:this.primitives,glyphs:this.glyphs.size,errors:this.errors.slice()};}
     async pixel(x,y) {
         this.flush();x=Math.floor(x);y=Math.floor(y);if(x<0||y<0||x>=this.width||y>=this.height)throw Error('Pixel out of bounds');
         if(this.mode!=='WebGPU')return [...this.ctx.getImageData(x,y,1,1).data];

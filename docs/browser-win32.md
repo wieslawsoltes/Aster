@@ -138,9 +138,9 @@ For maintainers, LLVM (`clang`, `lld-link`, `llvm-ar`) rebuilds the CPU and samp
 python3 native/win32/build.py
 python3 build.py
 node tests/win32/unit.cjs
-python3 -m pip install playwright
+python3 -m pip install playwright pillow
 python3 -m playwright install chromium
-python3 tests/win32/browser.py --gpu
+xvfb-run -a -s '-screen 0 1440x1000x24' python3 tests/win32/browser.py --gpu --headed
 python3 tests/smoke.py
 ```
 
@@ -185,3 +185,5 @@ WinMine or any other untested third-party Windows executable works.
   and [WebGPU test configuration](https://chromium.googlesource.com/chromium/src/+/HEAD/third_party/blink/web_tests/FlagSpecificConfig)
   document software-GPU testing. This is for CI verification, not a recommendation
   to weaken normal browser security.
+
+Linux GPU CI also installs `libvulkan1 mesa-vulkan-drivers xvfb xauth`. It runs full Chrome on a virtual X display with a consistent SwiftShader Vulkan presentation path, and compares a screenshot pixel with the GPU readback. These are test-runner dependencies only, never Aster end-user dependencies.
