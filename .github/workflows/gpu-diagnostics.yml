@@ -12,32 +12,33 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: |
+          sudo apt-get update
+          sudo apt-get install -y libvulkan1 mesa-vulkan-drivers xvfb xauth
           python3 -m pip install playwright
           python3 -m playwright install chromium
-      - name: Execute the actual GDI renderer without the desktop compositor
+      - name: Exercise GPU rendering and presentation on a virtual display
         env:
           DEBUG: pw:browser
         run: |
-          python3 - <<'PY'
+          xvfb-run -a -s '-screen 0 1440x1000x24' python3 - <<'PY'
           import threading, json
-          from pathlib import Path
           from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
           from playwright.sync_api import sync_playwright
           server = ThreadingHTTPServer(('127.0.0.1',0), SimpleHTTPRequestHandler)
           threading.Thread(target=server.serve_forever,daemon=True).start()
           with sync_playwright() as p:
-              b = p.chromium.launch(headless=True,args=['--no-sandbox','--enable-unsafe-webgpu','--use-webgpu-adapter=swiftshader','--use-angle=swiftshader','--enable-unsafe-swiftshader'])
+              b = p.chromium.launch(headless=False,args=['--no-sandbox','--enable-unsafe-webgpu','--enable-features=Vulkan','--use-angle=vulkan','--use-vulkan=swiftshader','--use-webgpu-adapter=swiftshader','--disable-vulkan-surface'])
               page = b.new_page()
               page.on('console',lambda m: print('CONSOLE',m.type,m.text,flush=True))
               page.on('pageerror',lambda e: print('PAGEERROR',str(e),flush=True))
-              page.goto('http://127.0.0.1:'+str(server.server_port)+'/')
+              page.goto('http://127.0.0.1:'+str(server.server_port)+'/docs/browser-win32.md')
               page.evaluate('document.body.replaceChildren()')
               page.add_script_tag(path='src/win32/gdi.js')
               result = page.evaluate('''async()=>{
                   const g = new AsterGDI(document.body,64,64,{requireGPU:true,onError:e=>console.error('GDI ERROR',e.message)});
                   try {
                       await g.init();
-                      console.log('ADAPTER',JSON.stringify(g.adapter.info));
+                      console.log('ADAPTER',g.adapter.info.vendor,g.adapter.info.architecture,g.adapter.info.description);
                       g.enqueue([{op:'rect',x:0,y:0,w:64,h:64,color:[12,34,56,255]}]);
                       const pixel=await g.pixel(10,10);
                       return {pixel,stats:g.stats()};
