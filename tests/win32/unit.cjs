@@ -57,6 +57,18 @@ await check('Compiled Pad handles WM_COMMAND and executes UTF-16 WriteFile/ReadF
 await check('Compiled GDI app responds to pointer messages and emits draw commands',async()=>{
  let r,stage=0,clicked=false;r=await runtime(e=>{if(e.type==='draw'&&stage>0)clicked||=e.commands.some(c=>c.op==='ellipse'&&c.x===172&&c.y===152);if(e.type==='idle')setTimeout(()=>{if(stage++===0){r.event({type:'message',hwnd:r.mainWindow,message:513,wParam:1,lParam:200|(180<<16)});}else r.event({type:'message',hwnd:r.mainWindow,message:16});},0);});r.load(exe('gdi'));await r.run();assert(clicked);assert.equal(r.exitCode,0);assert.equal(r.timers.size,0);
 });
+await check('GDI drains do not retain a growing history of completed batch results',async()=>{
+ const batches=[],r=await runtime(e=>{if(e.type==='draw'){batches.push(e.commands.length);return Promise.resolve({discardedHostResult:true});}});
+ for(let n=0;n<40;n++){r.draw(1,{op:'rect',x:0,y:0,w:1,h:1,color:[1,2,3,255]});assert.equal(await r.flush(),undefined);}
+ assert.equal(batches.length,40);assert.equal(r.pendingDraws.size,0);assert.equal(r.drawCount,0);
+ return {completedBatches:40,retainedResult:typeof await r.graphicsReady};
+});
+await check('GDI batches enforce the 4096-command ceiling',async()=>{
+ const batches=[],r=await runtime(e=>{if(e.type==='draw')batches.push(e.commands.length);});
+ for(let n=0;n<4096;n++)r.draw(1,{op:'rect',x:n,y:0,w:1,h:1,color:[1,2,3,255]});
+ await r.flush();assert.deepEqual(batches,[4096]);assert.equal(r.drawCount,0);
+ r.draw(1,{op:'rect',x:0,y:0,w:1,h:1,color:[1,2,3,255]});await r.flush();assert.deepEqual(batches,[4096,1]);
+});
 await check('No host process, network, COM or Windows installer APIs exist',async()=>{const r=await runtime();for(const[dll,name]of[['kernel32.dll','CreateProcessA'],['shell32.dll','ShellExecuteW'],['ws2_32.dll','connect'],['ole32.dll','CoCreateInstance'],['msi.dll','MsiInstallProductW']])assert.equal(r.resolve(dll,name),0);return r.apis.size+' named exports, each with documented subset semantics';});
 await check('Cached and uncached x86 produce identical results; measure both',async()=>{
  let expected=2166136261;for(let i=0;i<200000;i++){expected=Math.imul(expected^i,16777619)>>>0;expected=((expected<<5)|(expected>>>27))>>>0;}const samples={cached:[],uncached:[]};let stats;

@@ -60,6 +60,9 @@ def main(args):
                 def pipeline_probe():
                     return page.evaluate("""async()=>{const el=document.createElement('div');document.body.append(el);const g=new AsterGDI(el,64,64,{requireGPU:true});try{await g.init();g.enqueue([{op:'rect',x:0,y:0,w:64,h:64,color:[12,34,56,255]}]);const pixel=await g.pixel(10,10);if(pixel.join(',')!=='12,34,56,255')throw Error('WebGPU pixel mismatch: '+pixel);return g.stats();}finally{g.destroy();el.remove();}}""")
                 check('WebGPU pipeline initializes and renders a verified pixel',pipeline_probe)
+            def no_animation_frames():
+                return page.evaluate("""async()=>{const el=document.createElement('div');document.body.append(el);const saved=window.requestAnimationFrame;const g=new AsterGDI(el,64,64,{requireGPU:!!window.ASTER_WIN32_REQUIRE_GPU});try{await g.init();window.requestAnimationFrame=()=>0;for(let n=0;n<40;n++)await g.submit([{op:'rect',x:0,y:0,w:64,h:64,color:[n,34,56,255]}]);const pixel=await g.pixel(10,10);if(pixel.join(',')!=='39,34,56,255')throw Error('Render did not progress without rAF');if(g.pending.length||g.stats().peakQueuedCommands!==1)throw Error('Drawing backlog grew');return g.stats();}finally{window.requestAnimationFrame=saved;g.destroy();el.remove();}}""")
+            check('Rendering progresses with animation callbacks suspended and stays bounded',no_animation_frames)
             def hello():
                 sample('hello');page.wait_for_selector('.win32-messagebox');assert 'Zażółć' in page.locator('.win32-messagebox').inner_text();page.get_by_role('button',name='Cancel',exact=True).click();page.wait_for_function('w.win32Session.exitCode===2');stopped();return page.evaluate('w.win32Session.stats')
             check('PE32 MessageBoxW executes and resumes with Cancel result',hello)
@@ -84,7 +87,7 @@ def main(args):
                 canvas=page.locator('.win32-canvas');box=canvas.bounding_box();canvas.click(position={'x':400*box['width']/680,'y':340*box['height']/460});canvas.press('Space')
                 page.wait_for_function('w.win32Session.stats.apiCounts?.["user32.dll!KillTimer"]>=1');page.wait_for_timeout(150)
                 pixel=page.evaluate('w.win32Session.renderer.pixel(400,340)');assert pixel==[69,203,166,255],pixel
-                g=page.evaluate('w.win32Session.renderer.stats()');assert g['errors']==[]
+                g=page.evaluate('w.win32Session.renderer.stats()');assert g['errors']==[];assert g['peakQueuedCommands']<=4096;assert g['acknowledgedBatches']>0
                 if args.gpu:assert g['glyphs']>10 and g['drawCalls']==g['frames']*2
                 png=page.screenshot(path=str(OUT/'win32-gdi.png'));image=Image.open(io.BytesIO(png)).convert('RGB');screen=image.getpixel((round(box['x']+400*box['width']/680),round(box['y']+340*box['height']/460)));assert list(screen)==pixel[:3],('Presented canvas differs from GPU readback',screen,pixel);detail={'renderer':g,'cpu':page.evaluate('w.win32Session.stats'),'readyMs':page.evaluate('w.win32Session.readyMs'),'clickedPixel':pixel,'screenshotPixel':list(screen)};stop();return detail
             check('GDI primitives, text, mouse and WM_TIMER use the actual render target',graphics)
@@ -99,7 +102,7 @@ def main(args):
                 for i in range(int.from_bytes(data[pe+6:pe+8],'little')):
                     s=sections+i*40;rva=int.from_bytes(data[s+12:s+16],'little');size=int.from_bytes(data[s+16:s+20],'little');raw=int.from_bytes(data[s+20:s+24],'little')
                     if rva<=entry<rva+size:data[raw+entry-rva:raw+entry-rva+2]=b'\xeb\xfe';break
-                upload('busy-loop.exe',bytes(data));page.wait_for_function('w.win32Session.stats.instructions>10000');page.evaluate('async()=>{const c=Aster.launch("calculator");await c.ready;await c.close(true)}');stop();return 'Main desktop responded while the Worker executed an infinite x86 loop; Stop terminated it'
+                upload('busy-loop.exe',bytes(data));page.wait_for_function('w.win32Session.stats.instructions>10000');page.evaluate('async()=>{const c=Aster.launch("calculator");await c.ready;await c.close(true)}');stop();assert page.get_by_role('button',name='Run sample',exact=True).is_enabled();return 'Main desktop responded while the Worker executed an infinite x86 loop; Stop terminated it'
             check('Busy EXE cannot monopolize the desktop main thread',busy)
             def standalone():
                 other=context.new_page();other.set_default_timeout(15000)

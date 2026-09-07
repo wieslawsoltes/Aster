@@ -1,5 +1,5 @@
 'use strict';
-const CACHE = 'aster-desktop-1.1.0-win32';
+const CACHE = 'aster-desktop-1.1.1-win32';
 const FILES = ['./', './index.html', './manifest.webmanifest', './assets/icon.svg', './assets/icon-192.png', './assets/icon-512.png', './src/styles.css', './src/core.js', './src/renderer.js', './src/windows.js', './src/apps-files.js', './src/apps-creative.js', './src/apps-tools.js', './src/apps-system.js', './src/shell.js', './src/apps-win32.js', './src/win32/gdi.js', './src/win32/pe.js', './src/win32/runtime.js', './src/win32/worker.js', './src/win32/x86.wasm', './src/win32/examples/hello.exe', './src/win32/examples/pad.exe', './src/win32/examples/gdi.exe', './src/win32/examples/compute.exe'];
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));

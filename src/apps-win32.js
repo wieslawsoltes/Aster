@@ -27,7 +27,7 @@ async function runtimeAssets(){
     return {wasm:await wasmModule,source:await workerSource};
 }
 class Session {
-    constructor(w,nodes){this.w=w;this.nodes=nodes;this.files=new Map();this.controls=new Map();this.stats={};this.persist=Promise.resolve();this.closed=false;this.sequence=Promise.resolve();this.started=performance.now();}
+    constructor(w,nodes){this.w=w;this.nodes=nodes;this.files=new Map();this.controls=new Map();this.stats={};this.persist=Promise.resolve();this.closed=false;this.halted=false;this.exitCode=null;this.sequence=Promise.resolve();this.started=performance.now();}
     send(event){this.worker?.postMessage(event);}
     async start(bytes,name){
         this.name=name;this.key=await digest(bytes);if(activeSessions.has(this.key))throw Error('This executable is already running in another Win32 Lab window');if(activeSessions.size>=4)throw Error('Four guest processes are already running');activeSessions.set(this.key,this);const saved=await OS.db.get('win32-files:'+this.key)||[];
@@ -35,19 +35,23 @@ class Session {
         const {wasm,source}=await runtimeAssets();if(this.closed)return;
         const url=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));this.worker=new Worker(url,{name:'Aster Win32: '+name});URL.revokeObjectURL(url);
         this.worker.onerror=e=>this.error(Error(e.message||'Worker failed'));
-        this.worker.onmessage=({data})=>{this.sequence=this.sequence.then(()=>this.receive(data)).catch(error=>this.error(error));};
+        this.worker.onmessage=({data})=>{
+            if(['files','stopped','stats'].includes(data.type))this.receive(data).catch(error=>this.error(error));
+            else this.sequence=this.sequence.then(()=>this.receive(data)).catch(error=>this.error(error));
+        };
         const exe=bytes.slice().buffer;this.send({type:'start',wasm,exe,name,files:[...this.files].map(([path,bytes])=>({path,bytes})),options:{cache:true}});
         this.nodes.stage.replaceChildren();this.nodes.log.textContent='';this.nodes.phase.textContent='Loading '+name+'…';this.nodes.stop.disabled=false;this.nodes.run.disabled=true;this.nodes.sampleRun.disabled=true;
         this.renderFiles();
     }
-    error(error){if(this.failed)return;console.error('Win32 runtime:',error);this.failed=true;this.nodes.phase.textContent='Stopped: '+error.message;this.nodes.log.textContent+='\n'+error.message;this.nodes.details.open=true;this.nodes.run.disabled=false;this.nodes.sampleRun.disabled=false;this.nodes.stop.disabled=true;this.worker?.terminate();this.worker=null;if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);this.renderer?.destroy();}
+    error(error){if(this.failed||this.closed||this.halted)return;console.error('Win32 runtime:',error);this.failed=true;this.nodes.phase.textContent='Stopped: '+error.message;this.nodes.log.textContent+='\n'+error.message;this.nodes.details.open=true;this.nodes.run.disabled=false;this.nodes.sampleRun.disabled=false;this.nodes.stop.disabled=true;this.worker?.terminate();this.worker=null;if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);this.renderer?.destroy();}
     async receive(e){
-        if((this.closed||this.failed)&&!['files','stopped','error'].includes(e.type))return;
+        if((this.closed||this.failed||this.halted)&&!['files','stopped','error'].includes(e.type))return;
         if(e.type==='loaded'){this.image=e.image;this.nodes.log.textContent=JSON.stringify({name:e.name,...e.image,supportedAPIs:e.supportedAPIs},null,2);this.nodes.phase.textContent='Running '+e.name;}
         else if(e.type==='window'){
             if(!e.parent){
                 this.hwnd=e.hwnd;this.width=e.width;this.height=e.height;this.nodes.stage.replaceChildren();this.board=OS.el('div',{class:'win32-board'});this.nodes.stage.append(this.board);this.board.style.width=e.width+'px';this.board.style.height=e.height+'px';
                 this.renderer=await new AsterGDI(this.board,e.width,e.height,{requireGPU:!!globalThis.ASTER_WIN32_REQUIRE_GPU,onError:error=>this.error(error),onFrame:()=>this.metrics()}).init();
+                if(this.closed||this.halted){this.renderer.destroy();return;}
                 this.w.setTitle?.(e.title+' · Win32');this.bindInput(this.renderer.canvas);this.resize=new ResizeObserver(()=>this.fit());this.resize.observe(this.nodes.stage);this.fit();this.renderer.canvas.focus();if(e.credit)this.send({type:'ack',credit:e.credit});
             }else{
                 if(e.parent!==this.hwnd)throw Error('Nested child controls unsupported');
@@ -58,7 +62,7 @@ class Session {
                 else throw Error('No browser control for '+type);
                 control.style.cssText+=`;left:${e.x}px;top:${e.y}px;width:${e.width}px;height:${e.height}px`;control.hidden=!(e.style&0x10000000);control.dataset.hwnd=e.hwnd;this.controls.set(e.hwnd,control);this.board.append(control);
             }
-        }else if(e.type==='draw'){if(e.hwnd!==this.hwnd)throw Error('Drawing to child DC unsupported');this.renderer.enqueue(e.commands);if(e.credit){await new Promise(resolve=>requestAnimationFrame(resolve));this.renderer.flush();if(this.renderer.device)await this.renderer.device.queue.onSubmittedWorkDone();this.send({type:'ack',credit:e.credit});}}
+        }else if(e.type==='draw'){if(e.hwnd!==this.hwnd)throw Error('Drawing to child DC unsupported');await this.renderer.submit(e.commands);if(e.credit)this.send({type:'ack',credit:e.credit});}
         else if(e.type==='text'){const c=this.controls.get(e.hwnd);if(c){if(c.matches('input,textarea'))c.value=e.text;else c.textContent=e.text;}else if(e.hwnd===this.hwnd)this.w.setTitle?.(e.text+' · Win32');}
         else if(e.type==='show'){const c=this.controls.get(e.hwnd);if(c)c.hidden=!e.visible;else if(this.board)this.board.hidden=!e.visible;}
         else if(e.type==='destroy'){const c=this.controls.get(e.hwnd);if(c){c.remove();this.controls.delete(e.hwnd);}}
@@ -99,10 +103,10 @@ class Session {
         })}));panel.append(row);}
     }
     async stop(){
-        if(this.stopping)return this.stopping;
-        this.stopping=(async()=>{if(!this.worker){if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);return;}const worker=this.worker;await new Promise(resolve=>{this.stopAck=resolve;worker.postMessage({type:'stop'});setTimeout(resolve,500);});await this.sequence;await this.persist;worker.terminate();if(this.worker===worker)this.worker=null;if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);})();return this.stopping;
+        if(this.stopping)return this.stopping;this.halted=true;
+        this.stopping=(async()=>{if(!this.worker){if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);return;}const worker=this.worker;await new Promise(resolve=>{this.stopAck=resolve;worker.postMessage({type:'stop'});setTimeout(resolve,500);});worker.terminate();await this.persist;this.nodes.stop.disabled=true;this.nodes.run.disabled=false;this.nodes.sampleRun.disabled=false;if(!this.failed&&this.exitCode===null)this.nodes.phase.textContent='Stopped';if(this.worker===worker)this.worker=null;if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);})();return this.stopping;
     }
-    async close(){if(this.closed)return;await this.stop();this.closed=true;this.resize?.disconnect();this.renderer?.destroy();}
+    async close(){if(this.closed)return;this.closed=true;this.resize?.disconnect();this.renderer?.destroy();await this.stop();}
 }
 OS.win32={asset,digest,Session};
 OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x86 Windows executables entirely in this browser.',category:'Development',width:1000,height:750,minWidth:360,minHeight:420,

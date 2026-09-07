@@ -24,8 +24,8 @@ class Runtime {
     resolve(dll,name) {return this.apis.get(dll.toLowerCase()+'!'+name)?.address||0;}
     emit(type,value={}) {return this.host({type,...value});}
     log(text) {text=String(text).slice(0,8192);this.logBytes+=text.length;if(this.logBytes>1048576)throw Error('Guest output quota exceeded');this.emit('stdout',{text});}
-    draw(hwnd,command) {if(++this.drawCount>4096)this.flush();let list=this.pendingDraws.get(hwnd);if(!list)this.pendingDraws.set(hwnd,list=[]);list.push(command);}
-    flush() {const jobs=[];for(const [hwnd,commands]of this.pendingDraws){const job=this.emit('draw',{hwnd,commands});if(job&&typeof job.then==='function')jobs.push(job);}this.pendingDraws.clear();this.drawCount=0;if(jobs.length){this.graphicsReady=Promise.all([this.graphicsReady,...jobs]);this.drawBackpressure=true;}return this.graphicsReady;}
+    draw(hwnd,command) {if(++this.drawCount>4096)throw Error('GDI batch quota exceeded');let list=this.pendingDraws.get(hwnd);if(!list)this.pendingDraws.set(hwnd,list=[]);list.push(command);}
+    flush() {const jobs=[];for(const [hwnd,commands]of this.pendingDraws){const job=this.emit('draw',{hwnd,commands});if(job&&typeof job.then==='function')jobs.push(job);}this.pendingDraws.clear();this.drawCount=0;if(jobs.length){this.graphicsReady=Promise.all([this.graphicsReady,...jobs]).then(()=>undefined);this.drawBackpressure=true;}return this.graphicsReady;}
     path(name) {
         name=String(name).replace(/\\/g,'/');if(name.startsWith('//'))throw Error('UNC and device paths are not available');
         if(/^[a-z]:/i.test(name)){if(!/^c:/i.test(name))throw Error('Only the private C: drive is available');name=name.slice(2);}
@@ -55,6 +55,7 @@ class Runtime {
         const sp=c.get_reg(4)>>>0,ret=this.mem.u32(sp),args=[];for(let i=0;i<api.argc;i++)args.push(this.mem.u32(sp+4+i*4));
         this.calls++;this.apiCounts[api.dll+'!'+api.name]=(this.apiCounts[api.dll+'!'+api.name]||0)+1;
         let value;try{value=api.fn(...args);if(value&&typeof value.then==='function')value=await value;}catch(error){throw Error(`${api.dll}!${api.name}: ${error.message}`);}
+        if(this.drawCount>=4096)this.flush();
         if(this.drawBackpressure){await this.graphicsReady;this.drawBackpressure=false;}
         c.set_reg(0,(value??0)>>>0);c.set_reg(4,sp+4+(api.cdecl?0:api.argc*4));c.set_reg(8,ret);
     }
@@ -74,11 +75,11 @@ class Runtime {
             if(now-lastYield>=8){await this.flush();await new Promise(r=>setTimeout(r,0));lastYield=performance.now();}
             if(now-lastStats>=500){this.emit('stats',this.stats());lastStats=now;}
         }
-        this.flush();return this.exitCode;
+        await this.flush();return this.exitCode;
     }
     stats() {return {instructions:this.cpu.instruction_count(),cacheHits:this.cpu.hit_count(),cacheMisses:this.cpu.miss_count(),apiCalls:this.calls,apiCounts:{...this.apiCounts},elapsedMs:performance.now()-this.started,guestMemoryMiB:64,queuedMessages:this.messages.length,fileRevision:this.fileRevision};}
     exit(code) {if(this.stopped)return;this.exitCode=code>>>0;this.stopped=true;this.flush();for(const t of this.timers.values())clearInterval(t.timer);this.timers.clear();this.wake();for(const resolve of this.requests.values())resolve(0);this.requests.clear();this.emit('exit',{code:this.exitCode,stats:this.stats()});}
-    request(type,fields={}) {this.flush();const id=this.nextRequest++;if(this.requests.size>=16)throw Error('Too many browser requests');const promise=new Promise(resolve=>this.requests.set(id,resolve));this.emit(type,{id,...fields});return promise;}
+    async request(type,fields={}) {await this.flush();const id=this.nextRequest++;if(this.requests.size>=16)throw Error('Too many browser requests');const promise=new Promise(resolve=>this.requests.set(id,resolve));this.emit(type,{id,...fields});return promise;}
     event(event) {
         if(event.type==='response'){const fn=this.requests.get(event.id);if(fn){this.requests.delete(event.id);fn(event.value);}return;}
         if(event.type==='text'){const control=this.get(event.hwnd,'window');control.text=String(event.text).slice(0,32767);this.post(control.parent,WM.COMMAND,(0x300<<16)|control.id,event.hwnd);return;}
@@ -94,7 +95,7 @@ class Runtime {
         if(hwnd===0xffffffff)throw Error('Thread-only message filtering unsupported');
         for(;;){const index=this.messages.findIndex(m=>m.message===WM.QUIT||((!hwnd||m.hwnd===hwnd)&&((!min&&!max)||(m.message>=min&&m.message<=max))));
             if(index>=0){const msg=this.messages[index];if(remove)this.messages.splice(index,1);this.mem.zero(ptr,28);[msg.hwnd,msg.message,msg.wParam,msg.lParam,msg.time].forEach((v,i)=>this.mem.w32(ptr+i*4,v));return wait&&msg.message===WM.QUIT?0:1;}
-            if(!wait||this.stopped)return 0;this.flush();this.emit('idle',this.stats());await new Promise(r=>this.waiters.push(r));
+            if(!wait||this.stopped)return 0;await this.flush();this.emit('idle',this.stats());await new Promise(r=>this.waiters.push(r));
         }
     }
     async windowProc(hwnd,message,wp=0,lp=0) {const w=this.get(hwnd,'window');return w.proc?this.invoke(w.proc,[hwnd,message,wp,lp]):this.defaultProc(hwnd,message,wp,lp);}

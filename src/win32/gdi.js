@@ -37,7 +37,7 @@ const css=c=>`rgba(${c[0]},${c[1]},${c[2]},${(c[3]??255)/255})`;
 class GDIRenderer {
     constructor(container,width,height,options={}) {
         this.width=width;this.height=height;this.options=options;this.canvas=document.createElement('canvas');this.canvas.width=width;this.canvas.height=height;this.canvas.className='win32-canvas';this.canvas.tabIndex=0;this.canvas.setAttribute('aria-label','Windows application graphics');container.prepend(this.canvas);
-        this.mode='Initializing';this.pending=[];this.frames=0;this.drawCalls=0;this.primitives=0;this.glyphs=new Map();this.dead=false;this.errors=[];
+        this.mode='Initializing';this.pending=[];this.frames=0;this.drawCalls=0;this.primitives=0;this.glyphs=new Map();this.dead=false;this.errors=[];this.peakQueuedCommands=0;this.acknowledgedBatches=0;
         this.scratch=document.createElement('canvas');this.scratch.width=512;this.scratch.height=192;this.fontContext=this.scratch.getContext('2d',{willReadFrequently:true});
     }
     async init() {
@@ -79,7 +79,19 @@ class GDIRenderer {
     enqueue(commands) {
         if(this.dead)return;
         if(!Array.isArray(commands)||commands.length>4097||this.pending.length+commands.length>32768){this.fail(Error('GDI command queue limit reached'));return;}
-        this.pending.push(...commands);if(!this.frame)this.frame=requestAnimationFrame(()=>{this.frame=0;try{this.flush();}catch(error){this.fail(error);}});
+        this.pending.push(...commands);this.peakQueuedCommands=Math.max(this.peakQueuedCommands,this.pending.length);
+        if(!this.frame&&!this.frameTimer){
+            const render=()=>{try{this.flush();}catch(error){this.fail(error);}};
+            this.frame=requestAnimationFrame(render);this.frameTimer=setTimeout(render,64);
+        }
+    }
+    async submit(commands) {
+        if(this.dead)throw Error('Renderer has stopped');
+        this.enqueue(commands);this.flush();
+        if(this.dead)throw Error('Renderer rejected the batch');
+        if(this.mode==='WebGPU')await this.device.queue.onSubmittedWorkDone();
+        this.acknowledgedBatches++;
+        return this.stats();
     }
     measure(text,size) {this.fontContext.font=`${size}px sans-serif`;return {width:Math.ceil(this.fontContext.measureText(text).width),height:Math.ceil(size*1.35)};}
     glyph(char,size) {
@@ -121,7 +133,8 @@ class GDIRenderer {
         return new Float32Array(out);
     }
     flush() {
-        if(this.dead||!this.pending.length)return;const commands=this.pending.splice(0);this.frames++;
+        if(this.frame)cancelAnimationFrame(this.frame);if(this.frameTimer)clearTimeout(this.frameTimer);this.frame=this.frameTimer=0;
+        if(this.dead||!this.pending.length)return;const commands=this.pending.splice(0);
         if(this.mode==='WebGPU'){
             const data=this.expand(commands);if(!data.length)return;const d=this.device;d.queue.writeBuffer(this.buffer,0,data);
             const encoder=d.createCommandEncoder();const pass=encoder.beginRenderPass({colorAttachments:[{view:this.target.createView(),loadOp:this.initial?'clear':'load',clearValue:{r:1,g:1,b:1,a:1},storeOp:'store'}]});
@@ -135,16 +148,16 @@ class GDIRenderer {
             }
             this.drawCalls+=commands.length;this.primitives+=commands.length;
         }
-        this.options.onFrame?.(this.stats());
+        this.frames++;this.options.onFrame?.(this.stats());
     }
-    stats() {return {mode:this.mode,adapter:this.adapter?{vendor:this.adapter.info?.vendor,architecture:this.adapter.info?.architecture,description:this.adapter.info?.description}:null,frames:this.frames,drawCalls:this.drawCalls,primitives:this.primitives,glyphs:this.glyphs.size,errors:this.errors.slice()};}
+    stats() {return {mode:this.mode,adapter:this.adapter?{vendor:this.adapter.info?.vendor,architecture:this.adapter.info?.architecture,description:this.adapter.info?.description}:null,frames:this.frames,acknowledgedBatches:this.acknowledgedBatches,peakQueuedCommands:this.peakQueuedCommands,queuedCommands:this.pending.length,drawCalls:this.drawCalls,primitives:this.primitives,glyphs:this.glyphs.size,errors:this.errors.slice()};}
     async pixel(x,y) {
         this.flush();x=Math.floor(x);y=Math.floor(y);if(x<0||y<0||x>=this.width||y>=this.height)throw Error('Pixel out of bounds');
         if(this.mode!=='WebGPU')return [...this.ctx.getImageData(x,y,1,1).data];
         const d=this.device,b=d.createBuffer({size:256,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
         try{const encoder=d.createCommandEncoder();encoder.copyTextureToBuffer({texture:this.target,origin:[x,y]},{buffer:b,bytesPerRow:256},[1,1]);d.queue.submit([encoder.finish()]);await b.mapAsync(GPUMapMode.READ);return [...new Uint8Array(b.getMappedRange(),0,4)];}finally{b.destroy();}
     }
-    destroy() {if(this.dead)return;this.dead=true;if(this.frame)cancelAnimationFrame(this.frame);this.pending=[];this.target?.destroy();this.atlas?.destroy();this.buffer?.destroy();this.viewport?.destroy();this.device?.destroy();}
+    destroy() {if(this.dead)return;this.dead=true;if(this.frame)cancelAnimationFrame(this.frame);if(this.frameTimer)clearTimeout(this.frameTimer);this.frame=this.frameTimer=0;this.pending=[];this.target?.destroy();this.atlas?.destroy();this.buffer?.destroy();this.viewport?.destroy();this.device?.destroy();}
 }
 globalThis.AsterGDI=GDIRenderer;
 })();
