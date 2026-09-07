@@ -9,6 +9,7 @@ on:
       - 'tests/**'
       - 'index.html'
       - 'build.py'
+      - 'sw.js'
       - '.github/workflows/browser-win32.yml'
   workflow_dispatch:
 
@@ -31,6 +32,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Preserve the exact tested source and binary provenance
+        run: |
+          mkdir -p tests/win32/artifacts
+          git archive --format=zip HEAD -o tests/win32/artifacts/Aster-source.zip
+          python3 - <<'PY'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+          paths = [Path('Aster.html'), Path('src/win32/x86.wasm'), *sorted(Path('src/win32/examples').glob('*.exe'))]
+          data = {'checkedOutCommit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(), 'pullRequestHead': os.environ.get('PR_HEAD', ''), 'sha256': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}}
+          Path('tests/win32/artifacts/provenance.json').write_text(json.dumps(data, indent=2) + '\n')
+          PY
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
       - name: Install build and browser test tools only — no Windows runtime
         run: |
           sudo apt-get update
@@ -43,6 +57,8 @@ jobs:
           node tests/win32/unit.cjs
           node tests/win32/backpressure.cjs
           python build.py
+          git diff --exit-code -- Aster.html
+          cp Aster.html tests/win32/artifacts/Aster-shipped.html
           xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/browser.py --gpu --headed
           cp tests/win32/artifacts/browser-results.json tests/win32/artifacts/browser-shipped-results.json
           cp tests/win32/artifacts/unit-results.json tests/win32/artifacts/unit-shipped-results.json
