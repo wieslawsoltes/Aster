@@ -1,0 +1,16 @@
+Aster bundled application notices
+
+Aster runtime: MIT; see LICENSE. Third-party code retains its own licenses.
+
+7-Zip reduced console 26.03 — Igor Pavlov. Public-domain LZMA SDK.
+Project and license: https://www.7-zip.org/sdk.html
+Original unmodified binary: https://github.com/ip7z/7zip/releases/download/26.03/7zr.exe
+
+Tiny C Compiler 0.9.27 — Fabrice Bellard and contributors; LGPL-2.1-or-later.
+Original compiler, DLL, headers and libraries are unmodified. MinGW header notices remain in their original files.
+This is a legacy compatibility fixture, not a current production-toolchain recommendation.
+Project: https://bellard.org/tcc/
+Complete corresponding source is bundled in Aster.html; download it using Win32 Lab > TinyCC source.
+It is also available at third-party/tinycc/tcc-0.9.27.tar.bz2 in the repository/hosted distribution.
+Original source: https://download-mirror.savannah.gnu.org/releases/tinycc/tcc-0.9.27.tar.bz2
+

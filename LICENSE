@@ -25,3 +25,7 @@ synthesized sample audio are original to this project. No Microsoft logos,
 wallpapers, proprietary system files, or font files are included. Windows
 and Windows 11 are trademarks of Microsoft; this project is not affiliated
 with or endorsed by Microsoft.
+
+Bundled third-party Windows applications are not covered by the Aster MIT
+license. See third-party/README.md and the included TinyCC LGPL license and
+corresponding source. 7zr is the public-domain LZMA SDK reduced console.

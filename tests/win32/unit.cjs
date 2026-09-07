@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const root=path.resolve(__dirname,'../..');require(root+'/src/win32/pe.js');const {Runtime,Memory,RETURN,HOOK}=require(root+'/src/win32/runtime.js');
+require(root+'/src/win32/compat.js');
 const wasm=fs.readFileSync(root+'/src/win32/x86.wasm'),report={tests:[],benchmarks:{},environment:{node:process.version,platform:process.platform,arch:process.arch}};
 let moduleCache;
 async function runtime(host,options){moduleCache||=await WebAssembly.compile(wasm);return Runtime.create(moduleCache,host,options);}
@@ -24,7 +25,7 @@ await check('REP MOVSB copies and advances registers',async()=>{const{c,m}=await
 await check('Direction flag controls backwards string operations',async()=>{const{m,c}=await cpu([0xbe,...u32(0x900002),0xbf,...u32(0x910002),0xb9,3,0,0,0,0xfd,0xf3,0xa4,0xfc,0xc3],r=>r.mem.copy(0x900000,new Uint8Array([7,8,9])));assert.deepEqual([...m.bytes.slice(0x910000,0x910003)],[7,8,9]);assert.equal(c.get_reg(9)&1024,0);});
 await check('FS loads use the emulated TEB, not host memory',async()=>{const{c}=await cpu([0x64,0xa1,0x18,0,0,0,0xc3],r=>{r.cpu.set_fs(0x10000);r.mem.w32(0x10018,0x10000);});assert.equal(c.get_reg(0),0x10000);});
 await check('Decoder cache invalidates when code is patched',async()=>{const{r,c,m}=await cpu([0xb8,1,0,0,0,0xc3]);assert.equal(c.get_reg(0),1);m.w32(0x401001,2);c.set_reg(8,0x401000);c.set_reg(4,0x3e00000);assert.equal(c.run(100),2);assert.equal(c.get_reg(0),2);});
-await check('Unsupported x87 instruction fails with an address',async()=>{const{c,status}=await cpu([0xd9,0xe8,0xc3]);assert.equal(status,3);assert.equal(c.get_fault(),3);assert.equal(c.get_fault_pc(),0x401000);});
+await check('Unsupported x87 transcendental instruction fails with an address',async()=>{const{c,status}=await cpu([0xd9,0xf2,0xc3]);assert.equal(status,3);assert.equal(c.get_fault(),3);assert.equal(c.get_fault_pc(),0x401000);});
 await check('Out-of-bounds guest stores cannot overwrite emulator state',async()=>{const{c,status}=await cpu([0xa3,...u32(0xfffffffc),0xc3]);assert.equal(status,3);assert.equal(c.get_fault(),1);});
 await check('Unmapped executable page is not executable',async()=>{const{c,status}=await cpu([0xb8,...u32(0x900000),0xff,0xe0]);assert.equal(status,3);assert.equal(c.get_fault(),2);});
 await check('Busy guest returns at the instruction budget',async()=>{const{c,status}=await cpu([0xeb,0xfe]);assert.equal(status,0);assert.equal(c.instruction_count(),10000);});

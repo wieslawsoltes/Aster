@@ -1,0 +1,32 @@
+{
+  "7zr": {
+    "title": "7-Zip reduced console",
+    "version": "26.03",
+    "upstream": "https://www.7-zip.org/sdk.html",
+    "binaryURL": "https://github.com/ip7z/7zip/releases/download/26.03/7zr.exe",
+    "license": "Public domain (LZMA SDK reduced console)",
+    "path": "src/win32/third-party/7zr.exe",
+    "sha256": {
+      "src/win32/third-party/7zr.exe": "ad4c82fadcbdf93c03b4fc440f300509c7d60c5c2f4d183e35d9d70d6957037d"
+    },
+    "unmodifiedUpstreamBinaries": true
+  },
+  "tinycc": {
+    "title": "Tiny C Compiler",
+    "version": "0.9.27",
+    "upstream": "https://bellard.org/tcc/",
+    "distributionURL": "https://download-mirror.savannah.gnu.org/releases/tinycc/tcc-0.9.27-win32-bin.zip",
+    "distributionSHA256": "02e2bfe8c272a549b15e4bfa4507bd7e05304692af1761db6c1e8e88af675651",
+    "license": "LGPL-2.1-or-later; included MinGW headers retain their notices",
+    "sourceURL": "https://download-mirror.savannah.gnu.org/releases/tinycc/tcc-0.9.27.tar.bz2",
+    "sourcePath": "third-party/tinycc/tcc-0.9.27.tar.bz2",
+    "path": "src/win32/third-party/tcc.exe",
+    "supportPath": "src/win32/third-party/tcc-files.json",
+    "sha256": {
+      "third-party/tinycc/tcc-0.9.27.tar.bz2": "de23af78fca90ce32dff2dd45b3432b2334740bb9bb7b05bf60fdbfc396ceb9c",
+      "src/win32/third-party/tcc.exe": "11b86934bb2833f57fa0453a605ca342aee9207e193faea9b973baa2b2b4c35b",
+      "src/win32/third-party/tcc-files.json": "28c65465f65e0727ea770d1e8f14aa9bca1d30c962d67c35aef2f484af6383b6"
+    },
+    "unmodifiedUpstreamBinaries": true
+  }
+}

@@ -1,697 +1,3056 @@
 {
-  "version": 1,
-  "notice": "Implemented facade exports have limited semantics; see browser-win32.md. This is not full API conformance.",
-  "count": 115,
-  "exports": [
+  "note": "Selected browser-backed semantics only. fail-on-call entries are recognized imports whose unsupported execution paths throw. Ordinal aliases share the named thunk address. This is not complete Win32 compatibility.",
+  "functions": [
     {
-      "dll": "kernel32.dll",
-      "name": "ExitProcess",
-      "arguments": 1,
-      "convention": "stdcall"
+      "dll": "advapi32.dll",
+      "name": "AdjustTokenPrivileges",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
-      "dll": "kernel32.dll",
-      "name": "GetLastError",
-      "arguments": 0,
-      "convention": "stdcall"
+      "dll": "advapi32.dll",
+      "name": "GetFileSecurityA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
-      "dll": "kernel32.dll",
-      "name": "SetLastError",
-      "arguments": 1,
-      "convention": "stdcall"
+      "dll": "advapi32.dll",
+      "name": "GetFileSecurityW",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
-      "dll": "kernel32.dll",
-      "name": "GetTickCount",
-      "arguments": 0,
-      "convention": "stdcall"
+      "dll": "advapi32.dll",
+      "name": "LookupPrivilegeValueA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
-      "dll": "kernel32.dll",
-      "name": "QueryPerformanceFrequency",
-      "arguments": 1,
-      "convention": "stdcall"
+      "dll": "advapi32.dll",
+      "name": "LookupPrivilegeValueW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
-      "dll": "kernel32.dll",
-      "name": "QueryPerformanceCounter",
-      "arguments": 1,
-      "convention": "stdcall"
+      "dll": "advapi32.dll",
+      "name": "OpenProcessToken",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
-      "dll": "kernel32.dll",
-      "name": "Sleep",
-      "arguments": 1,
-      "convention": "stdcall"
+      "dll": "advapi32.dll",
+      "name": "RegCloseKey",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
-      "dll": "kernel32.dll",
-      "name": "GetCurrentProcessId",
-      "arguments": 0,
-      "convention": "stdcall"
+      "dll": "advapi32.dll",
+      "name": "RegOpenKeyExA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
-      "dll": "kernel32.dll",
-      "name": "GetCurrentThreadId",
-      "arguments": 0,
-      "convention": "stdcall"
+      "dll": "advapi32.dll",
+      "name": "RegOpenKeyExW",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
-      "dll": "kernel32.dll",
-      "name": "IsDebuggerPresent",
-      "arguments": 0,
-      "convention": "stdcall"
+      "dll": "advapi32.dll",
+      "name": "RegQueryValueExA",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
-      "dll": "kernel32.dll",
-      "name": "GetProcessHeap",
-      "arguments": 0,
-      "convention": "stdcall"
+      "dll": "advapi32.dll",
+      "name": "RegQueryValueExW",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
-      "dll": "kernel32.dll",
-      "name": "HeapAlloc",
-      "arguments": 3,
-      "convention": "stdcall"
+      "dll": "advapi32.dll",
+      "name": "SetFileSecurityA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
-      "dll": "kernel32.dll",
-      "name": "HeapFree",
-      "arguments": 3,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "HeapSize",
-      "arguments": 3,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "GlobalAlloc",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "GlobalFree",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "GlobalLock",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "GlobalUnlock",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "LocalAlloc",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "LocalFree",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "LocalLock",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "LocalUnlock",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "GetModuleHandleA",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "GetModuleHandleW",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "LoadLibraryA",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "LoadLibraryW",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "GetProcAddress",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "GetCommandLineA",
-      "arguments": 0,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "GetCommandLineW",
-      "arguments": 0,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "GetModuleFileNameA",
-      "arguments": 3,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "GetModuleFileNameW",
-      "arguments": 3,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "OutputDebugStringA",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "OutputDebugStringW",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "lstrlenA",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "lstrlenW",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "lstrcpyA",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "lstrcpyW",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "lstrcmpA",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "lstrcmpW",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "CreateFileA",
-      "arguments": 7,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "CreateFileW",
-      "arguments": 7,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "ReadFile",
-      "arguments": 5,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "WriteFile",
-      "arguments": 5,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "GetStdHandle",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "CloseHandle",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "GetFileSize",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "kernel32.dll",
-      "name": "SetFilePointer",
-      "arguments": 4,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "RegisterClassA",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "RegisterClassW",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "RegisterClassExA",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "RegisterClassExW",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "CreateWindowExA",
-      "arguments": 12,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "CreateWindowExW",
-      "arguments": 12,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "ShowWindow",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "UpdateWindow",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "DestroyWindow",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "PostQuitMessage",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "DefWindowProcA",
-      "arguments": 4,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "GetMessageA",
-      "arguments": 4,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "PeekMessageA",
-      "arguments": 5,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "DispatchMessageA",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "PostMessageA",
-      "arguments": 4,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "DefWindowProcW",
-      "arguments": 4,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "GetMessageW",
-      "arguments": 4,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "PeekMessageW",
-      "arguments": 5,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "DispatchMessageW",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "PostMessageW",
-      "arguments": 4,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "TranslateMessage",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "SetWindowTextA",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "SetWindowTextW",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "GetWindowTextA",
-      "arguments": 3,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "GetWindowTextW",
-      "arguments": 3,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "GetWindowTextLengthA",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "GetWindowTextLengthW",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "MessageBoxA",
-      "arguments": 4,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "MessageBoxW",
-      "arguments": 4,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "GetClientRect",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "InvalidateRect",
-      "arguments": 3,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "ValidateRect",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "SetTimer",
-      "arguments": 4,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "KillTimer",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "GetDC",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "ReleaseDC",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "BeginPaint",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "EndPaint",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "user32.dll",
-      "name": "FillRect",
-      "arguments": 3,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "gdi32.dll",
-      "name": "CreateSolidBrush",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "gdi32.dll",
-      "name": "CreatePen",
-      "arguments": 3,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "gdi32.dll",
-      "name": "GetStockObject",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "gdi32.dll",
-      "name": "SelectObject",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "gdi32.dll",
-      "name": "DeleteObject",
-      "arguments": 1,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "gdi32.dll",
-      "name": "SetTextColor",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "gdi32.dll",
-      "name": "SetBkColor",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "gdi32.dll",
-      "name": "SetBkMode",
-      "arguments": 2,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "gdi32.dll",
-      "name": "TextOutA",
-      "arguments": 5,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "gdi32.dll",
-      "name": "TextOutW",
-      "arguments": 5,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "gdi32.dll",
-      "name": "GetTextExtentPoint32A",
-      "arguments": 4,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "gdi32.dll",
-      "name": "GetTextExtentPoint32W",
-      "arguments": 4,
-      "convention": "stdcall"
+      "dll": "advapi32.dll",
+      "name": "SetFileSecurityW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
       "dll": "gdi32.dll",
       "name": "CreateFontA",
-      "arguments": 14,
-      "convention": "stdcall"
+      "argc": 14,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
       "dll": "gdi32.dll",
       "name": "CreateFontW",
-      "arguments": 14,
-      "convention": "stdcall"
+      "argc": 14,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
       "dll": "gdi32.dll",
-      "name": "MoveToEx",
-      "arguments": 4,
-      "convention": "stdcall"
+      "name": "CreatePen",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
       "dll": "gdi32.dll",
-      "name": "LineTo",
-      "arguments": 3,
-      "convention": "stdcall"
+      "name": "CreateSolidBrush",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
       "dll": "gdi32.dll",
-      "name": "Rectangle",
-      "arguments": 5,
-      "convention": "stdcall"
+      "name": "DeleteObject",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
       "dll": "gdi32.dll",
       "name": "Ellipse",
-      "arguments": 5,
-      "convention": "stdcall"
-    },
-    {
-      "dll": "gdi32.dll",
-      "name": "SetPixel",
-      "arguments": 4,
-      "convention": "stdcall"
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
       "dll": "gdi32.dll",
       "name": "GdiFlush",
-      "arguments": 0,
-      "convention": "stdcall"
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "GetStockObject",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "GetTextExtentPoint32A",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "GetTextExtentPoint32W",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "LineTo",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "MoveToEx",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "Rectangle",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "SelectObject",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "SetBkColor",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "SetBkMode",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "SetPixel",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "SetTextColor",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "TextOutA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "TextOutW",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "AreFileApisANSI",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CloseHandle",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CompareFileTime",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CompareStringA",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CompareStringW",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CopyFileA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CopyFileW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CreateDirectoryA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CreateDirectoryW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CreateEventA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CreateEventW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CreateFileA",
+      "argc": 7,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CreateFileW",
+      "argc": 7,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CreateHardLinkA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CreateHardLinkW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CreateSemaphoreA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CreateSemaphoreW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "CreateThread",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "fail-on-call",
+      "reason": "Guest threads are not implemented; use a single-threaded program"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "DeleteCriticalSection",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "DeleteFileA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "DeleteFileW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "DeviceIoControl",
+      "argc": 8,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "DosDateTimeToFileTime",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "EnterCriticalSection",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "ExitProcess",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FileTimeToDosDateTime",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FileTimeToLocalFileTime",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FileTimeToSystemTime",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FindClose",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FindFirstFileA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FindFirstFileW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FindNextFileA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FindNextFileW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FlushFileBuffers",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FormatMessageA",
+      "argc": 7,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FormatMessageW",
+      "argc": 7,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FreeEnvironmentStringsA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FreeEnvironmentStringsW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FreeLibrary",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetACP",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetCPInfo",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetCommandLineA",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetCommandLineW",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetConsoleCP",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetConsoleMode",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetConsoleOutputCP",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetConsoleScreenBufferInfo",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetCurrentDirectoryA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetCurrentDirectoryW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetCurrentProcess",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetCurrentProcessId",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetCurrentThread",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetCurrentThreadId",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetDiskFreeSpaceA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetDiskFreeSpaceExA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetDiskFreeSpaceExW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetDiskFreeSpaceW",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetDriveTypeA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetDriveTypeW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetEnvironmentStrings",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetEnvironmentStringsA",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetEnvironmentStringsW",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetEnvironmentVariableA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetEnvironmentVariableW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetFileAttributesA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetFileAttributesExA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetFileAttributesExW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetFileAttributesW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetFileInformationByHandle",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetFileSize",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetFileSizeEx",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetFileTime",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetFileType",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetFullPathNameA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetFullPathNameW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetLastError",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetLocalTime",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetLocaleInfoA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetLocaleInfoW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetLogicalDriveStringsA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetLogicalDriveStringsW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetLogicalDrives",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetModuleFileNameA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetModuleFileNameW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetModuleHandleA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetModuleHandleW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetOEMCP",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetProcAddress",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetProcessAffinityMask",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetProcessHeap",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetProcessTimes",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetStartupInfoA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetStartupInfoW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetStdHandle",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetSystemDirectoryA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetSystemDirectoryW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetSystemInfo",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetSystemTime",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetSystemTimeAsFileTime",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetTempPathA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetTempPathW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetThreadLocale",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetTickCount",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetUserDefaultLCID",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetVersion",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetVersionExA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GetVersionExW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GlobalAlloc",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GlobalFree",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GlobalLock",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GlobalMemoryStatus",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GlobalMemoryStatusEx",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "GlobalUnlock",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "HeapAlloc",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "HeapCreate",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "HeapDestroy",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "HeapFree",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "HeapReAlloc",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "HeapSize",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "HeapValidate",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "InitializeCriticalSection",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "InitializeCriticalSectionAndSpinCount",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "InterlockedDecrement",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "InterlockedExchange",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "InterlockedIncrement",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "IsDebuggerPresent",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "IsProcessorFeaturePresent",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "IsValidCodePage",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LCMapStringA",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LCMapStringW",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LeaveCriticalSection",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LoadLibraryA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LoadLibraryW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LocalAlloc",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LocalFileTimeToFileTime",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LocalFree",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LocalLock",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LocalUnlock",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "MapViewOfFile",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "fail-on-call",
+      "reason": "Shared/mapped files are not implemented"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "MoveFileA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "MoveFileExA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "MoveFileExW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "MoveFileW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "MoveFileWithProgressA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "MoveFileWithProgressW",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "MultiByteToWideChar",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "OpenEventA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "OpenEventW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "OpenFileMappingA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "OpenFileMappingW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "OutputDebugStringA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "OutputDebugStringW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "QueryPerformanceCounter",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "QueryPerformanceFrequency",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "ReadFile",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "ReleaseSemaphore",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "RemoveDirectoryA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "RemoveDirectoryW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "ResetEvent",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "ResumeThread",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "fail-on-call",
+      "reason": "Guest threads are not implemented; use a single-threaded program"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SearchPathA",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SearchPathW",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetConsoleCtrlHandler",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetConsoleMode",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetConsoleOutputCP",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetCurrentDirectoryA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetCurrentDirectoryW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetEndOfFile",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetEnvironmentVariableA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetEnvironmentVariableW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetEvent",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetFileApisToANSI",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetFileApisToOEM",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetFileAttributesA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetFileAttributesW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetFilePointer",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetFilePointerEx",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetFileTime",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetLastError",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetProcessAffinityMask",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetThreadAffinityMask",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SetUnhandledExceptionFilter",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "Sleep",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SuspendThread",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "fail-on-call",
+      "reason": "Guest threads are not implemented; use a single-threaded program"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "SystemTimeToFileTime",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "TerminateProcess",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "TlsAlloc",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "TlsFree",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "TlsGetValue",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "TlsSetValue",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "UnhandledExceptionFilter",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "fail-on-call",
+      "reason": "Guest SEH dispatch is not implemented"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "UnmapViewOfFile",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "VirtualAlloc",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "VirtualFree",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "VirtualProtect",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "VirtualQuery",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "WaitForSingleObject",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "WideCharToMultiByte",
+      "argc": 8,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "WriteConsoleA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "WriteConsoleW",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "WriteFile",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrcmpA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrcmpW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrcpyA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrcpyW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrlenA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrlenW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
     },
     {
       "dll": "msvcrt.dll",
-      "name": "strlen",
-      "arguments": 1,
-      "convention": "cdecl"
+      "name": "??1type_info@@UAE@XZ",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
     },
     {
       "dll": "msvcrt.dll",
-      "name": "strcmp",
-      "arguments": 2,
-      "convention": "cdecl"
+      "name": "?terminate@@YAXXZ",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "fail-on-call",
+      "reason": "Structured/C++ exception dispatch is not implemented"
     },
     {
       "dll": "msvcrt.dll",
-      "name": "memcpy",
-      "arguments": 3,
-      "convention": "cdecl"
+      "name": "_CxxThrowException",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "fail-on-call",
+      "reason": "Structured/C++ exception dispatch is not implemented"
     },
     {
       "dll": "msvcrt.dll",
-      "name": "memmove",
-      "arguments": 3,
-      "convention": "cdecl"
+      "name": "_XcptFilter",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "fail-on-call",
+      "reason": "Structured/C++ exception dispatch is not implemented"
     },
     {
       "dll": "msvcrt.dll",
-      "name": "memset",
-      "arguments": 3,
-      "convention": "cdecl"
+      "name": "__CxxFrameHandler",
+      "argc": 4,
+      "callingConvention": "cdecl",
+      "status": "fail-on-call",
+      "reason": "Structured/C++ exception dispatch is not implemented"
     },
     {
       "dll": "msvcrt.dll",
-      "name": "malloc",
-      "arguments": 1,
-      "convention": "cdecl"
+      "name": "__dllonexit",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
     },
     {
       "dll": "msvcrt.dll",
-      "name": "free",
-      "arguments": 1,
-      "convention": "cdecl"
+      "name": "__getmainargs",
+      "argc": 5,
+      "callingConvention": "cdecl",
+      "status": "partial"
     },
     {
       "dll": "msvcrt.dll",
-      "name": "puts",
-      "arguments": 1,
-      "convention": "cdecl"
+      "name": "__iob_func",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "__lconv_init",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "__p___argc",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "__p___argv",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "__p___initenv",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "__p___winitenv",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "__p__acmdln",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "__p__commode",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "__p__environ",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "__p__fmode",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "__p__wcmdln",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "__set_app_type",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "__setusermatherr",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "__wgetmainargs",
+      "argc": 5,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_amsg_exit",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_beginthreadex",
+      "argc": 6,
+      "callingConvention": "cdecl",
+      "status": "fail-on-call",
+      "reason": "Guest threads are not implemented; select single-thread mode"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_cexit",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_close",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_controlfp",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_cwait",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "fail-on-call",
+      "reason": "Child processes are not implemented in this browser runtime"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_dup",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_errno",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_except_handler3",
+      "argc": 4,
+      "callingConvention": "cdecl",
+      "status": "fail-on-call",
+      "reason": "Structured/C++ exception dispatch is not implemented"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_exit",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_fdopen",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_fileno",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_ftol",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_get_osfhandle",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_getcwd",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_initterm",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_isatty",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_lock",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_lseek",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_msize",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_onexit",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_open",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_purecall",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "fail-on-call",
+      "reason": "Structured/C++ exception dispatch is not implemented"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_read",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_setjmp3",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_setmode",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_snprintf",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_spawnvp",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "fail-on-call",
+      "reason": "Child processes are not implemented in this browser runtime"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_strdup",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_stricmp",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_strlwr",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_strnicmp",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_unlink",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_unlock",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_vsnprintf",
+      "argc": 4,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_wcsdup",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_wcsicmp",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_wfopen",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_write",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "abort",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "atexit",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "atoi",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "atol",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "calloc",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "clearerr",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
     },
     {
       "dll": "msvcrt.dll",
       "name": "exit",
-      "arguments": 1,
-      "convention": "cdecl"
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "fclose",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "feof",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "ferror",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "fflush",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "fgetc",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "fgets",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "fopen",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "fprintf",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "fputc",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "fputs",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "fread",
+      "argc": 4,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "free",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "fseek",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "ftell",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "fwrite",
+      "argc": 4,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "getchar",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "getenv",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "isalnum",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "isalpha",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "isdigit",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "islower",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "isspace",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "isupper",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "ldexp",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "localeconv",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "localtime",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "longjmp",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "malloc",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "memchr",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "memcmp",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "memcpy",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "memmove",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "memset",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "perror",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "printf",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "putchar",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "puts",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "qsort",
+      "argc": 4,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "raise",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "realloc",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "remove",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "rewind",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "setlocale",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "setvbuf",
+      "argc": 4,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "signal",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "sprintf",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "sscanf",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strcat",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strchr",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strcmp",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strcpy",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strerror",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strlen",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strncmp",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strncpy",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strrchr",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strstr",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strtod",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strtol",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "strtoul",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "time",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "tolower",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "toupper",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "ungetc",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "vfprintf",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "vsprintf",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "wcscat",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "wcschr",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "wcscmp",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "wcscpy",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "wcslen",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "wcsncmp",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "wcsncpy",
+      "argc": 3,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "wcsrchr",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "wcsstr",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "oleaut32.dll",
+      "name": "SysAllocString",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "oleaut32.dll",
+      "name": "SysAllocStringLen",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "oleaut32.dll",
+      "name": "SysFreeString",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "oleaut32.dll",
+      "name": "SysStringLen",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "oleaut32.dll",
+      "name": "VariantClear",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "oleaut32.dll",
+      "name": "VariantCopy",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "oleaut32.dll",
+      "name": "VariantInit",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "BeginPaint",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CharLowerW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CharUpperW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreateWindowExA",
+      "argc": 12,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreateWindowExW",
+      "argc": 12,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DefWindowProcA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DefWindowProcW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DestroyWindow",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DispatchMessageA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DispatchMessageW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "EndPaint",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "FillRect",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetClientRect",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetDC",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetMessageA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetMessageW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindowTextA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindowTextLengthA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindowTextLengthW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindowTextW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "InvalidateRect",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "KillTimer",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "MessageBoxA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "MessageBoxW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "PeekMessageA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "PeekMessageW",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "PostMessageA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "PostMessageW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "PostQuitMessage",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "RegisterClassA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "RegisterClassExA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "RegisterClassExW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "RegisterClassW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "ReleaseDC",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetTimer",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetWindowTextA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetWindowTextW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "ShowWindow",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "TranslateMessage",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "UpdateWindow",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "ValidateRect",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
     }
+  ],
+  "aliases": {
+    "oleaut32.dll!#10": "oleaut32.dll!VariantCopy",
+    "oleaut32.dll!#2": "oleaut32.dll!SysAllocString",
+    "oleaut32.dll!#4": "oleaut32.dll!SysAllocStringLen",
+    "oleaut32.dll!#6": "oleaut32.dll!SysFreeString",
+    "oleaut32.dll!#7": "oleaut32.dll!SysStringLen",
+    "oleaut32.dll!#8": "oleaut32.dll!VariantInit",
+    "oleaut32.dll!#9": "oleaut32.dll!VariantClear"
+  },
+  "dataImports": [
+    "msvcrt.dll!__argc",
+    "msvcrt.dll!__argv",
+    "msvcrt.dll!__initenv",
+    "msvcrt.dll!__mb_cur_max",
+    "msvcrt.dll!__winitenv",
+    "msvcrt.dll!_acmdln",
+    "msvcrt.dll!_adjust_fdiv",
+    "msvcrt.dll!_commode",
+    "msvcrt.dll!_environ",
+    "msvcrt.dll!_fmode",
+    "msvcrt.dll!_iob",
+    "msvcrt.dll!_osver",
+    "msvcrt.dll!_wcmdln",
+    "msvcrt.dll!_winmajor",
+    "msvcrt.dll!_winminor",
+    "msvcrt.dll!_winver"
   ]
 }

@@ -1,4 +1,4 @@
-/* Aster's bounded guest memory and PE32 loader. No native DLLs are loaded. MIT. */
+/* Aster's bounded guest memory and PE32 loader. No host-native DLLs are loaded. MIT. */
 'use strict';
 (() => {
 const RAM = 64 * 1024 * 1024, HOOK = 0xf0000000, RETURN = 0xfffffff0;
@@ -7,7 +7,7 @@ class Memory {
     constructor(cpu) {
         this.cpu = cpu; this.bytes = new Uint8Array(cpu.memory.buffer, cpu.guest_base(), RAM);
         this.view = new DataView(this.bytes.buffer, this.bytes.byteOffset, RAM);
-        this.next = 0x1000000; this.allocations = new Map(); this.freeList = [];
+        this.regions = []; this.next = 0x1000000; this.allocations = new Map(); this.freeList = [];
         this.decoder = new TextDecoder('windows-1252');
         this.encoder = new Map(); for (let i = 0; i < 256; i++) this.encoder.set(this.decoder.decode(new Uint8Array([i])), i);
     }
@@ -38,7 +38,7 @@ class Memory {
         wide ? this.w16(p + n * 2, 0) : this.w8(p + n, 0); return n;
     }
     alloc(n, zero = true) {
-        if (!Number.isInteger(n) || n < 0 || n > 16 * 1024 * 1024 || this.allocations.size > 65536) throw Error('Guest allocation quota exceeded');
+        if (!Number.isInteger(n) || n < 0 || n > 16 * 1024 * 1024 + 65536 || this.allocations.size > 65536) throw Error('Guest allocation quota exceeded');
         n = Math.max(16, Math.ceil(n / 16) * 16); let p, index = this.freeList.findIndex(x => x.size >= n);
         if (index >= 0) { const item = this.freeList.splice(index, 1)[0]; p = item.p; if (item.size > n) this.freeList.push({ p: p + n, size: item.size - n }); }
         else { p = this.next; if (p + n > 0x3c00000) throw Error('Guest heap exhausted'); this.next += n; }
@@ -57,13 +57,14 @@ function loadPE(data, mem, resolve, options = {}) {
     const pe = u32(0x3c); range(pe, 24); if (u32(pe) !== 0x4550) throw Error('Not a PE Windows executable (DOS and Win16 unsupported)');
     const machine = u16(pe + 4), sections = u16(pe + 6), optSize = u16(pe + 20), opt = pe + 24;
     if (machine !== 0x14c) throw Error(`Unsupported CPU ${hex(machine)}: accepts 32-bit x86, not x64 or ARM`);
-    if (u16(pe + 22) & 0x3000) throw Error('Load a user-mode EXE, not a DLL or system image');
+    const isDLL = !!(u16(pe + 22) & 0x2000);
+    if (u16(pe + 22) & 0x1000 || isDLL !== !!options.dll) throw Error('Load a user-mode EXE, not a DLL or system image');
     if (!(u16(pe + 22) & 2)) throw Error('PE image is not marked executable');
     if (!sections || sections > 96 || optSize < 96) throw Error('Invalid PE section/optional header');
     range(opt, optSize + sections * 40); if (u16(opt) !== 0x10b) throw Error('Only PE32 optional headers are supported');
     const preferred = u32(opt + 28), imageSize = u32(opt + 56), headerSize = u32(opt + 60), entryRva = u32(opt + 16), subsystem = u16(opt + 68);
     if (![2, 3].includes(subsystem)) throw Error('Only Windows GUI and console applications are supported');
-    if (!imageSize || imageSize > 24 * 1024 * 1024 || headerSize > imageSize || headerSize < opt + optSize + sections * 40) throw Error('Invalid PE image/header size');
+    if (!imageSize || imageSize > (options.maxImageSize ?? 24 * 1024 * 1024) || headerSize > imageSize || headerSize < opt + optSize + sections * 40) throw Error('Invalid PE image/header size');
     const base = options.base ?? (preferred >= 0x20000 && preferred % 65536 === 0 && preferred + imageSize <= 0x3000000 ? preferred : 0x400000);
     if (base < 0x20000 || base % 65536 || base + imageSize > 0x3000000) throw Error('Unsupported PE load address');
     range(0, headerSize);
@@ -72,8 +73,10 @@ function loadPE(data, mem, resolve, options = {}) {
     const directoryCount = u32(opt + 92); if (directoryCount > 16 || 96 + directoryCount * 8 > optSize) throw Error('Invalid PE directory count');
     const dir = n => n < directoryCount ? [u32(opt + 96 + n * 8), u32(opt + 100 + n * 8)] : [0, 0];
     if (dir(14)[0]) throw Error('.NET/CLR executables are unsupported');
-    if (dir(9)[0]) throw Error('Static TLS and TLS callbacks are not implemented');
+    if (dir(9)[0] && !options.tls) throw Error('Static TLS and TLS callbacks require the compatibility runtime');
     if (dir(13)[0]) throw Error('Delay-loaded imports are not implemented');
+    if (mem.regions.some(r => base < r.base + r.imageSize && base + imageSize > r.base)) throw Error('PE image overlaps another loaded image');
+    mem.regions.push({base, imageSize, sections:sectionInfo});
     mem.copy(base, bytes.subarray(0, headerSize));
     for (let i = 0; i < sections; i++) {
         const s = opt + optSize + i * 40, virtualSize = u32(s + 8), rva = u32(s + 12), rawSize = u32(s + 16), raw = u32(s + 20), flags = u32(s + 36), size = Math.max(virtualSize, rawSize);
@@ -82,9 +85,9 @@ function loadPE(data, mem, resolve, options = {}) {
         if (rawSize) { range(raw, rawSize); mem.copy(base + rva, bytes.subarray(raw, raw + rawSize)); }
         if (size > rawSize) mem.zero(base + rva + rawSize, size - rawSize);
         if (flags & 0x20000000) mem.cpu.mark_executable(base + rva, size);
-        sectionInfo.push({ rva, size, executable: !!(flags & 0x20000000) });
+        sectionInfo.push({ rva, size, executable: !!(flags & 0x20000000), writable: !!(flags & 0x80000000) });
     }
-    if (!sectionInfo.some(s => s.executable && entryRva >= s.rva && entryRva < s.rva + s.size)) throw Error('Entry point is not in executable code');
+    if (!(isDLL && entryRva === 0) && !sectionInfo.some(s => s.executable && entryRva >= s.rva && entryRva < s.rva + s.size)) throw Error('Entry point is not in executable code');
     const delta = (base - preferred) >>> 0;
     if (delta) {
         const [rva, size] = dir(5); if (!rva || !size || (u16(pe+22)&1)) throw Error('Image requires relocation, but relocations are absent'); imageRange(rva, size, true);
@@ -96,6 +99,7 @@ function loadPE(data, mem, resolve, options = {}) {
             offset += length;
         }
     }
+    mem.next = Math.max(mem.next, 0x1000000, Math.ceil((base + imageSize) / 65536) * 65536);
     const imports = [], missing = [], [importRva, importSize] = dir(1);
     const imageString = rva => { imageRange(rva,1,true); const s = mem.string(base + rva); imageRange(rva,s.length+1,true); return s; };
     if (importRva) {
@@ -115,8 +119,23 @@ function loadPE(data, mem, resolve, options = {}) {
         }
         if (!ended) throw Error('Unterminated import directory');
     }
-    mem.next=Math.max(0x1000000,Math.ceil((base+imageSize)/65536)*65536);
-    return {machine:'i386',format:'PE32',base,preferred,imageSize,entry:base+entryRva,subsystem,imports,missing,relocated:!!delta};
+    const exports = Object.create(null), [exportRva, exportSize] = dir(0);
+    if (exportRva) {
+        const p = imageRange(exportRva, 40, true), ordinalBase = mem.u32(p+16), count = mem.u32(p+20), names = mem.u32(p+24);
+        if (count>16384 || names>count) throw Error('PE export quota exceeded');
+        const functions=imageRange(mem.u32(p+28),count*4,true), nameTable=names?imageRange(mem.u32(p+32),names*4,true):0, ordinals=names?imageRange(mem.u32(p+36),names*2,true):0;
+        for(let i=0;i<count;i++) {const rva=mem.u32(functions+i*4);if(!rva)continue;if(rva>=exportRva && rva<exportRva+exportSize)throw Error('Forwarded PE DLL exports are unsupported');exports['#'+(ordinalBase+i)]=imageRange(rva,1,true);}
+        for(let i=0;i<names;i++) {const index=mem.u16(ordinals+i*2);if(index>=count)throw Error('Export ordinal outside table');const name=imageString(mem.u32(nameTable+i*4));exports[name]=exports['#'+(ordinalBase+index)]||0;}
+    }
+    let tls=null; const [tlsRva,tlsSize]=dir(9);
+    if(tlsRva) {
+        if(tlsSize<24)throw Error('Invalid TLS directory');const p=imageRange(tlsRva,24,true),start=mem.u32(p),end=mem.u32(p+4),index=mem.u32(p+8),array=mem.u32(p+12),zero=mem.u32(p+16),characteristics=mem.u32(p+20);
+        if(end<start || end-start+zero>1048576 || !index || characteristics&~0xf00000)throw Error('Invalid TLS template or flags');
+        if(end>start)imageRange(start-base,end-start,true);imageRange(index-base,4,true);
+        const callbacks=[];if(array){let terminated=false;for(let i=0;i<64;i++){const address=mem.u32(imageRange(array-base+i*4,4,true));if(!address){terminated=true;break;}if(!sectionInfo.some(s=>s.executable&&address>=base+s.rva&&address<base+s.rva+s.size))throw Error('TLS callback outside executable section');callbacks.push(address);}if(!terminated)throw Error('TLS callback quota exceeded');}
+        const alignmentCode=(characteristics>>>20)&15;if(alignmentCode===15)throw Error('Invalid TLS alignment');tls={start,size:end-start,zero,index,callbacks,alignment:alignmentCode?2**(alignmentCode-1):16};
+    }
+    return {machine:'i386',format:'PE32',base,preferred,imageSize,entry:entryRva?base+entryRva:0,subsystem,imports,missing,relocated:!!delta,isDLL,exports,tls,sections:sectionInfo};
 }
 globalThis.AsterWin32 = {Memory,loadPE,RAM,HOOK,RETURN,hex};
 if(typeof module!=='undefined'&&module.exports)module.exports=globalThis.AsterWin32;

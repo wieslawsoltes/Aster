@@ -1,0 +1,11 @@
+#include <stdio.h>
+int main(void) {
+    unsigned value = 2166136261u;
+    for (int i=0;i<100;i++) value=(value^(unsigned)i)*16777619u;
+    FILE *f = fopen("compiled-result.txt", "wb");
+    if (!f) return 2;
+    fprintf(f,"TCC compiled inside Aster: %u\n",value);
+    fclose(f);
+    puts("Hello from a real Windows EXE compiled inside Aster!");
+    return 0;
+}

@@ -63,3 +63,42 @@ WebGPU CI uses Chromium's SwiftShader software adapter. It checks real WebGPU
 commands/shaders and presentation, not physical GPU speed. Cache timings compare
 two modes of this software emulator on one original checksum program; they are
 not native-Windows performance, frames per second or general compatibility.
+
+## Real upstream application compatibility
+
+`node tests/win32/compat.cjs` adds **24 checks** covering the extension API/CPU
+semantics, malformed inputs, readonly/share/heap/descriptor boundaries, and the
+**original unmodified 7-Zip 26.03 and TinyCC 0.9.27 binaries**. This is not a mock
+console banner: 7-Zip creates, tests and extracts text/binary archives, extracts
+an independent py7zr archive and rejects corruption. TinyCC loads its relocated
+original DLL and TLS, compiles C, and its generated Windows EXE computes and
+writes the expected result. Invalid C fails rather than producing an EXE.
+
+`apps-browser.py` repeats useful operations through actual browser UI controls
+and Workers, with network disabled after static asset loading. Its six checks
+include the import picker, persisted archive testing, compilation, and **Files
+→ Run EXE** for compiler output. `--standalone` repeats the same operations from
+the complete offline HTML, without an execution server or external assets.
+The console, PE output and archive bytes are genuine; screenshots are captured
+from these running tests. `--inject` is only a restricted local development mode
+and does not certify IndexedDB or WebGPU.
+
+```sh
+node tests/win32/compat.cjs
+node tests/win32/exports.cjs --check
+python tests/win32/apps-browser.py
+python tests/win32/apps-browser.py --standalone --output tests/win32/artifacts/standalone-apps
+```
+
+CI's `upstream-native-cross-check` downloads the **same run's actual artifacts**.
+On a real Windows runner it uses the original `7zr.exe` to test/extract the
+Node-Wasm, browser-Worker, and standalone-browser archives and compares every
+byte. It also executes each TinyCC-produced EXE directly on Windows and verifies
+the computed file, then compiles the same C natively with the same original
+TinyCC distribution. That Windows host is independent validation only; Aster
+never connects to it. `native-apps.json` records seven reference checks.
+
+No EXE is patched, recompiled or filename-substituted. TinyCC is the legacy 2017
+release, not a recommendation for production compilation of hostile input. No
+claim of full x87 precision, full CRT behavior, all 7-Zip options, GUI 7-Zip,
+TinyCC `-run`, PuTTY or general application compatibility is made.

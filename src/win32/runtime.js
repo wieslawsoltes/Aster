@@ -11,17 +11,32 @@ class Runtime {
     }
     constructor(cpu,host,options) {
         this.cpu=cpu;this.mem=new Memory(cpu);this.host=host;this.options=options;
-        this.apis=new Map();this.hooks=new Map();this.handles=new Map();this.nextHandle=256;
+        this.modules=new Map();this.loadingModules=new Set();this.nextImageBase=0x800000;this.tlsImages=[];this.apis=new Map();this.hooks=new Map();this.nextThunk=HOOK;this.aliases=new Map();this.dataImports=new Map();this.handles=new Map();this.nextHandle=256;
         this.classes=new Map();this.messages=[];this.waiters=[];this.timers=new Map();this.requests=new Map();
         this.files=new Map();this.dirtyFiles=new Set();this.lastError=0;this.exitCode=null;this.stopped=false;
         this.pendingDraws=new Map();this.drawCount=0;this.started=performance.now();this.calls=0;this.depth=0;
         this.graphicsReady=Promise.resolve();this.drawBackpressure=false;this.nextRequest=1;this.logBytes=0;this.apiCounts=Object.create(null);this.mainWindow=0;this.fileRevision=0;
-        this.registerAPIs();cpu.set_cache(options.cache===false?0:1);
+        this.registerAPIs();globalThis.AsterWin32.installCompat?.(this);cpu.set_cache(options.cache===false?0:1);
     }
     handle(value) {if(this.handles.size>=4096)throw Error('Guest handle quota exceeded');const id=this.nextHandle++;this.handles.set(id,value);return id;}
     get(id,type) {const h=this.handles.get(id);if(!h||(type&&h.type!==type))throw Error(`Invalid ${type||'object'} handle ${hex(id)}`);return h;}
-    register(dll,name,argc,fn,cdecl=false) {const address=HOOK+this.apis.size*16,api={dll,name,argc,fn,cdecl,address};this.apis.set(dll+'!'+name,api);this.hooks.set(address,api);}
-    resolve(dll,name) {return this.apis.get(dll.toLowerCase()+'!'+name)?.address||0;}
+    register(dll,name,argc,fn,cdecl=false) {const key=dll.toLowerCase()+'!'+name,existing=this.apis.get(key),address=existing?.address??this.nextThunk; if(!existing)this.nextThunk+=16; const api={dll:dll.toLowerCase(),name,argc,fn,cdecl,address};this.apis.set(key,api);this.hooks.set(address,api);}
+    resolve(dll,name) {let key=dll.toLowerCase()+'!'+name;key=this.aliases.get(key)||key;const data=this.dataImports.get(key);if(data){data.address??=data.create();return data.address;}const api=this.apis.get(key)?.address;if(api)return api;const image=this.modules.get(dll.toLowerCase())||this.loadPrivateLibrary(dll);return image?.exports[name]||0;}
+    loadPrivateLibrary(name) {
+        name=String(name).toLowerCase();if(!/^[a-z0-9_.-]+\.dll$/.test(name))return null;
+        if(this.modules.has(name))return this.modules.get(name);const bytes=this.files.get(name);if(!bytes)return null;
+        if(this.loadingModules.has(name))throw Error('Cyclic DLL imports unsupported');if(this.modules.size+this.loadingModules.size>=4)throw Error('Private DLL limit: four');
+        this.loadingModules.add(name);try{const base=this.nextImageBase;this.nextImageBase+=0x200000;if(this.nextImageBase>0x1000000)throw Error('Private DLL image budget exceeded');
+        const image=loadPE(bytes,this.mem,this.resolve.bind(this),{base,dll:true,tls:true,maxImageSize:0x200000});if(image.imageSize>0x200000)throw Error('Private DLL exceeds 2 MiB image limit');image.name=name;if(image.missing.length)throw Error('Unsupported DLL imports: '+image.missing.join(', '));this.modules.set(name,image);return image;}finally{this.loadingModules.delete(name);}
+    }
+    prepareTLS(image) {
+        if(!image.tls||image.tlsPrepared)return;image.tlsPrepared=true;const m=this.mem,t=image.tls,index=this.tlsImages.length;if(index>=64)throw Error('Static TLS slot limit');
+        this.tlsVector??=m.alloc(64*4);m.w32(0x1002c,this.tlsVector);const raw=m.alloc(t.size+t.zero+t.alignment-1),data=Math.ceil(raw/t.alignment)*t.alignment;if(t.size)m.copy(data,m.bytes.slice(t.start,t.start+t.size));m.w32(t.index,index);m.w32(this.tlsVector+index*4,data);this.tlsImages.push(image);
+    }
+    async initializeImage(image) {
+        if(image.initialized)return;if(image.initializing)throw Error('Recursive DLL initialization is unsupported');image.initializing=true;this.prepareTLS(image);for(const callback of image.tls?.callbacks||[])await this.invoke(callback,[image.base,1,0]);
+        if(image.isDLL&&image.entry){const success=await this.invoke(image.entry,[image.base,1,0]);if(!success)throw Error('DLL_PROCESS_ATTACH failed: '+image.name);}image.initialized=true;image.initializing=false;
+    }
     emit(type,value={}) {return this.host({type,...value});}
     log(text) {text=String(text).slice(0,8192);this.logBytes+=text.length;if(this.logBytes>1048576)throw Error('Guest output quota exceeded');this.emit('stdout',{text});}
     draw(hwnd,command) {if(++this.drawCount>4096)throw Error('GDI batch quota exceeded');let list=this.pendingDraws.get(hwnd);if(!list)this.pendingDraws.set(hwnd,list=[]);list.push(command);}
@@ -36,18 +51,19 @@ class Runtime {
     addFile(name,data) {
         const path=this.path(name),bytes=data instanceof Uint8Array?data:new Uint8Array(data);
         const total=[...this.files.values()].reduce((n,v)=>n+v.length,0)-(this.files.get(path)?.length||0)+bytes.length;
-        if((this.files.size>=128&&!this.files.has(path))||bytes.length>8*1024*1024||total>32*1024*1024)throw Error('Guest file quota: 128 files, 8 MiB/file, 32 MiB total');
+        if((this.files.size>=512&&!this.files.has(path))||bytes.length>8*1024*1024||total>32*1024*1024)throw Error('Guest file quota: 512 files, 8 MiB/file, 32 MiB total');
         this.files.set(path,bytes.slice());return path;
     }
     changed(path) {this.dirtyFiles.add(path);this.fileRevision++;}
     load(bytes,name='application.exe') {
         if(this.image)throw Error('Create a fresh process to load another executable');
-        this.name=String(name).replace(/[\\/]/g,'_').slice(0,128);this.image=loadPE(bytes,this.mem,this.resolve.bind(this),this.options);
+        this.name=String(name).replace(/[\\/]/g,'_').slice(0,128);this.image=loadPE(bytes,this.mem,this.resolve.bind(this),{...this.options,tls:!!globalThis.AsterWin32.installCompat});
+        this.image.deferred=this.image.imports.filter(i=>this.apis.get(i.dll+'!'+i.name)?.unsupported).map(i=>i.dll+'!'+i.name);
         this.emit('loaded',{name:this.name,image:this.image,supportedAPIs:this.apis.size});
         if(this.image.missing.length)throw Error('Unsupported imports: '+this.image.missing.slice(0,30).join(', ')+(this.image.missing.length>30?' …':''));
         const c=this.cpu,m=this.mem;c.set_reg(4,0x3effff0);c.set_reg(8,this.image.entry);c.set_fs(0x10000);
         m.w32(0x10000,0xffffffff);m.w32(0x10004,0x3f00000);m.w32(0x10008,0x3c00000);m.w32(0x10018,0x10000);m.w32(0x10030,0x11000);m.w32(0x11008,this.image.base);
-        this.commandA=m.str('"C:\\'+this.name+'"');this.commandW=m.str('"C:\\'+this.name+'"',true);this.push(RETURN);return this.image;
+        const command='"C:\\'+this.name+'"'+(this.options.args?' '+String(this.options.args).slice(0,8192):'');this.commandA=m.str(command);this.commandW=m.str(command,true);this.prepareCompat?.();for(const image of this.modules.values())this.prepareTLS(image);this.prepareTLS(this.image);this.push(RETURN);return this.image;
     }
     push(n) {this.cpu.set_reg(4,this.cpu.get_reg(4)-4);this.mem.w32(this.cpu.get_reg(4)>>>0,n);}
     async dispatch() {
@@ -56,21 +72,22 @@ class Runtime {
         this.calls++;this.apiCounts[api.dll+'!'+api.name]=(this.apiCounts[api.dll+'!'+api.name]||0)+1;
         let value;try{value=api.fn(...args);if(value&&typeof value.then==='function')value=await value;}catch(error){throw Error(`${api.dll}!${api.name}: ${error.message}`);}
         if(this.drawCount>=4096)this.flush();
+        if(value?.jump){value.jump.regs.forEach((v,i)=>c.set_reg(i,v));c.set_reg(0,value.jump.value);return;}
         if(this.drawBackpressure){await this.graphicsReady;this.drawBackpressure=false;}
         c.set_reg(0,(value??0)>>>0);c.set_reg(4,sp+4+(api.cdecl?0:api.argc*4));c.set_reg(8,ret);
     }
-    fault() {const code=this.cpu.get_fault();throw Error(`x86 fault ${code} at ${hex(this.cpu.get_fault_pc())}: ${({1:'out-of-bounds memory',2:'execution outside mapped code',3:'unsupported instruction',4:'invalid operand',5:'integer divide error'})[code]||'CPU error'}`);}
-    async invoke(address,args) {
+    fault() {const code=this.cpu.get_fault();throw Error(`x86 fault ${code} at ${hex(this.cpu.get_fault_pc())}: ${({1:'out-of-bounds memory',2:'execution outside mapped code',3:'unsupported instruction',4:'invalid operand',5:'integer divide error',6:'x87 stack fault',7:'unmasked x87 exception'})[code]||'CPU error'}`);}
+    async invoke(address,args,cdecl=false) {
         if(!address)return 0;if(++this.depth>32)throw Error('Win32 callback recursion limit');
         const c=this.cpu,oldPC=c.get_reg(8),oldSP=c.get_reg(4);for(let i=args.length-1;i>=0;i--)this.push(args[i]);this.push(RETURN);c.set_reg(8,address);
         const start=c.instruction_count();let yielded=performance.now();
         try {
             while(!this.stopped){const code=c.run(20000);if(code===2)break;if(code===3)this.fault();if(code===1)await this.dispatch();if(c.instruction_count()-start>10000000)throw Error('Window callback instruction budget exceeded');if(performance.now()-yielded>8){await this.flush();await new Promise(r=>setTimeout(r,0));yielded=performance.now();}}
-            if(!this.stopped&&c.get_reg(4)!==oldSP)throw Error('Callback did not preserve its stdcall stack');return c.get_reg(0)>>>0;
+            if(!this.stopped&&c.get_reg(4)!==(cdecl?oldSP-args.length*4:oldSP))throw Error('Callback did not preserve its '+(cdecl?'cdecl':'stdcall')+' stack');return c.get_reg(0)>>>0;
         } finally {c.set_reg(8,oldPC);c.set_reg(4,oldSP);this.depth--;}
     }
     async run() {
-        if(!this.image||this.image.missing.length)throw Error('No compatible executable loaded');let lastYield=performance.now(),lastStats=lastYield;
+        if(!this.image||this.image.missing.length)throw Error('No compatible executable loaded');for(const image of this.modules.values())await this.initializeImage(image);await this.initializeImage(this.image);let lastYield=performance.now(),lastStats=lastYield;
         while(!this.stopped){const code=this.cpu.run(10000);if(code===3)this.fault();if(code===2){this.exit(this.cpu.get_reg(0));break;}if(code===1)await this.dispatch();const now=performance.now();
             if(now-lastYield>=8){await this.flush();await new Promise(r=>setTimeout(r,0));lastYield=performance.now();}
             if(now-lastStats>=500){this.emit('stats',this.stats());lastStats=now;}

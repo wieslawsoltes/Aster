@@ -13,8 +13,8 @@ function host(event){
 }
 function savedFiles(force=false){
     if(!process||flushing||(!force&&!process.dirtyFiles.size))return;flushing=true;
-    const files=[];for(const path of (force?process.files.keys():process.dirtyFiles)){const bytes=process.files.get(path).slice();files.push({path,bytes});}
-    process.dirtyFiles.clear();postMessage({type:'files',files,revision:process.fileRevision},files.map(f=>f.bytes.buffer));flushing=false;
+    const files=[];for(const path of (force?process.files.keys():process.dirtyFiles)){const bytes=process.files.has(path)?process.files.get(path).slice():null;files.push({path,bytes});}
+    process.dirtyFiles.clear();postMessage({type:'files',files,revision:process.fileRevision},files.filter(f=>f.bytes).map(f=>f.bytes.buffer));flushing=false;
 }
 function crash(error){
     releaseCredits();savedFiles();
@@ -29,7 +29,7 @@ onmessage=async({data})=>{
         if(data.type==='start'){
             if(started)throw Error('Worker already owns a process');started=true;
             process=await AsterWin32.Runtime.create(data.wasm,host,data.options||{});
-            if(!Array.isArray(data.files)||data.files.length>128)throw Error('Invalid file snapshot');
+            if(!Array.isArray(data.files)||data.files.length>512)throw Error('Invalid file snapshot');
             for(const file of data.files)process.addFile(file.path,file.bytes);
             process.load(new Uint8Array(data.exe),data.name);process.run().catch(crash);
         } else if(data.type==='snapshot'){savedFiles(true);}

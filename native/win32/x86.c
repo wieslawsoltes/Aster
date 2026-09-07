@@ -14,6 +14,8 @@ typedef unsigned long long u64; typedef signed long long i64;
 #define SF 128u
 #define DF 1024u
 #define OF 2048u
+#define ID (1u << 21)
+#define PERSIST (DF|ID)
 #define HOOK 0xf0000000u
 #define SENTINEL 0xfffffff0u
 static u8 ram[RAM_SIZE], executable[RAM_SIZE / 4096];
@@ -35,7 +37,8 @@ EXPORT void touch(u32 addr,u32 size) {
  if(addr>=RAM_SIZE||size>RAM_SIZE-addr||!size)return;
  for(u32 i=addr/4096;i<((addr+size+4095)/4096);i++)if(executable[i]){invalidate();return;}
 }
-EXPORT void reset(void) { for(u32 i=0;i<8;i++)r[i]=0; pc=0;flags=2;fault=0;instructions=cache_hits=cache_misses=0;invalidate(); }
+EXPORT void fpu_reset(void);
+EXPORT void reset(void) { for(u32 i=0;i<8;i++)r[i]=0; pc=0;flags=2;fault=0;instructions=cache_hits=cache_misses=0;fpu_reset();invalidate(); }
 EXPORT void mark_executable(u32 addr,u32 size) { if(addr>=RAM_SIZE||size>RAM_SIZE-addr){fault=1;return;} for(u32 i=addr/4096;i<((addr+size+4095)/4096);i++)executable[i]=1; invalidate(); }
 static void fail(u32 code) { if(!fault){fault=code;faultpc=pc;} }
 static int bounds(u32 a,u32 n) { if(a<4096||a>RAM_SIZE||n>RAM_SIZE-a){fail(1);return 0;}return 1; }
@@ -52,9 +55,9 @@ static u32 szp(u32 v,int w) { v&=mask(w);u32 b=v&255;b^=b>>4;b&=15;return (!v?ZF
 static u32 alu(int op,u32 a,u32 b,int w) {
  u32 m=mask(w),s=1u<<(8*w-1),old=flags,c=(op==2||op==3)?(flags&CF):0,v=0;u64 wide;
  a&=m;b&=m;
- if(op==0||op==2){wide=(u64)a+b+c;v=(u32)wide&m;flags=(old&DF)|szp(v,w)|(wide>m?CF:0)|((~(a^b)&(a^v)&s)?OF:0)|((a^b^v)&AF);}
- else if(op==3||op==5||op==7){wide=(u64)b+c;v=(a-b-c)&m;flags=(old&DF)|szp(v,w)|((u64)a<wide?CF:0)|(((a^b)&(a^v)&s)?OF:0)|((a^b^v)&AF);}
- else {v=op==1?a|b:op==4?a&b:a^b;flags=(old&DF)|szp(v,w);}
+ if(op==0||op==2){wide=(u64)a+b+c;v=(u32)wide&m;flags=(old&PERSIST)|szp(v,w)|(wide>m?CF:0)|((~(a^b)&(a^v)&s)?OF:0)|((a^b^v)&AF);}
+ else if(op==3||op==5||op==7){wide=(u64)b+c;v=(a-b-c)&m;flags=(old&PERSIST)|szp(v,w)|((u64)a<wide?CF:0)|(((a^b)&(a^v)&s)?OF:0)|((a^b^v)&AF);}
+ else {v=op==1?a|b:op==4?a&b:a^b;flags=(old&PERSIST)|szp(v,w);}
  flags|=2;return v;
 }
 static int condition(int c) { int cf=!!(flags&CF),zf=!!(flags&ZF),sf=!!(flags&SF),of=!!(flags&OF),pf=!!(flags&PF);switch(c){case 0:return of;case 1:return !of;case 2:return cf;case 3:return !cf;case 4:return zf;case 5:return !zf;case 6:return cf||zf;case 7:return !cf&&!zf;case 8:return sf;case 9:return !sf;case 10:return pf;case 11:return !pf;case 12:return sf!=of;case 13:return sf==of;case 14:return zf||sf!=of;default:return !zf&&sf==of;} }
@@ -65,8 +68,8 @@ static Operand reg(int n){Operand a={0};a.kind=2;a.reg=n;return a;}
 static u32 address(Operand a){return (u32)a.disp+(a.base!=255?r[a.base]:0)+(a.index!=255?r[a.index]<<a.scale:0)+(a.fs?fsbase:0);}
 static u32 readop(Operand a,int w){return a.kind==1?a.imm&mask(w):a.kind==2?regread(a.reg,w):rd(address(a),w);}
 static void writeop(Operand a,u32 v,int w){if(a.kind==2)regwrite(a.reg,v,w);else if(a.kind==3)wr(address(a),v,w);else fail(4);}
-enum {BAD=0,MOV,LEA,ALU,TEST,INC,DEC,PUSH,POP,CALL,JMP,JCC,RET,LEAVE,NOP,XCHG,MOVZX,MOVSX,IMUL,MULDIV,SHIFT,SETCC,CMOV,STR,LOOP,SIGNEXT,FLAG,PUSHA,POPA,PUSHF,POPF,BSWAP,SHDOUBLE,CMPXCHG,XADD,CPUID,LAHF,SAHF};
-typedef struct {u32 tag,gen,next;Operand a,b;u32 extra;u8 op,w,sub,rep,seg;} Insn;
+enum {BAD=0,MOV,LEA,ALU,TEST,INC,DEC,PUSH,POP,CALL,JMP,JCC,RET,LEAVE,NOP,XCHG,MOVZX,MOVSX,IMUL,MULDIV,SHIFT,SETCC,CMOV,STR,LOOP,SIGNEXT,FLAG,PUSHA,POPA,PUSHF,POPF,BSWAP,SHDOUBLE,CMPXCHG,XADD,CPUID,LAHF,SAHF,BIT,BITSCAN,FPU};
+typedef struct {u32 tag,gen,next;Operand a,b;u32 extra;u8 op,w,sub,rep,seg,lock;} Insn;
 #define CACHE_SIZE 16384
 static Insn cache[CACHE_SIZE];
 static u32 cursor;static int segfs;
@@ -76,7 +79,7 @@ static Operand modrm(int code) { Operand a={0};int mod=code>>6,rm=code&7;if(mod=
  if(mod==0&&a.base==5){a.base=255;a.disp=(i32)fetch(4);}else if(mod==1)a.disp=(i8)fetch(1);else if(mod==2)a.disp=(i32)fetch(4);return a;
 }
 static Insn decode(u32 at){Insn d={0};d.tag=at;d.gen=epoch;d.w=4;cursor=at;segfs=0;int op=fetch(1),prefix=0;
- while(op==0x66||op==0xf2||op==0xf3||op==0x64||op==0x2e||op==0x3e||op==0x26||op==0x36){if(++prefix>8){fail(3);break;}if(op==0x66)d.w=2;else if(op==0x64)segfs=1;else if(op==0xf2||op==0xf3)d.rep=op;op=fetch(1);}
+ while(op==0xf0||op==0x66||op==0xf2||op==0xf3||op==0x64||op==0x2e||op==0x3e||op==0x26||op==0x36){if(++prefix>8){fail(3);break;}if(op==0xf0)d.lock=1;else if(op==0x66)d.w=2;else if(op==0x64)segfs=1;else if(op==0xf2||op==0xf3)d.rep=op;op=fetch(1);}
  d.seg=segfs;int w=d.w,m,g;
  if(op<=0x3d&&(op&7)<=5){d.op=ALU;d.sub=op>>3;int form=op&7;d.w=(form&1)?w:1;if(form<4){m=fetch(1);Operand rm=modrm(m),rg=reg((m>>3)&7);d.a=form&2?rg:rm;d.b=form&2?rm:rg;}else {d.a=reg(0);d.b=imm(fetch(d.w));}}
  else if(op>=0x40&&op<=0x4f){d.op=op<0x48?INC:DEC;d.a=reg(op&7);}
@@ -100,6 +103,8 @@ static Insn decode(u32 at){Insn d={0};d.tag=at;d.gen=epoch;d.w=4;cursor=at;segfs
  case 0xa4:case 0xa5:case 0xa6:case 0xa7:case 0xaa:case 0xab:case 0xac:case 0xad:case 0xae:case 0xaf:d.op=STR;d.sub=op;d.w=(op&1)?w:1;break;
  case 0xa8:case 0xa9:d.op=TEST;d.w=(op&1)?w:1;d.a=reg(0);d.b=imm(fetch(d.w));break;
  case 0xc0:case 0xc1:case 0xd0:case 0xd1:case 0xd2:case 0xd3:d.op=SHIFT;d.w=(op&1)?w:1;m=fetch(1);d.sub=(m>>3)&7;d.a=modrm(m);d.b=op<0xd0?imm(fetch(1)):op<0xd2?imm(1):reg(1);break;
+ case 0x9b:d.op=NOP;break;
+ case 0xd8:case 0xd9:case 0xda:case 0xdb:case 0xdc:case 0xdd:case 0xde:case 0xdf:d.op=FPU;d.sub=op;m=fetch(1);d.extra=m;d.a=modrm(m);break;
  case 0xc2:case 0xc3:d.op=RET;d.extra=op==0xc2?fetch(2):0;break;
  case 0xc6:case 0xc7:d.op=MOV;d.w=(op&1)?w:1;m=fetch(1);if((m>>3)&7)d.op=BAD;d.a=modrm(m);d.b=imm(fetch(d.w));break;
  case 0xc9:d.op=LEAVE;break;
@@ -115,6 +120,9 @@ static Insn decode(u32 at){Insn d={0};d.tag=at;d.gen=epoch;d.w=4;cursor=at;segfs
  case 0xa4:case 0xa5:case 0xac:case 0xad:d.op=SHDOUBLE;m=fetch(1);d.a=modrm(m);d.b=reg((m>>3)&7);d.sub=op2;d.extra=(op2&1)?0:fetch(1);break;
  case 0xb0:case 0xb1:d.op=CMPXCHG;d.w=(op2&1)?w:1;m=fetch(1);d.a=modrm(m);d.b=reg((m>>3)&7);break;
  case 0xc0:case 0xc1:d.op=XADD;d.w=(op2&1)?w:1;m=fetch(1);d.a=modrm(m);d.b=reg((m>>3)&7);break;
+ case 0xa3:case 0xab:case 0xb3:case 0xbb:d.op=BIT;m=fetch(1);d.a=modrm(m);d.b=reg((m>>3)&7);d.sub=op2==0xa3?4:op2==0xab?5:op2==0xb3?6:7;break;
+ case 0xba:d.op=BIT;m=fetch(1);d.sub=(m>>3)&7;d.a=modrm(m);d.b=imm(fetch(1));if(d.sub<4)d.op=BAD;break;
+ case 0xbc:case 0xbd:d.op=BITSCAN;m=fetch(1);d.a=reg((m>>3)&7);d.b=modrm(m);d.sub=op2==0xbd;break;
  case 0xa2:d.op=CPUID;break;
  default:d.op=BAD;break;}break;}
  default:d.op=BAD;break;
@@ -122,6 +130,7 @@ static Insn decode(u32 at){Insn d={0};d.tag=at;d.gen=epoch;d.w=4;cursor=at;segfs
  d.next=cursor;if(cursor-at>15)d.op=BAD;
  /* Repetition and FS on unsupported forms must not silently change semantics. */
  if(d.rep&&d.op!=STR&&!(op==0x90&&d.rep==0xf3))d.op=BAD;
+ if(d.lock && (d.a.kind!=3 || !((d.op==ALU&&d.sub!=7)||d.op==INC||d.op==DEC||d.op==XCHG||d.op==CMPXCHG||d.op==XADD||(d.op==BIT&&d.sub!=4)||(d.op==MULDIV&&(d.sub==2||d.sub==3)))))d.op=BAD;
  return d;
 }
 static u32 shift(u32 v,u32 count,int sub,int w){u32 n=count&31,m=mask(w),bits=w*8,old=flags,res=v&m,cf=flags&CF,of=flags&OF;if(!n)return res;
@@ -130,8 +139,71 @@ static u32 shift(u32 v,u32 count,int sub,int w){u32 n=count&31,m=mask(w),bits=w*
  if(sub==4||sub==6){cf=n<=bits?(res>>(bits-n))&1:0;res=n>=bits?0:(res<<n)&m;if(n==1)of=((res>>(bits-1))^cf)?OF:0;}
  else if(sub==5){cf=n<=bits?(res>>(n-1))&1:0;of=n==1&&res&(1u<<(bits-1))?OF:0;res=n>=bits?0:res>>n;}
  else {cf=n>=bits?!!(res&(1u<<(bits-1))):(res>>(n-1))&1;res=(u32)(sign(res,w)>>(n>=bits?bits-1:n))&m;of=0;}
- flags=(old&DF)|szp(res,w)|cf|of|2;return res;
+ flags=(old&PERSIST)|szp(res,w)|cf|of|2;return res;
 }
+/* Deliberate x87 subset with binary64 intermediates (not 80-bit precision).
+ * Stack tags, control-word rounding for integer stores, status and exceptions
+ * are modeled. Transcendental/environment-save/BCD opcodes fail closed. */
+static double fp[8];static u8 fptag[8];static u32 fptop,fpcontrol=0x37f,fpstatus;
+static double st(int i){u32 n=(fptop+i)&7;if(!fptag[n]){fail(6);return 0;}return fp[n];}
+static void stput(int i,double value){u32 n=(fptop+i)&7;fp[n]=value;fptag[n]=1;}
+EXPORT void fpu_push(double value){u32 n=(fptop-1)&7;if(fptag[n]){fail(6);return;}fptop=n;fp[n]=value;fptag[n]=1;}
+EXPORT double fpu_pop(void){double value=st(0);fptag[fptop]=0;fptop=(fptop+1)&7;return value;}
+EXPORT u32 fpu_status(void){return (fpstatus&~0x3800)|(fptop<<11);}
+EXPORT u32 fpu_control(void){return fpcontrol;}
+EXPORT void set_fpu_control(u32 value){fpcontrol=value&65535;}
+EXPORT void fpu_reset(void){for(int i=0;i<8;i++){fp[i]=0;fptag[i]=0;}fptop=fpstatus=0;fpcontrol=0x37f;}
+static double scale2(double value,int exponent){if(exponent>16384)exponent=16384;if(exponent< -16384)exponent=-16384;while(exponent>0){value*=2;exponent--;}while(exponent<0){value*=0.5;exponent++;}return value;}
+static double fpround(double x){int mode=(fpcontrol>>10)&3;if(mode==1)return __builtin_floor(x);if(mode==2)return __builtin_ceil(x);if(mode==3)return __builtin_trunc(x);double lo=__builtin_floor(x),part=x-lo;if(part<.5)return lo;if(part>.5)return lo+1;return lo-2*__builtin_floor(lo*.5)==0?lo:lo+1;}
+static double fpread(u32 p,int width){
+ if(width==4){union{u32 u;float f;}v;v.u=rd(p,4);return v.f;}
+ if(width==8){union{u64 u;double d;}v;v.u=(u64)rd(p,4)|((u64)rd(p+4,4)<<32);return v.d;}
+ u64 mantissa=(u64)rd(p,4)|((u64)rd(p+4,4)<<32);u32 signExp=rd(p+8,2),exponent=signExp&0x7fff;double v;
+ if(exponent==0x7fff){union{u64 u;double d;}x;x.u=mantissa==0x8000000000000000ULL?0x7ff0000000000000ULL:0x7ff8000000000000ULL;v=x.d;}
+ else v=scale2((double)mantissa,((int)(exponent?exponent:1)-16383)-63);
+ return signExp&0x8000?-v:v;
+}
+static void fpwrite(u32 p,double value,int width){
+ if(width==4){union{u32 u;float f;}v;v.f=(float)value;wr(p,v.u,4);return;}
+ union{u64 u;double d;}v;v.d=value;if(width==8){wr(p,(u32)v.u,4);wr(p+4,(u32)(v.u>>32),4);return;}
+ u32 signExp=(u32)(v.u>>48)&0x8000,exponent=(u32)(v.u>>52)&0x7ff;u64 frac=v.u&0xfffffffffffffULL,mantissa=0;
+ if(exponent==0x7ff){signExp|=0x7fff;mantissa=frac?0xc000000000000000ULL:0x8000000000000000ULL;}
+ else if(exponent){signExp|=exponent+16383-1023;mantissa=(frac|(1ULL<<52))<<11;}
+ else if(frac){int exp=-1022;while(!(frac&(1ULL<<52))){frac<<=1;exp--;}signExp|=(u32)(exp+16383);mantissa=frac<<11;}
+ wr(p,(u32)mantissa,4);wr(p+4,(u32)(mantissa>>32),4);wr(p+8,signExp,2);
+}
+static void fpcompare(double a,double b,int cpuFlags){int unordered=(a!=a||b!=b);if(cpuFlags){flags&=~(CF|PF|ZF|OF|SF|AF);flags|=unordered?(CF|PF|ZF):a<b?CF:a==b?ZF:0;}
+ else {fpstatus&=~0x4500;fpstatus|=unordered?0x4500:a<b?0x100:a==b?0x4000:0;}}
+static double fparithmetic(double a,double b,int sub){double value=0;switch(sub){case 0:value=a+b;break;case 1:value=a*b;break;case 4:value=a-b;break;case 5:value=b-a;break;case 6:if(b==0){fpstatus|=4;if(!(fpcontrol&4))fail(7);}value=a/b;break;case 7:if(a==0){fpstatus|=4;if(!(fpcontrol&4))fail(7);}value=b/a;break;default:fail(3);}
+ if(((fpcontrol>>8)&3)==0)value=(double)(float)value;return value;}
+static void fpstoreint(u32 p,int width,int truncate){double value=st(0);value=truncate?__builtin_trunc(value):fpround(value);double limit=width==2?32768.0:width==4?2147483648.0:9223372036854775808.0;i64 n;
+ if(value!=value||value< -limit||value>=limit){fpstatus|=1;if(!(fpcontrol&1))fail(7);n=width==2?-32768:width==4?(-2147483647-1):(-9223372036854775807LL-1);}
+ else n=(i64)value;
+ if(width==8){wr(p,(u32)n,4);wr(p+4,(u32)((u64)n>>32),4);}else wr(p,(u32)n,width);
+}
+static void fpstep(Insn d){int op=d.sub,m=d.extra,g=(m>>3)&7,i=m&7;u32 p=d.a.kind==3?address(d.a):0;double a,b;
+ if(m<0xc0){
+  if(op==0xd8||op==0xda||op==0xdc||op==0xde){a=st(0);b=op==0xda?(double)(i32)rd(p,4):op==0xde?(double)(i16)rd(p,2):fpread(p,op==0xd8?4:8);if(g==2||g==3){fpcompare(a,b,0);if(g==3)fpu_pop();}else stput(0,fparithmetic(a,b,g));return;}
+  if(op==0xd9){if(g==0)fpu_push(fpread(p,4));else if(g==2||g==3){fpwrite(p,st(0),4);if(g==3)fpu_pop();}else if(g==5)fpcontrol=rd(p,2);else if(g==7)wr(p,fpcontrol,2);else fail(3);return;}
+  if(op==0xdd){if(g==0)fpu_push(fpread(p,8));else if(g==1){fpstoreint(p,8,1);fpu_pop();}else if(g==2||g==3){fpwrite(p,st(0),8);if(g==3)fpu_pop();}else if(g==7)wr(p,fpu_status(),2);else fail(3);return;}
+  if(op==0xdb){if(g==0)fpu_push((double)(i32)rd(p,4));else if(g==1||g==2||g==3){fpstoreint(p,4,g==1);if(g!=2)fpu_pop();}else if(g==5)fpu_push(fpread(p,10));else if(g==7){fpwrite(p,st(0),10);fpu_pop();}else fail(3);return;}
+  if(op==0xdf){if(g==0)fpu_push((double)(i16)rd(p,2));else if(g==1||g==2||g==3){fpstoreint(p,2,g==1);if(g!=2)fpu_pop();}else if(g==5){u64 n=(u64)rd(p,4)|((u64)rd(p+4,4)<<32);fpu_push((double)(i64)n);}else if(g==7){fpstoreint(p,8,0);fpu_pop();}else fail(3);return;}
+  fail(3);return;
+ }
+ if(op==0xd8){a=st(0);b=st(i);if(g==2||g==3){fpcompare(a,b,0);if(g==3)fpu_pop();}else stput(0,fparithmetic(a,b,g));return;}
+ if(op==0xdc||op==0xde){if(op==0xde&&m==0xd9){fpcompare(st(0),st(1),0);fpu_pop();fpu_pop();return;}if(g==2||g==3){fail(3);return;}a=st(i);b=st(0);stput(i,fparithmetic(a,b,g>=4?(g^1):g));if(op==0xde)fpu_pop();return;}
+ if(op==0xd9){if(g==0){fpu_push(st(i));return;}if(g==1){a=st(0);b=st(i);stput(0,b);stput(i,a);return;}
+  switch(m){case 0xd0:return;case 0xe0:stput(0,-st(0));return;case 0xe1:stput(0,__builtin_fabs(st(0)));return;case 0xe4:fpcompare(st(0),0,0);return;
+  case 0xe8:fpu_push(1);return;case 0xe9:fpu_push(3.321928094887362);return;case 0xea:fpu_push(1.4426950408889634);return;case 0xeb:fpu_push(3.141592653589793);return;case 0xec:fpu_push(.3010299956639812);return;case 0xed:fpu_push(.6931471805599453);return;case 0xee:fpu_push(0);return;
+  case 0xf6:fptop=(fptop-1)&7;return;case 0xf7:fptop=(fptop+1)&7;return;case 0xfa:stput(0,__builtin_sqrt(st(0)));return;case 0xfc:stput(0,fpround(st(0)));return;case 0xfd:a=st(1);if(a>16384)a=16384;if(a< -16384)a=-16384;stput(0,scale2(st(0),(i32)a));return;default:fail(3);return;}
+ }
+ if(op==0xdd){if(g==0){fptag[(fptop+i)&7]=0;return;}if(g==2||g==3){stput(i,st(0));if(g==3)fpu_pop();return;}if(g==4||g==5){fpcompare(st(0),st(i),0);if(g==5)fpu_pop();return;}fail(3);return;}
+ if(op==0xdb){if(m==0xe2){fpstatus&=~0xff;return;}if(m==0xe3){fpu_reset();return;}if(g==5||g==6){fpcompare(st(0),st(i),1);return;}}
+ if(op==0xdf){if(m==0xe0){regwrite(0,fpu_status(),2);return;}if(g==5||g==6){fpcompare(st(0),st(i),1);fpu_pop();return;}}
+ if(op==0xda&&m==0xe9){fpcompare(st(0),st(1),0);fpu_pop();fpu_pop();return;}
+ fail(3);
+}
+
 /* status: 0 budget, 1 imported function, 2 callback/entry return, 3 fault. */
 EXPORT u32 run(u32 budget){
  if(budget>1000000)budget=1000000;
@@ -163,17 +235,23 @@ EXPORT u32 run(u32 budget){
    else if(d.sub==6||d.sub==7){if(!a){fail(5);break;}product=w==1?regread(0,2):((u64)regread(2,w)<<(w*8))|regread(0,w);if(d.sub==6){u64 q=product/a;if(q>mask(w)){fail(5);break;}v=(u32)q;b=(u32)(product%a);}else{prod=w==1?(i16)product:w==2?(i32)product:(i64)product;i64 div=sign(a,w);if(prod==(-9223372036854775807LL-1)&&div==-1){fail(5);break;}i64 q=prod/div;if(q!=(i64)sign((u32)q,w)){fail(5);break;}v=(u32)q;b=(u32)(prod%div);}if(w==1)regwrite(0,(v&255)|((b&255)<<8),2);else{regwrite(0,v,w);regwrite(2,b,w);}}
    break;
   case SHIFT:a=readop(d.a,w);b=readop(d.b,1);writeop(d.a,shift(a,b,d.sub,w),w);break;
-  case SHDOUBLE:a=readop(d.a,w);b=readop(d.b,w);v=(d.sub&1?regread(1,1):d.extra)&31;if(v){if(v>w*8){fail(3);break;}u64 wide;u32 out,carry;if(d.sub<0xac){wide=((u64)a<<(w*8))|b;out=(u32)((wide<<v)>>(w*8));carry=(a>>(w*8-v))&1;}else{wide=((u64)b<<(w*8))|a;out=(u32)(wide>>v);carry=(a>>(v-1))&1;}save=flags;flags=(save&DF)|szp(out,w)|carry|2;if(v==1)flags|=((a^out)&(1u<<(w*8-1)))?OF:0;writeop(d.a,out,w);}break;
+  case SHDOUBLE:a=readop(d.a,w);b=readop(d.b,w);v=(d.sub&1?regread(1,1):d.extra)&31;if(v){if(v>w*8){fail(3);break;}u64 wide;u32 out,carry;if(d.sub<0xac){wide=((u64)a<<(w*8))|b;out=(u32)((wide<<v)>>(w*8));carry=(a>>(w*8-v))&1;}else{wide=((u64)b<<(w*8))|a;out=(u32)(wide>>v);carry=(a>>(v-1))&1;}save=flags;flags=(save&PERSIST)|szp(out,w)|carry|2;if(v==1)flags|=((a^out)&(1u<<(w*8-1)))?OF:0;writeop(d.a,out,w);}break;
   case LOOP:if(d.sub!=0xe3)r[1]--;if(d.sub==0xe3?!r[1]:r[1]&&(d.sub==0xe2||(d.sub==0xe1?!!(flags&ZF):!(flags&ZF))))pc=d.next+d.extra;break;
   case SIGNEXT:if(d.sub==0x98)regwrite(0,(u32)sign(regread(0,w==4?2:1),w==4?2:1),w);else regwrite(2,sign(regread(0,w),w)<0?mask(w):0,w);break;
   case FLAG:if(d.sub==0xfc)flags&=~DF;else if(d.sub==0xfd)flags|=DF;else if(d.sub==0xf8)flags&=~CF;else if(d.sub==0xf9)flags|=CF;else flags^=CF;break;
-  case PUSHF:push(flags,w);break;case POPF:flags=(pop(w)&(CF|PF|AF|ZF|SF|DF|OF))|2;break;
+  case PUSHF:push(flags,w);break;case POPF:flags=(pop(w)&(CF|PF|AF|ZF|SF|DF|OF|ID))|2;break;
   case LAHF:regwrite(4,flags&255,1);break;case SAHF:flags=(flags&~(CF|PF|AF|ZF|SF))|(regread(4,1)&(CF|PF|AF|ZF|SF))|2;break;
   case PUSHA:save=r[4];for(int i=0;i<8;i++)push(i==4?save:regread(i,w),w);break;
   case POPA:for(int i=7;i>=0;i--){v=pop(w);if(i!=4)regwrite(i,v,w);}break;
   case BSWAP:v=readop(d.a,4);writeop(d.a,(v>>24)|((v>>8)&0xff00)|((v<<8)&0xff0000)|(v<<24),4);break;
   case CMPXCHG:a=readop(d.a,w);alu(7,regread(0,w),a,w);if(flags&ZF)writeop(d.a,readop(d.b,w),w);else regwrite(0,a,w);break;
   case XADD:a=readop(d.a,w);v=alu(0,a,readop(d.b,w),w);writeop(d.b,a,w);writeop(d.a,v,w);break;
+  case BIT:{i32 bit=d.b.kind==1?(i32)d.b.imm:sign(readop(d.b,w),w);Operand target=d.a;
+   if(target.kind==3){i32 word=bit>=0?bit/(w*8):-1-((-1-bit)/(w*8));target.disp+=(i32)(word*w);}
+   u32 bitmask=1u<<((u32)bit&(w*8-1));a=readop(target,w);flags=(flags&~CF)|((a&bitmask)?CF:0);
+   if(d.sub!=4){v=d.sub==5?a|bitmask:d.sub==6?a&~bitmask:a^bitmask;writeop(target,v,w);}break;}
+  case BITSCAN:a=readop(d.b,w);if(!a)flags|=ZF;else{flags&=~ZF;v=d.sub?(31u-__builtin_clz(a)):__builtin_ctz(a);writeop(d.a,v,w);}break;
+  case FPU:fpstep(d);break;
   case CPUID:if(r[0]==0){r[0]=1;r[3]=0x756e6547;r[2]=0x49656e69;r[1]=0x6c65746e;}else{r[0]=0x500;r[1]=r[2]=r[3]=0;}break;
   case STR:{u32 n=d.rep?r[1]:1,limit=n>256?256:n;int stride=(flags&DF)?-w:w;int compare=d.sub==0xa6||d.sub==0xa7||d.sub==0xae||d.sub==0xaf;u32 i;
    for(i=0;i<limit&&!fault;i++){u32 src=r[6]+(d.seg?fsbase:0);if(d.sub==0xa4||d.sub==0xa5){wr(r[7],rd(src,w),w);r[6]+=stride;r[7]+=stride;}else if(d.sub==0xaa||d.sub==0xab){wr(r[7],regread(0,w),w);r[7]+=stride;}else if(d.sub==0xac||d.sub==0xad){regwrite(0,rd(src,w),w);r[6]+=stride;}else if(d.sub==0xa6||d.sub==0xa7){alu(7,rd(src,w),rd(r[7],w),w);r[6]+=stride;r[7]+=stride;}else{alu(7,regread(0,w),rd(r[7],w),w);r[7]+=stride;}if(d.rep)r[1]--;if(d.rep&&compare&&((d.rep==0xf3)!=!!(flags&ZF)))break;}

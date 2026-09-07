@@ -1,193 +1,193 @@
 # Browser-only Win32 compatibility
 
-Aster **Win32 Lab** loads real PE32 `.exe` bytes and runs their IA-32 instructions
-inside a dedicated WebAssembly worker. Supported Windows DLL imports are bound to
-an original JavaScript API implementation. GDI draws onto a persistent WebGPU
-render target. No Wine, Docker, Linux VM, Windows image, companion, socket proxy,
-remote executable service, account, or application upload is required.
+Aster **Win32 Lab** executes real **32-bit x86 PE32** program bytes in a dedicated
+WebAssembly Worker. Supported Windows imports bind to browser-backed JavaScript
+implementations, and GDI draws through WebGPU. There is **no Wine, Docker,
+companion, Windows installation, executable service, application upload or
+remote desktop stream**. This is a small user-mode compatibility runtime, not a
+bootable OS or a general Windows replacement.
 
-This is an **experimental, deliberately small compatibility runtime**, not a
-complete Windows emulator. Most existing Windows applications will fail because
-of missing DLL exports, instructions, controls, or OS behavior. The four supplied
-examples are original programs compiled to standard Windows executables, not
-JavaScript rewrites disguised as `.exe` files. No executable hash selects a
-hard-coded implementation. The hash is used only for private-drive identity.
+The CPU is an original IA-32 interpreter compiled to Wasm, with a decoded-
+instruction cache. It is **not a complete Rosetta-style optimizing JIT**. No file
+name or executable hash selects a mock implementation. SHA-256 identifies each
+private C: drive; the program's machine code owns its computation and callbacks.
 
-## Run without installing anything
+## Two real upstream applications
 
-Open Aster, find **Win32 Lab** in Start, choose **GDI Playground**, **Win32 Pad**,
-**Hello Win32**, or **Integer checksum**, and press **Run sample**. Alternatively,
-choose **Open .exe**, select a compatible 32-bit executable, and press **Run
-selected**. Dropping an EXE onto the app selects it but does not auto-run it.
-Double-clicking an `.exe` in File Explorer opens the same launcher.
+These exact original Windows binaries are bundled, with hashes and provenance
+in [`third-party/manifest.json`](../third-party/manifest.json). They are not
+recompiled or patched for Aster.
 
-The generated **Aster.html includes the complete runtime and all samples**. It
-works offline without separate files. The ordinary source edition works with
-Aster's existing static server or GitHub Pages. There is no execution backend.
-WebGPU needs a supporting browser and secure context; the UI explicitly reports
-Canvas 2D when WebGPU is unavailable. Never enable Chromium's unsafe GPU test
-flags for ordinary browsing. They are used only with the trusted CI fixtures.
-
-**Stop** terminates the worker after requesting a final drive snapshot. A busy
-x86 loop cannot block the main desktop. Normal window close flushes saved files;
-force-close/crash/browser shutdown can lose the most recent unsnapshotted writes.
-An EXE is not automatically restarted after a browser reload.
-
-## What is implemented
-
-| Layer | Implementation and bounds |
+| Program | Verified scenarios / limits |
 | --- | --- |
-| PE loader | MZ/PE signatures, i386/PE32, GUI/console subsystem, header/section bounds, mapped import tables, named imports, HIGHLOW relocations, entry-point validation. Reports missing imports before executing instructions. |
-| CPU | Original integer IA-32 interpreter compiled to Wasm, 8/16/32-bit operands, ModRM/SIB, integer arithmetic/flags, common branches/calls/returns, shifts/rotates, multiply/divide, string operations, CMOV/SETcc, FS-relative access. A bounded 16,384-entry decode cache avoids repeated parsing. |
-| Scheduling | One emulated thread per worker; bounded instruction slices; browser event loop yielding; asynchronous Win32 message waits; synchronous, nested guest WNDPROC callbacks with recursion/instruction limits. |
-| USER32 subset | Class registration, one top-level window per process, EDIT/BUTTON/STATIC children, creation/paint/close/destroy messages, queued input and commands, Get/Peek/DispatchMessage, window text, OK/Cancel message boxes, WM_TIMER timers. |
-| GDI subset | DC/paint handling, solid brushes/pens, stock objects, selection/deletion, rectangles, ellipses, lines, pixels, text color/background, TextOutA/W, simple fonts and text measurement. |
-| KERNEL32 subset | Process exit, monotonic clocks, performance counters, heap allocations, selected string functions, module/import lookup for implemented facades, synchronous private-file create/read/write/seek/close. |
-| C runtime subset | A few `msvcrt.dll` allocation, memory, string and output functions using cdecl. This is not the MSVC CRT startup/runtime. |
-| Storage | Case-insensitive private C: drive per executable SHA-256, snapshots to Aster's IndexedDB metadata, explicit download/copy to Aster files. UTF-16 strings are handled by W functions; ANSI uses Windows-1252. |
+| **7-Zip reduced console 26.03 (`7zr.exe`)** | Create an LZMA2 `.7z` from text and arbitrary binary bytes; test it in a fresh process; extract all bytes; extract an independently generated py7zr archive; reject corruption. Use `-mmt=off`; sample creation uses `-mx=1 -md=1m`. This is the reduced console, **not the 7-Zip GUI**, and full format/encryption coverage is not claimed. |
+| **Tiny C Compiler 0.9.27 (`tcc.exe` + original `libtcc.dll`, headers/libraries)** | Load and relocate the original DLL, initialize main/DLL static TLS, compile ordinary C using `stdio.h`, write a normal Windows EXE, then run that EXE in a separate Aster Worker and verify its computed file. Invalid C produces a real compiler error, not an output EXE. This is a **legacy 2017 compatibility fixture**, not a current production-toolchain recommendation. `-run`, self-hosting, every compiler flag and arbitrary generated programs are not certified. |
 
-There are **115 named facade exports** in this revision. This is not a claim of
-115 complete Windows API implementations. See the generated
-[`browser-win32-exports.json`](browser-win32-exports.json) for their names and
-argument counts, and `src/win32/runtime.js` for exact behavior.
+Four original compiled GUI/CPU examples remain: **Win32 Pad**, **GDI Playground**,
+**Hello Win32**, and **Integer checksum**. The general runtime executes both the
+third-party programs and these small test programs; examples are not substituted
+with JavaScript apps.
 
-### Intentional differences and unsupported features
+PuTTY/PuTTYgen were researched as further targets. Their required cryptography,
+networking and broader Windows UI/API behavior are outside this tested scope.
+No working PuTTY, Notepad++, installer, modern game or arbitrary Windows app is
+claimed. Compatibility is demonstrated by the scenarios above, not merely by
+printing a help banner.
 
-Only one top-level custom-class window per process and four concurrent guest
-workers are allowed. Nested child controls, native menus, resources/dialog
-bundles, subclassing, owner drawing, scrollbars, clipboard, printing and drag/drop
-inside the guest are not implemented. EDIT and BUTTON are browser DOM controls
-for usable text input, selection, touch and accessibility; they are not pixel-
-identical USER32 widgets. Top-level `CreateWindowEx` dimensions are treated as
-client dimensions. Font metrics, classic colors, clipping and paint invalidation
-are simplified. `InvalidateRect` invalidates the whole client; default class
-background erasure is not implemented. Programs should paint their own surface.
-`TranslateMessage` is an acknowledged facade no-op: browser text input supplies
-WM_CHAR, rather than a Windows keyboard-layout translation engine.
+## Try it with no runtime installation
 
-Not supported: x64/ARM/Win16/DOS, x87/SSE/SIMD, protected-mode hardware, kernel
-code/drivers, SEH, static TLS/TLS callbacks, threads, processes, arbitrary native
-DLL loading, delay imports, dynamic executable allocation, COM/OLE, .NET, UWP,
-MSI, MFC, full CRT startup, DirectX/OpenGL/Vulkan, audio and network APIs. A missing
-function or unsupported instruction is an explicit diagnostic, not a fabricated
-successful return. Certain implemented facade queries intentionally return
-single-process values (for example, process/thread ID 1 and no debugger).
+Open **Aster.html**, or Aster's static hosted page, and launch **Win32 Lab**.
+Choose **7-Zip 26.03** and press **Run sample**. The prefilled arguments create
+`sample.7z` from the private `welcome.txt`:
 
-This is conceptually a binary compatibility layer, but **not Rosetta, a complete
-x86-to-Wasm JIT, or a native-speed guarantee**. The first CPU tier is a Wasm
-interpreter with a decode cache. There is no guest-generated JavaScript `eval`
-and no native machine-code execution outside the browser.
-
-## Graphics and performance design
-
-GDI commands are batched into instanced WebGPU primitives. One draw submits the
-batch into a persistent texture; a second draw presents that texture. Unchanged
-pixels remain on the GPU. There is no remote screen stream and no full-frame
-CPU screenshot upload. Text glyphs are rasterized by the browser once, uploaded
-to a bounded atlas and subsequently drawn by the GPU. Browser controls overlay
-the client canvas. Canvas2D is an explicit fallback, not labeled WebGPU.
-
-The CPU runs off the main thread. Import thunks execute only at Windows API call
-boundaries. The decoder cache is invalidated on guest/host writes to code pages,
-not every stack or data write. Message waits sleep instead of polling. Mousemove,
-paint and timer messages are coalesced and queues are bounded. Files are copied
-only when changed or explicitly requested, not on every frame.
-
-The reproducible checksum benchmark runs the **same PE32 program with the cache
-on and off**, validates the resulting file, discards the first measurement and
-reports three timed samples and their medians. `unit-results.json` contains the
-actual observed timings. These are software-emulation observations, not an FPS
-promise, native-Windows comparison or broad application benchmark. CI WebGPU
-uses **SwiftShader**, so it validates the real GPU API/shader path in software;
-it does not measure a physical GPU's performance.
-
-## Storage and security boundaries
-
-The fixed guest address space is **64 MiB**; the Wasm instance reserves **80 MiB**
-including the emulator and decode cache. A process has at most 4,096 handles,
-128 windows, 64 timers, 1,024 queued messages, 128 files, 8 MiB per file and 32 MiB
-of file data. The EXE upload-to-memory limit is 16 MiB. Guest memory access is
-checked before indexing the guest array. Guest addresses cannot directly name
-Wasm interpreter state, JavaScript objects or the host filesystem.
-
-Win32 file calls access only the selected executable's in-memory C: map. UNC,
-device names, traversal, alternate drives and paths with unsafe components are
-rejected. No host-directory permission is requested. No WinInet, Winsock,
-CreateProcess or ShellExecute facade exists. UI strings use text nodes rather
-than guest-supplied HTML. WebGPU coordinates, textures, queues and glyph caches
-are bounded. Imported EXEs are not uploaded to any service.
-
-Snapshots are keyed by the complete executable SHA-256. A second simultaneous
-instance of the same EXE is rejected to avoid drive races. A different binary
-receives a different drive. Files stay in the browser profile/origin; clearing
-site data removes them. **Normal Aster backup currently does not include these
-private drives.** Use **Files → Download** or **Copy to Aster** first. Imported
-EXEs themselves are not retained by the launcher; keep your original file.
-
-This code is not a formally verified malware-analysis sandbox. Emulator,
-browser or GPU-driver vulnerabilities and denial-of-service risks remain.
-Use trusted test programs and keep the browser updated. There is no claim that
-all malicious executables are safe to run.
-
-## Verification and rebuilding
-
-No toolchain is required by end users. Prebuilt runtime and samples are committed.
-For maintainers, LLVM (`clang`, `lld-link`, `llvm-ar`) rebuilds the CPU and samples:
-
-```sh
-python3 native/win32/build.py
-python3 build.py
-node tests/win32/unit.cjs
-python3 -m pip install playwright pillow
-python3 -m playwright install chromium
-xvfb-run -a -s '-screen 0 1440x1000x24' python3 tests/win32/browser.py --gpu --headed
-python3 tests/smoke.py
+```text
+a sample.7z welcome.txt -mmt=off -mx=1 -md=1m
 ```
 
-The unit suite covers real integer machine-code execution, guest bounds, code
-cache invalidation, unsupported opcodes, PE rejection, relocations, imports,
-private file paths, actual compiled callbacks/file writes and the cache benchmark.
-The browser suite drives real Win32 program controls, verifies WriteFile bytes,
-loads them with ReadFile, restarts/reloads the private drive, reads pixels back
-from the actual GDI render target, tests timer/pointer interaction, validates an
-unsupported EXE, stops an infinite x86 loop, and runs standalone HTML offline.
-The GPU CI job **fails if it uses Canvas fallback** or has a WebGPU validation
-error. A separate Windows runner executes the unchanged checksum sample as a
-native Windows EXE and checks its output.
+Use **Files** to download the archive or copy it into Aster's documents. After
+the process exits, **Import files** imports selected files into this executable's
+private C:. Change the arguments and press **Run selected**, for example:
 
-Reports, screenshots and the rebuilt standalone HTML are retained in CI
-artifacts. Test fixture success does not imply that Notepad++, Office, Photoshop,
-WinMine or any other untested third-party Windows executable works.
+```text
+t sample.7z -mmt=off
+x my-archive.7z -mmt=off -aoa
+```
 
-## Research and rationale (2026-09-07)
+Choose **TinyCC 0.9.27** and **Run sample**. Original support files and an editable
+sample `hello-aster.c` are seeded only if missing. The default arguments are:
 
-- Microsoft's [PE format specification](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format)
-  documents PE32, import-address tables and relocation structures. The loader
-  implements a bounded subset rather than booting Windows.
-- Microsoft's [Win32 window-message guide](https://learn.microsoft.com/en-us/windows/win32/learnwin32/window-messages)
-  explains message queues and window-procedure dispatch. Aster maps browser input
-  to those guest-facing contracts, with the limitations described above.
-- [retrowin32](https://github.com/evmar/retrowin32) is an existing high-level Windows
-  emulator demonstrating that an `.exe` can be paired with CPU emulation and an
-  API implementation directly in a browser. Its README also warns about narrow
-  compatibility and points to a successor. No code is copied from it here.
-- [v86](https://github.com/copy/v86) takes a different route: PC hardware emulation
-  plus runtime x86-to-Wasm translation. That broader system architecture is not
-  needed for this small user-mode API subset; Aster does not integrate v86.
-- [BottleShip](https://github.com/jenissimo/bottleship) describes a more ambitious
-  browser high-level-emulation engine with Win32 and DirectX mapped to web APIs.
-  Its advertised game compatibility was not independently verified for this PR;
-  neither its engine nor games are bundled here.
-- The [WebGPU specification](https://gpuweb.github.io/gpuweb/) supplies the GPU
-  resource/pipeline model. CPU emulation remains in Wasm; GPU work is used where
-  it fits naturally: batching, rasterization, text and compositing.
-- Chromium's [SwiftShader guidance](https://chromium.googlesource.com/chromium/src/+/main/docs/gpu/swiftshader.md)
-  and [WebGPU test configuration](https://chromium.googlesource.com/chromium/src/+/HEAD/third_party/blink/web_tests/FlagSpecificConfig)
-  document software-GPU testing. This is for CI verification, not a recommendation
-  to weaken normal browser security.
+```text
+-o hello-aster.exe hello-aster.c
+```
 
-Linux GPU CI also installs `libvulkan1 mesa-vulkan-drivers xvfb xauth`. It runs full Chrome on a virtual X display with a consistent SwiftShader Vulkan presentation path, and compares a screenshot pixel with the GPU readback. These are test-runner dependencies only, never Aster end-user dependencies.
+Open **Files**, find `hello-aster.exe`, and click **Run EXE**. A new Worker executes
+the generated machine code, displays its console output and creates
+`compiled-result.txt` with the checksum **3726872593**. To compile another C file,
+use **Import files** and change the arguments. Each different EXE has a separate
+private drive; files are not automatically shared between compiler and output.
 
-Graphics use acknowledged Worker credits: top-level window creation waits for the browser surface, and batches wait for presentation/GPU completion before guest drawing continues. A deliberately slow-display regression runs the real GDI EXE and verifies bounded outstanding batches. This prevents a fast guest from overflowing the renderer during GPU initialization or slow software rendering.
+**Open .exe** selects another compatible executable. Drag/drop and File Explorer
+select an executable without automatically running it. Arguments are passed to
+the virtual process, never to a host shell. The optional stdin field supplies a
+closed, preloaded input stream, not an interactive terminal.
 
-Render submissions no longer depend on animation callbacks: every Worker credit is acknowledged after direct batch submission and GPU completion, with a timer fallback for scheduled clients. A browser regression suppresses all animation callbacks and verifies 40 batches and their final pixel. Pending commands and peak queue size are exposed in renderer statistics. Completed fence results are discarded rather than retaining historical batch arrays. Stop acknowledgements and file snapshots bypass the graphics queue; a slow renderer cannot prevent Worker termination. The 4,096-command batch limit, private-memory bounds and shader/device limitations remain explicit.
+The single-file edition embeds the runtime, both upstream applications/support
+files, all samples, license notices **and TinyCC's complete corresponding source
+archive**. End users need no build tools, account or extra download. Win32 Lab's
+expanded diagnostics contain **Licenses** and **TinyCC source** download buttons.
+The source edition uses ordinary static HTTP/HTTPS hosting; GitHub Pages is
+sufficient. WebGPU and durable storage depend on browser/context. Fallback to
+Canvas 2D or memory storage is clearly labeled.
+
+## Implemented architecture
+
+| Layer | Scope |
+| --- | --- |
+| PE loader | Bounded MZ/PE32/i386 headers, mapped sections/imports, entry validation, HIGHLOW relocations, named and ordinal exports, data imports, private DLL dependencies and single-thread static TLS templates/callbacks. Unknown imports fail before guest execution. |
+| CPU | Common integer IA-32 instructions, 8/16/32-bit operands, ModRM/SIB, arithmetic/flags/branches, stack/calls, string operations, CMOV/SETcc, FS access, bit-test/modify and bit scans. LOCK is accepted only on supported memory RMW instructions in this single-thread model. |
+| x87 subset | Eight-register stack/tags, binary32/64 loads/stores and arithmetic, integer conversions, comparisons, control/status and selected constants/rounding. Extended 80-bit representation is converted through **binary64 intermediates**: full 80-bit precision/range is not emulated. SSE, transcendental operations, packed BCD and full FPU environment operations remain unsupported. |
+| Loader lifecycle | Up to four private in-memory DLLs, at most 2 MiB mapped image each; acyclic dependencies; bounded exports; process-attach DllMain and TLS callbacks; aligned static TLS data and emulated TEB. Private DLL unload/detach, loader-lock semantics, forwarded exports and delay imports are not implemented. No DLL is loaded into the host OS. |
+| Kernel services | Bounded allocations and heap ownership/reallocation, module queries, private synchronous files, sizes/seeks/truncation, directory enumeration, rename/copy/delete, DOS attributes, times, UTF-8/UTF-16/1252/OEM437 conversions, argument/environment strings and single-thread synchronization/TLS. Unsupported privileged operations return documented failures, not host privileges. |
+| C runtime | Selected MSVCRT startup/data globals, cdecl/varargs, args/env, stdio/descriptors, memory/string operations, formatting, integer/numeric conversion, guest callbacks and bounded setjmp/longjmp. This is **not** a full MSVC/UCRT implementation. File translation/locale/format semantics are partial; CRT streams are unbuffered. |
+| USER32 / GDI | One top-level window, EDIT/BUTTON/STATIC children, WNDPROC messages, timers, pointer/key events, solid brushes/pens, primitives, text and measured fonts. GDI batches render directly through WebGPU; browser controls overlay the surface. |
+| OLE data subset | BSTR allocation and scalar/BSTR VARIANT operations with correct ordinal aliases. No COM/Automation server or object activation. |
+
+The generated [export manifest](browser-win32-exports.json) lists **430 function
+entries**: **416 partial implementations** and **14 explicit fail-on-call entries**,
+plus **7 ordinal aliases** and **16 data imports**. This count does not imply 430
+complete Windows APIs. Some real programs import optional threading/exception
+paths that are never used in the tested scenario; those named entries bind but
+**throw an explicit unsupported error if called**. Completely unknown imports
+reject the image. Exact behavior lives in `src/win32/runtime.js` and `compat.js`.
+
+Not implemented: x64/ARM/Win16/DOS, kernel services/drivers, general SEH/C++
+exceptions, threads/child processes, dynamic executable memory, COM/.NET/UWP,
+MFC, full CRT/UCRT, native menus/resources/dialogs, DirectX/OpenGL, audio, guest
+networking, host clipboard/printers/devices or arbitrary DLL discovery. Browser
+controls/GDI font metrics are not pixel-identical Windows widgets. Most existing
+Windows programs remain incompatible.
+
+## Performance design and evidence
+
+The CPU runs off the main UI thread. The bounded 16,384-entry decode cache avoids
+repeated instruction decoding and invalidates when executable bytes change.
+API thunks cross into JavaScript only at API boundaries. Message waits sleep;
+paint/timer/mouse events are coalesced. Execution slices, callback budgets and
+Worker Stop keep a busy executable from blocking the desktop.
+
+GDI batches use instanced primitives and a retained GPU texture. A second draw
+presents that texture. Cached browser-rasterized glyphs avoid repeating text
+rasterization. There is no remote framebuffer and no full-screen CPU screenshot
+upload. Credits wait for surface readiness and GPU completion, prevent unbounded
+queues, and work even when animation callbacks are suspended. Stop/file messages
+bypass the rendering queue. **WebGPU does not accelerate 7-Zip compression or
+TinyCC's CPU work**; those execute in Wasm.
+
+`unit.cjs` measures cached versus uncached execution of the same checksum PE,
+verifies identical output, discards warmup and records all timed samples. Reports
+are software-emulator microbenchmarks, **not native-Windows speed or FPS**. No
+physical-GPU benchmark or arbitrary-application speed guarantee is claimed.
+
+## Storage and security
+
+The guest address space is 64 MiB; the Wasm instance reserves 80 MiB including the
+CPU/cache. Limits include four guest processes, 4,096 handles/process, 128 windows,
+64 timers, 1,024 queued messages, 512 files, 8 MiB/file and 32 MiB file data. Main
+EXE input is capped at 16 MiB. All guest pointers remain inside bounded guest
+memory; they cannot address interpreter state, JS objects or host directories.
+
+Files use a case-insensitive private C: map. UNC/devices/alternate drives/path
+traversal are rejected. No native-folder permission, executable upload, socket
+proxy, `CreateProcess`, or `ShellExecute` is involved. Selected source filenames,
+console text and titles render as text nodes, not HTML. Private DLL names must be
+simple `.dll` basenames and resolve only from files already in that process.
+
+Changed file bytes and deletions are snapshotted to IndexedDB under the full EXE
+SHA-256. Restart/reload persistence is tested. **Attributes, file times and empty
+directories currently last only for the process; nonempty directories are
+inferred from persisted file paths.** Stop requests a final snapshot, but force
+termination, faults or browser shutdown can lose unflushed writes. Private drives
+are not part of normal Aster backups: use **Download** or **Copy to Aster** first.
+Clearing site data erases them. Only one live instance per EXE hash is allowed to
+avoid persistence races. The launcher does not retain arbitrary imported EXEs.
+
+Use trusted programs and trusted input. This is **not a formally verified
+malware-analysis sandbox**; emulator/browser/GPU vulnerabilities and resource
+exhaustion risks remain. Never enable unsafe Chromium GPU test flags for normal
+browsing. Test flags, LLVM, Xvfb and the native Windows reference runner are
+maintainer/CI tools only, not application dependencies.
+
+## Reproduce verification
+
+```sh
+node tests/win32/unit.cjs
+node tests/win32/compat.cjs
+node tests/win32/exports.cjs --check
+node tests/win32/backpressure.cjs
+python build.py
+xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/browser.py --gpu --headed
+xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/apps-browser.py --gpu --headed
+xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/apps-browser.py --gpu --headed --standalone --output tests/win32/artifacts/standalone-apps
+python tests/smoke.py
+```
+
+Maintainers can rebuild the original CPU/four local examples with
+`python native/win32/build.py` (LLVM), but the two third-party EXEs are always
+unaltered upstream binaries. `python third-party/fetch.py` reproduces their
+hash-pinned packaging. [Test documentation](../tests/win32/README.md) explains
+negative tests, artifacts and independent native references. The workflow must
+pass at the exact head being merged; screenshots alone do not establish success.
+
+## Primary sources and rationale
+
+- [Microsoft PE format](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format): PE32 headers, imports/exports, relocations and TLS structures.
+- [Microsoft window messages](https://learn.microsoft.com/en-us/windows/win32/learnwin32/window-messages): queues and WNDPROC dispatch.
+- [Microsoft SetFileAttributesW](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfileattributesw): DOS attributes and failure behavior.
+- [LZMA SDK / 7zr](https://www.7-zip.org/sdk.html): reduced console, formats and public-domain license. Only the pinned binary/version in the manifest is certified by our tests.
+- [TinyCC project](https://bellard.org/tcc/) and [manual](https://bellard.org/tcc/tcc-doc.html): native compiler/linker, Windows support and LGPL. Full corresponding source accompanies our binary distribution.
+- [WebGPU specification](https://gpuweb.github.io/gpuweb/): GPU resource/command/pipeline model. CPU emulation and graphics are separate.
+- [Chromium SwiftShader guidance](https://chromium.googlesource.com/chromium/src/+/main/docs/gpu/swiftshader.md): software-GPU CI. Our tests execute real WebGPU/WGSL and compare readback with presented pixels, not physical GPU throughput.
+
+All CPU/PE/API implementation here is original Aster code. No Windows system DLL,
+OS image, Microsoft program, proprietary font or copied Wine implementation is
+bundled. Third-party application licenses are in [the notices/source directory](../third-party/README.md).
