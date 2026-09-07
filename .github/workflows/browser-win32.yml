@@ -34,15 +34,15 @@ jobs:
       - name: Install build and browser test tools only — no Windows runtime
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-18 lld-18 llvm-18
-          python -m pip install playwright
+          sudo apt-get install -y clang-18 lld-18 llvm-18 libvulkan1 mesa-vulkan-drivers xvfb xauth
+          python -m pip install playwright pillow
           python -m playwright install --with-deps chromium
       - name: Validate the shipped CPU and PE32 programs
         run: |
           for file in src/*.js src/win32/*.js sw.js; do node --check "$file"; done
           node tests/win32/unit.cjs
           python build.py
-          python tests/win32/browser.py --gpu
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/browser.py --gpu --headed
           cp tests/win32/artifacts/browser-results.json tests/win32/artifacts/browser-shipped-results.json
           cp tests/win32/artifacts/unit-results.json tests/win32/artifacts/unit-shipped-results.json
       - name: Rebuild CPU and examples from source and repeat the tests
@@ -54,7 +54,7 @@ jobs:
           python native/win32/build.py
           node tests/win32/unit.cjs
           python build.py
-          python tests/win32/browser.py --gpu
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/browser.py --gpu --headed
       - name: Regress the browser desktop
         run: python tests/smoke.py
       - name: Retain reports, genuine screenshots, and offline standalone HTML
