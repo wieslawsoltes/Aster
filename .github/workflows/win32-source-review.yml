@@ -1,0 +1,24 @@
+name: Win32 source review snapshot
+on:
+  push:
+    branches: [feat/browser-win32]
+    paths: ['.github/workflows/win32-source-review.yml']
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v5
+      - name: Archive tracked source only
+        run: |
+          mkdir -p /tmp/aster-review
+          git archive --format=zip HEAD -o /tmp/aster-review/source.zip
+          git rev-parse HEAD > /tmp/aster-review/commit.txt
+          sha256sum /tmp/aster-review/source.zip > /tmp/aster-review/checksum.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: browser-win32-source-review
+          path: /tmp/aster-review/
+          retention-days: 3
