@@ -2,9 +2,10 @@ name: Import verified Win32 compatibility extension
 on:
   push:
     branches: [feat/browser-win32]
-    paths: ['.compat-payload/ready']
+    paths: ['.compat-payload/ready', '.github/workflows/compat-publish.yml']
 permissions:
   contents: write
+  actions: read
 jobs:
   import:
     runs-on: ubuntu-24.04
@@ -17,6 +18,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: aster-compat-research
+          run-id: 34166730154
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: /tmp/aster-upstream-cache/research
+      - uses: actions/download-artifact@v4
+        with:
+          name: original-compat-fixtures
+          run-id: 34167763090
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: /tmp/aster-upstream-cache/fixtures
       - name: Validate source payload and unchanged base, then apply exact line edits
         run: |
           python - <<'PY'
@@ -66,7 +79,25 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends clang-18 lld-18 llvm-18
-          python third-party/fetch.py
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, runpy
+          namespace = runpy.run_path('third-party/fetch.py')
+          cached = {}
+          for path in Path('/tmp/aster-upstream-cache').rglob('*'):
+              if path.is_file() and not path.is_symlink() and path.stat().st_size <= 16*1024*1024:
+                  data = path.read_bytes()
+                  cached[hashlib.sha256(data).hexdigest()] = data
+          def verified_cached_fetch(url, expected):
+              if expected not in cached:
+                  raise ValueError('Original upstream bytes missing from verified cache: ' + url)
+              data = cached[expected]
+              assert hashlib.sha256(data).hexdigest() == expected
+              print('Verified original release:', url, expected)
+              return data
+          namespace['main'].__globals__['fetch'] = verified_cached_fetch
+          namespace['main']()
+          PY
           python native/win32/build.py
           node tests/win32/exports.cjs
           python build.py
