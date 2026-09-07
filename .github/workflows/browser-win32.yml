@@ -7,6 +7,9 @@ on:
       - 'native/win32/**'
       - 'examples/win32/**'
       - 'tests/**'
+      - 'third-party/**'
+      - 'docs/browser-win32-exports.json'
+      - 'Aster.html'
       - 'index.html'
       - 'build.py'
       - 'sw.js'
@@ -39,7 +42,7 @@ jobs:
           python3 - <<'PY'
           import hashlib, json, os, subprocess
           from pathlib import Path
-          paths = [Path('Aster.html'), Path('src/win32/x86.wasm'), *sorted(Path('src/win32/examples').glob('*.exe'))]
+          paths = [Path('Aster.html'), Path('src/win32/x86.wasm'), *sorted(Path('src/win32/examples').glob('*.exe')), *sorted(Path('src/win32/third-party').glob('*'))]
           data = {'checkedOutCommit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(), 'pullRequestHead': os.environ.get('PR_HEAD', ''), 'sha256': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}}
           Path('tests/win32/artifacts/provenance.json').write_text(json.dumps(data, indent=2) + '\n')
           PY
@@ -55,6 +58,8 @@ jobs:
         run: |
           for file in src/*.js src/win32/*.js sw.js; do node --check "$file"; done
           node tests/win32/unit.cjs
+          node tests/win32/exports.cjs --check
+          node tests/win32/compat.cjs
           node tests/win32/backpressure.cjs
           python build.py
           git diff --exit-code -- Aster.html
@@ -62,6 +67,9 @@ jobs:
           xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/browser.py --gpu --headed
           cp tests/win32/artifacts/browser-results.json tests/win32/artifacts/browser-shipped-results.json
           cp tests/win32/artifacts/unit-results.json tests/win32/artifacts/unit-shipped-results.json
+          cp tests/win32/artifacts/compat/results.json tests/win32/artifacts/compat-shipped-results.json
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/apps-browser.py --gpu --headed
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/apps-browser.py --gpu --headed --standalone --output tests/win32/artifacts/standalone-apps
       - name: Rebuild CPU and examples from source and repeat the tests
         env:
           CLANG: clang-18
@@ -70,6 +78,8 @@ jobs:
         run: |
           python native/win32/build.py
           node tests/win32/unit.cjs
+          node tests/win32/exports.cjs --check
+          node tests/win32/compat.cjs
           node tests/win32/backpressure.cjs
           python build.py
           xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/browser.py --gpu --headed
@@ -105,5 +115,27 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: browser-win32-native-reference
+          path: tests/win32/native-artifacts/
+          retention-days: 14
+
+  upstream-native-cross-check:
+    needs: browser
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: browser-win32-evidence
+          path: _browser-evidence
+      - name: Native Windows validates browser-created archives and compiler output
+        run: python tests/win32/native-apps.py --evidence _browser-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: upstream-win32-native-cross-check
           path: tests/win32/native-artifacts/
           retention-days: 14

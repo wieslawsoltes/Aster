@@ -27,14 +27,14 @@ jobs:
       - name: Check source and build the standalone edition
         run: |
           test -f index.html
-          for file in src/*.js sw.js; do node --check "$file"; done
+          for file in src/*.js src/win32/*.js sw.js; do node --check "$file"; done
           python3 -m py_compile build.py start.py tests/smoke.py
           python3 build.py
       - name: Prepare only the public runtime files
         run: |
           mkdir -p _site
           cp index.html Aster.html manifest.webmanifest sw.js LICENSE _site/
-          cp -R src assets _site/
+          cp -R src assets third-party _site/
           touch _site/.nojekyll
           python3 - <<'PY'
           import hashlib, json, os
@@ -48,7 +48,7 @@ jobs:
           path: _site
 
   deploy:
-    needs: build
+    needs: [build, browser-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -96,7 +96,7 @@ jobs:
               print(p.chromium.executable_path)
           PY
           )"
-          python3 tests/smoke.py --url http://localhost:8765/ --browser "$BROWSER"
+          python3 tests/smoke.py --browser "$BROWSER"
       - name: Retain browser reports and screenshots
         if: always()
         uses: actions/upload-artifact@v4

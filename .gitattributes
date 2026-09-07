@@ -1,0 +1,9 @@
+# Reproducible source and hash-pinned fixture manifests on every platform.
+* text=auto eol=lf
+*.exe -text
+*.wasm -text
+*.zip -text
+*.7z -text
+*.bz2 -text
+*.png -text
+*.ico -text
