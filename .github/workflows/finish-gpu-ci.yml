@@ -1,0 +1,54 @@
+name: Finalize GPU presentation checks
+on:
+  push:
+    branches: [feat/browser-win32]
+    paths: ['.github/workflows/finish-gpu-ci.yml']
+permissions:
+  contents: write
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Update source and deterministic screenshot verification
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          def edit(name, replacements):
+              p=Path(name);s=p.read_text()
+              for old,new in replacements:
+                  assert s.count(old)==1,(name,old)
+                  s=s.replace(old,new)
+              p.write_text(s)
+          edit('src/win32/gdi.js',[
+              ('const blit=d.createShaderModule({code:BLIT});','this.presentFormat=navigator.gpu.getPreferredCanvasFormat();const blit=d.createShaderModule({code:BLIT});'),
+              ("fragment:{module:blit,entryPoint:'fs',targets:[{format:'rgba8unorm'}]}","fragment:{module:blit,entryPoint:'fs',targets:[{format:this.presentFormat}]}"),
+              ("this.context.configure({device:d,format:'rgba8unorm',alphaMode:'opaque'})","this.context.configure({device:d,format:this.presentFormat,alphaMode:'opaque'})"),
+              ('stats() {return {mode:this.mode,frames:','stats() {return {mode:this.mode,adapter:this.adapter?{vendor:this.adapter.info?.vendor,architecture:this.adapter.info?.architecture,description:this.adapter.info?.description}:null,frames:')
+          ])
+          edit('tests/win32/browser.py',[
+              ('import argparse, hashlib, json, threading, time','import argparse, hashlib, io, json, sys, threading, time\nfrom PIL import Image'),
+              ("        if args.gpu: flags+=['--enable-unsafe-webgpu','--use-webgpu-adapter=swiftshader','--use-angle=swiftshader','--enable-unsafe-swiftshader']","        if args.gpu: flags+=['--enable-unsafe-webgpu']\n        if args.gpu and sys.platform.startswith('linux'): flags+=['--enable-features=Vulkan','--use-angle=vulkan','--use-vulkan=swiftshader','--use-webgpu-adapter=swiftshader','--disable-vulkan-surface']"),
+              ("options={'headless':True,'args':flags}","options={'headless':not args.headed,'args':flags}"),
+              ("parser.add_argument('--gpu',action='store_true');","parser.add_argument('--gpu',action='store_true');parser.add_argument('--headed',action='store_true');"),
+              ("page.screenshot(path=str(OUT/'win32-gdi.png'));detail=","png=page.screenshot(path=str(OUT/'win32-gdi.png'));image=Image.open(io.BytesIO(png)).convert('RGB');screen=image.getpixel((round(box['x']+400*box['width']/680),round(box['y']+340*box['height']/460)));assert list(screen)==pixel[:3],('Presented canvas differs from GPU readback',screen,pixel);detail="),
+              ("'clickedPixel':pixel}","'clickedPixel':pixel,'screenshotPixel':list(screen)}")
+          ])
+          edit('docs/browser-win32.md',[
+              ('python3 -m pip install playwright','python3 -m pip install playwright pillow'),
+              ('python3 tests/win32/browser.py --gpu','xvfb-run -a -s \'-screen 0 1440x1000x24\' python3 tests/win32/browser.py --gpu --headed')
+          ])
+          p=Path('docs/browser-win32.md')
+          p.write_text(p.read_text()+'\nLinux GPU CI also installs `libvulkan1 mesa-vulkan-drivers xvfb xauth`. It runs full Chrome on a virtual X display with a consistent SwiftShader Vulkan presentation path, and compares a screenshot pixel with the GPU readback. These are test-runner dependencies only, never Aster end-user dependencies.\n')
+          PY
+          node --check src/win32/gdi.js
+          python3 -m py_compile tests/win32/browser.py
+          python3 build.py
+      - name: Commit the updated source and standalone HTML
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/win32/gdi.js tests/win32/browser.py docs/browser-win32.md Aster.html
+          git commit -m "Use preferred GPU canvas format and verify actual presented pixels"
+          git push origin HEAD:feat/browser-win32
