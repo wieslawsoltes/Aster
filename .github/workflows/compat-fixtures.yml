@@ -11,16 +11,18 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Retrieve upstream distributions without executing Windows code
         run: |
           mkdir -p /tmp/fixtures
-          python3 - <<'PY'
+          python - <<'PY'
           import concurrent.futures, urllib.request, hashlib, json
           from pathlib import Path
           root=Path('/tmp/fixtures')
           urls={
             'tinycc-mirror.zip':'https://download-mirror.savannah.gnu.org/releases/tinycc/tcc-0.9.27-win32-bin.zip',
-            'tinycc-nongnu.zip':'https://download.savannah.nongnu.org/releases/tinycc/tcc-0.9.27-win32-bin.zip',
             'tinycc-source.tar.bz2':'https://download-mirror.savannah.gnu.org/releases/tinycc/tcc-0.9.27.tar.bz2',
             'lzma2603.7z':'https://www.7-zip.org/a/lzma2603.7z',
             'tinycc-mirror2.zip':'https://mirror.csclub.uwaterloo.ca/nongnu/tinycc/tcc-0.9.27-win32-bin.zip'
@@ -35,17 +37,21 @@ jobs:
                   return name,{'url':url,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
               except Exception as e:
                   return name,{'url':url,'error':str(e)}
-          with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
               report=dict(pool.map(get,urls.items()))
           (root/'provenance.json').write_text(json.dumps(report,indent=2))
           print(json.dumps(report,indent=2))
           PY
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends 7zip
-          mkdir -p /tmp/input
-          printf 'Independent archive created by Linux 7-Zip\n' > /tmp/input/independent.txt
-          cd /tmp/input && 7zz a -mmt=off -md=1m /tmp/fixtures/independent.7z independent.txt
+          python -m pip install py7zr==1.0.0
+          python - <<'PY'
+          from pathlib import Path
+          import py7zr
+          text=Path('/tmp/independent.txt');text.write_text('Independent archive created by py7zr\n')
+          with py7zr.SevenZipFile('/tmp/fixtures/independent.7z','w',filters=[{'id':py7zr.FILTER_LZMA2,'dict_size':1048576}]) as archive:
+              archive.write(text,'independent.txt')
+          PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: original-compat-fixtures
           path: /tmp/fixtures/
