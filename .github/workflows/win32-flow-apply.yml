@@ -11,28 +11,31 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
-      - name: Apply checksum-verified source edits
-        env:
-          DELTA: >-
-            eNqtGmlv28byrzAuEIkIw/A+rCpA2hzIhz6kSYp8cIx0uTuU2FCkQlI+avu/v5nd5aHDLR7wUtdacYc797m+uDvbsm59dn4mat6+yJr6uoXm+XVR+Z69EWfWWQZ53QACOEGQZZHwE5HnGU8DSBweizwFEQWB70S+4AwCz3dZlvuxSN00SP0QPBCOEE6W4lks76DBozKRJzzP/FwkInRYnntJ7DmhE8aeGyVJlEeM4U8ovCBgPh6fhxFzAydOQoA8ZHhUvW3Pzi/uztjZueslqYeEDqsObjrE8rX66SfjI1QCGmiMvKyvDV5XXVOXX6uv1bsdtJ2BjAp63gDriroyitZg/HtVX5cgViCMuipvDUm20a3B0PLpX2OVMN59+MNooK13DQd8uQH8xsStbbx7/d7IWMfX+nFZbIoOj+xqI7CcNEJiNhs8obWNz3j0l7r5jieza1Z0rQGMr412l+Er9I48xzKKipc7UVQr409E+/sOdmDX1acejI54XVcwN/9Ewo0vkCGUZSgNSt6LakdvryTvW1bQk5VtvK+2uw7p3uCT1vhB5wrJXFdsoHkhAY0NtC1baWZ4zUpoOYJdr4sSpHBIEii/bNfeEku43DZwBRWywyr8KTaMeIEb4LuOZfhW3tQbo76ChpRDhNExTa8xsWvoWUuKK6qiK1hZ/K3UVDf4xGAoF/591dQ7IpVlttY2vSVqpLSqO0PAFh8abV0CqhLf/bOBH8T/K0kQnva2YRv4c2GIogHeKam3LW60UgaIhRCAloaRs7IkvMZ3gC2yWK9Q/chrje8QU9dr6LklUrkGV3Jrdy2RA8ImG/w8ZRdu8Ag4sD9tQJZBbxFf2mjwc4c6odUW2HelM6OEatWtSTRkQ2iHpdF2SEbbFZzMDLlu0XYRhKFcyiKDBlWCYsEv7BbRrWu0C9RHkd9qG38urRkFruWqJNLiElktqud5WazW3WjsC5KX9pKOrKzdbbckIOLslFCIlzXQMnB6YYjRcUizayhQ7EWF7GyLGyht41NXb6eC2mgrEwiGdLUV27brGh9lt1uGyiG7WjVsu0Y5KFlZaBFIKtkseRxSVJG1ZGWNmtW+iF6/QaxEsS0ht2ipdYPy50CWvmaNuEatPlc2hjQsCFML6Ct8jdy2m1YZzxAhjF2LqAnTascaVnUASEVOFmiQLtAszh4uH6whLLcNf8G221aH5L/aaUj2AycQWZokaRrEPE9T7uUsdrjvY0SFGJgbc5+7XiCSKAhFnLt+lqV+4KXCy8IQJiHZi0EEPo8YzyBwMyeJA4ziScDcxM9CL/dYEuFZAQZ2lmZ+GAf4j/s5pEESxaHYD8lBmKiIrBZDQDYm/4p8fjEjdbUza9aiQrcg5Ip17ezSVrEO2rlgHbO72y2YZodBxUYnheIK5HPT5mQoc2iaulm+lPtyrZ6Y5mIfJ5SonDMSLxEZxa4iUi6OiOzhIpSyhFMLDYfkS3S8RK8V5p2mTTmzjYRjormdm4sGul1TLR72CZmej1JW56uFPl8mgglMmGiYaKS1Hbcjr98Oh21KCz2E64SJwqJXGmYqIWQJbPSqp0+fTFjrv+UMdSWUDlrkc35HSjmf9T47swpxLt9/GJAGnqNErFca6bX0L1v51xTYG4BHLqb7Ub/v+qf23aDf95xhf25OIPy0hyB5Hp0QBP0JQeSd2A+9WO/L1YBhobSlZIOmfOzD0n1frERx4MJYAUVehJR7geP76EzMdTMeYh1EBVLsMYFrHohURLHwUxYHmRN7OaB7RyJ346kLR+j3wmXCjVkaMd9JokjEsZuBAzHWTnHCUl+wLEg8QPf2EhFE4McR4o1iL432XdhLScZZv9CsLiSLlHJk9SF+1TXM0lE70+T1i4rhS2ewUjfRRiwX+sjHTvwNhWdv2M38EQBLP5d50Vapb2rNA9berHAxMoJWPQJoTmNpQBrgMyV7827fbbGGaidOiVrqXxz5qcRkP9X7vntkTfiwp8uPht3luB24ejsMjl/2dUxSi147+9Qqt6XcsjxZ88yV65qLEVByvWyho0W96zSIFQVT0epgpj9Ye1txXazO+6LWNO72AotEIbCWwACC5YHxRkbp2VCer1lr9ElgikqF9Erm7PFwTXG5a9fzgwj2b4ga+AurPBCqnicTnZ06YVMLWC6XM1VEz8yJgwu4KjjYPx4vvw/pP+EVz55NgFSO6MMH5r/5GLZTCujZsNKalsoyOVUi5YFSR2Wai56bUbcmL4E1vXYPNyeWsDw0CueElAYyXcfXsRnTi3McOb0kjPsWLYz32SBZ7J/mO6mO02qloa0Tcjx/TMDWccQ4fyyS/DgJNg0sI2kYojVpcnVQDfx/BP1Y+miw5keQgxSSxNgcxyzgCdZoTh6Cn6UeZFkWun4SYeXnpG7Oc8wGIffCKExT7NqzJA+wFIxSR0xSCGRRFIPrCcbiEHvQjLHEjzH3sAD7fQ8iIbI8yvMoyUSUuWHu89RFZ8NQ5gsh4KAxT0KtRrnQotLG3kvUQ4tReUYueqDRc4fWwign77j9O6MxoRdSz8MnUEkPNaLH+DIAeL4ySrU4KgBfvJh25rI3UsSrhna//aBOEPvGsbz0MKPr04Mx+qvOXvJj72F63WCXfaJXv0ki3TKjhy+MCjvqBnvsoqQO3dhVfXMqbXjvRNWZM+qMZbdSoIIqSzc9+GDoqRGNRS21aJjswnGPmm77OJciK73EglFiullbTqC04L1JyLJtewTQ7QHmxTH1XQ7bfqQlJxdHetEW9EEJ3MZecq5JwHphO59frK8rYfXJ4tLsGwPKTzNicmbd7YE8mEOn0NMQujpgqcWBm9Mhv1IH/nKJ3hVNs8NxUhr6CDdSVqsWJ+v8KAl1r5GEj/YCjq9Sglr0hiWBBpjY0aWHXPTnyEw9wvi6hpCLk7iwt1S41OIkjJu4oa/9XK5OQmGtFOiCUq2mNE2BkgEoOTrqdFjU7cR+VIwT7GIxbvkicX3u+RgMc8cNUo9jiOOYpJIUK+yEpxgshZ8xrIMhpLqZY7Wcht40KkaM+b6X5FhdAza0LMDKGQ/PuIsbApwEA2HkpHmYxVzEWRpCInjgYOGZCmyhD6Kilro7EbpV4ecr/n3pjolGp/2Jir9Wqv5UNRmCt8sKro3f0ObJ3vJdxeV0hSLVXE7e+vqVOjv6LvtoKmvUcGd2f7//WDqHuV+5jdjstvgb0OIfqawOA+KPXd0xjF0cQBxUdYoPfGGpGT9VDhFv2sfnND8pr2D58m5KDnRzPMPSm+Zii4z/psaU8zuMN5I5qhoezMVDj19XrVNYJavFkZTgpuhmZsuuQLylQYUU88NE0g1gkm/h40DT3LxD+5v3epJ0GXU+UZl9xcodHWXqbTkjGHZl1YCPhh46jJUhyM8hhR6hXQwe66nYmXoj/HrcVN6Vxie6Wy/VJicXAyrd3Zt3e0wtJzSvUA9ySlMIKcReH1NdCSS5gxFsZP5hMhqR8xk8YZj5kBZGl4h1jSkXwwDjWBr7gYLGkK0OFXo0aW9vp7HCDZmLBRELPZ5k3E8zEWIjDkmWeAFdTeSOzxNIo8ALRST8OE9iLLVinzkOZILlk1gRRCl12b6XMh5w5kR5GrPcybiANE7jGKNP4jiRGyAGiP0kcbBBx/Y7wIacMy/fjxWhk6qYqRZ9h1l/G0ap31QJPTfPjwdM2o+2aOLoCmh2DDXw9Yz+k1F3jplRaxXKpaj5jvzWlpch8KaUXowJs7hC3x12s1rc2mxL5fEcSnOh3pc+slRRxT7ZbGrAlQxZr1qUFhZ2eAK2lvRzRy8VDWBtcv7kiT7o1afPbz5++/L+P7737eOb3/94//HNNwRAV+6a2zuVFFY21TFoR/+EfEmsOgtyTTRDo8Iau/o5wF/Pnpn9MbqBvbirtzTU4t3Mujl3rFv8//ocKVzTL16XdXN+UVkYvMPI8sLw8uGyF4IcTi/78+S3Oda0riO9Qo2u/6qLaj6zZuYTtGw/Hc+ZnYqqhiiEnBYP1ww0va/psubV25k8dnXQqdzfr3QPaZ5odRCru4/otS76aBxf1isD0WAK0GNLYzhr8SAH8OXt3T/KWdrBYjWZfyLPDWzq3tWl9ZkHUxWa//csEy09t9DfVpy4OBhuUuTYH6m8bfuLmpl1wkMOcArIJ8PVRM9x5EJ72f39tS2DxieQt0F6ADp5Ke5fiifRiCHZTaeUtud4s5PHzUxLgpU1Zx3pQwE9J7Hv2pmJ1l1B842OH4YCSRip4k4t+uGPxry6mB3rfXb5s6xUJ0AneubZ5Uvn8di5Qz+z+X6V5QZ5ECd5QoU8jxPPzYQXgeszwR0hEpGGccRzl3pF7EiT0BUe5JGP1RYPMSZZOL4VD5nlZhgWb6wSO4BlPAfmLhRt7Iec8Sx2OYVjEWBF5KUZMjtE1d8I4B+xReRIcVFmO6/WDE3eSCj/RbaJu5XpzI4OSd1Q7/KUvRw8vhuVV73ijO7PGCIqGRUGlsXQi+iJftYrqrbwbWzpyFIEfVF0NQ1Frw24m01M8RAURhfgj3botT1ZAe1iWQ+2DBzQ69ugxwRwUcWquf1D5PX36BOwta6jw0b4+wbw4em1aGfacYdEmORsmtfRt4NtcTDkcYCYPLbCHO/C9+e0/FYCT2aSUfo/u+fPFRL5IGpURE4Evl77ZqIqwv7nQN9ozi5rB88am62+tPL117kYPe7WKFTi6VaSqhfbQcxlmwht08JUoZmafDFAJFRrXsrFxpfpBpZ1/40o/w5ygMCmPtTHcsnLeYOotZOfZXsx2uOF7tijLJ7/Aqqg+0D397PL+3rEca/ZuvOSnC1U1WCjkBbA07WvWqj9VUJX5nlkNNxqai8UBEVQY/1oLsJw+4E1l/RJFvf+GNAx3gJ3YgApL5iECndMoOam2gzBJKqVl3E2wSe96r62gnwpKhFNTmxj3L1IUUljnXbODByrq6XTF8l42olmLmj3RX2/QhIT+QiKD7hqgkgHh1Yf3MisdhgRlBf1o5OLSOuWdJ1ysn2RsaYxwwkFUH9NXMgWGjuJnGdkLrGUaOZmYu9ZeEVPoIsbFGsbtSxjX8ixfFTAT42yG+YVWiADYvpFK6f8U4YKwXR5pbBiJ9Jo6SYrzr6T8b3RY7qV5Un2Uxi7/C8Rlzf8=
+        with:
+          fetch-depth: 2
+      - name: Decode and verify the original source delta
         run: |
           python3 - <<'PY'
-          import base64, hashlib, json, os, zlib
+          import base64, hashlib, json, re, subprocess, zlib
           from pathlib import Path
-          raw=zlib.decompress(base64.b64decode(os.environ['DELTA'],validate=True))
+          source=subprocess.check_output(['git','show','ab7e8716beaca00fc6e2e4afd3d938caa41f964f:.github/workflows/win32-flow-apply.yml'],text=True)
+          encoded=re.search(r'DELTA: >-\n\s+([^\n]+)',source).group(1).strip()
+          assert encoded.count('RYPMSZZOL')==1
+          encoded=encoded.replace('RYPMSZZOL','RYPMSZOL')
+          raw=zlib.decompress(base64.b64decode(encoded,validate=True))
           assert hashlib.sha256(raw).hexdigest()=='225cc2365c438abf268fbc0a7207170bb4504c0dbd3e213582116c599df5e72b'
           changes=json.loads(raw); outputs=[]
           allowed={'docs/browser-win32.md','src/apps-win32.js','src/win32/gdi.js','src/win32/runtime.js','src/win32/worker.js','tests/win32/browser.py','tests/win32/unit.cjs'}
           assert {c['path'] for c in changes}==allowed and len(changes)==len(allowed)
           for change in changes:
-              path=Path(change['path']); before=path.read_bytes()
-              assert hashlib.sha256(before).hexdigest()==change['before'], 'Concurrent modification: '+str(path)
+              path=Path(change['path']);before=path.read_bytes()
+              assert hashlib.sha256(before).hexdigest()==change['before'],'Concurrent modification: '+str(path)
               text=before.decode()
               for op in reversed(change['ops']):
                   assert 0<=op['a']<=op['b']<=len(text)
                   text=text[:op['a']]+op['text']+text[op['b']:]
               after=text.encode()
-              assert hashlib.sha256(after).hexdigest()==change['after'], str(path)
+              assert hashlib.sha256(after).hexdigest()==change['after'],str(path)
               outputs.append((path,after))
           for path,data in outputs:path.write_bytes(data)
           PY
@@ -41,7 +44,7 @@ jobs:
           for file in src/*.js src/win32/*.js sw.js; do node --check "$file"; done
           node tests/win32/unit.cjs
           python3 build.py
-      - name: Commit source and remove completed temporary workflows
+      - name: Commit source and remove temporary workflows
         run: |
           rm .github/workflows/win32-flow-apply.yml .github/workflows/win32-source-review.yml
           git config user.name 'github-actions[bot]'
