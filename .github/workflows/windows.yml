@@ -1,0 +1,60 @@
+name: Windows apps — native execution and security
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bridge-and-win32:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install native Windows compatibility and display dependencies
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends wine wine64 wine32:i386 xvfb xauth x11vnc openbox novnc gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 fonts-liberation
+          python -m pip install -r bridge/requirements.txt playwright
+          python -m playwright install --with-deps chromium
+      - name: Validate sources, security boundaries and package handling
+        run: |
+          for file in src/*.js bridge/client/*.js sw.js; do node --check "$file"; done
+          python -m py_compile bridge/*.py tests/windows/*.py
+          python -m unittest discover -s tests/windows -p 'test_*.py' -v
+          python build.py
+      - name: Compile original 64-bit and 32-bit Win32 GUI probes
+        run: |
+          mkdir -p /tmp/aster-probes
+          x86_64-w64-mingw32-gcc -O2 -mwindows -static tests/windows/probe.c -o /tmp/aster-probes/aster-probe-x64.exe -luser32 -lgdi32
+          i686-w64-mingw32-gcc -O2 -mwindows -static tests/windows/probe.c -o /tmp/aster-probes/aster-probe-x86.exe -luser32 -lgdi32
+          file /tmp/aster-probes/*.exe
+      - name: Exercise actual Windows code through Aster and noVNC
+        run: |
+          python -m tests.windows.integration --exe /tmp/aster-probes/aster-probe-x64.exe --exe /tmp/aster-probes/aster-probe-x86.exe
+      - name: Regress all browser desktop apps
+        run: python tests/smoke.py
+      - name: Keep execution evidence and standalone build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-execution-evidence
+          path: |
+            tests/windows/artifacts/
+            tests/results.json
+            tests/*.png
+            Aster.html
+          retention-days: 14
