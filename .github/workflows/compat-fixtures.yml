@@ -1,0 +1,52 @@
+name: Retrieve original compatibility fixtures
+on:
+  push:
+    branches: [feat/browser-win32]
+    paths: ['.github/workflows/compat-fixtures.yml']
+permissions:
+  contents: read
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Retrieve upstream distributions without executing Windows code
+        run: |
+          mkdir -p /tmp/fixtures
+          python3 - <<'PY'
+          import concurrent.futures, urllib.request, hashlib, json
+          from pathlib import Path
+          root=Path('/tmp/fixtures')
+          urls={
+            'tinycc-mirror.zip':'https://download-mirror.savannah.gnu.org/releases/tinycc/tcc-0.9.27-win32-bin.zip',
+            'tinycc-nongnu.zip':'https://download.savannah.nongnu.org/releases/tinycc/tcc-0.9.27-win32-bin.zip',
+            'tinycc-source.tar.bz2':'https://download-mirror.savannah.gnu.org/releases/tinycc/tcc-0.9.27.tar.bz2',
+            'lzma2603.7z':'https://www.7-zip.org/a/lzma2603.7z',
+            'tinycc-mirror2.zip':'https://mirror.csclub.uwaterloo.ca/nongnu/tinycc/tcc-0.9.27-win32-bin.zip'
+          }
+          def get(item):
+              name,url=item
+              try:
+                  with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'Aster-compatibility'}),timeout=35) as r:
+                      data=r.read(24*1024*1024+1)
+                  assert len(data)<=24*1024*1024
+                  (root/name).write_bytes(data)
+                  return name,{'url':url,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+              except Exception as e:
+                  return name,{'url':url,'error':str(e)}
+          with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+              report=dict(pool.map(get,urls.items()))
+          (root/'provenance.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          PY
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends 7zip
+          mkdir -p /tmp/input
+          printf 'Independent archive created by Linux 7-Zip\n' > /tmp/input/independent.txt
+          cd /tmp/input && 7zz a -mmt=off -md=1m /tmp/fixtures/independent.7z independent.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: original-compat-fixtures
+          path: /tmp/fixtures/
+          retention-days: 3
