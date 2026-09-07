@@ -1,8 +1,16 @@
 # Aster Desktop
 
-**Your space. Your pace.** An independent, Windows 11–inspired browser desktop built with plain HTML, CSS, JavaScript, and WGSL. Eighteen built-in apps, a shared file system, a window manager, and an implemented WebGPU graphics path. No runtime framework, package manager, external font, CDN, account, or backend is required.
+**Your space. Your pace.** An independent, Windows 11–inspired browser desktop built with plain HTML, CSS, JavaScript, and WGSL. Nineteen built-in apps, a shared file system, a window manager, and an implemented WebGPU graphics path. No runtime framework, package manager, external font, CDN, account, or backend is required.
 
-Aster is a browser desktop, **not a bootable operating system, Windows emulator, or native executable runtime**. It does not run `.exe`, `.msi`, PowerShell, kernel drivers, or Windows services. Imported HTML/JavaScript apps run in isolated browser frames.
+Aster is a browser desktop, **not a bootable OS or Windows installation**. The optional **Windows Apps** companion runs actual x86/x64 `.exe` applications through Wine on your Linux x86-64 host and streams their UI into Aster. This is host-assisted execution, not browser-native execution; Wine compatibility varies. Without the companion, only built-in and sandboxed HTML/JavaScript apps run. See [setup, performance and limits](bridge/README.md) and [the runtime research](docs/windows-runtime-research.md).
+
+## Run actual Windows applications
+
+```sh
+docker compose -f bridge/compose.yml up --build
+```
+
+Open `http://127.0.0.1:8787/`, launch **Windows Apps**, and pair with the token printed by your companion. Confirm that you trust the program, import a portable `.exe` or `.zip`, and choose **Run**. Programs and saved files live on the companion, separately from browser storage. **Wine is not a malware sandbox.** Use trusted programs on a dedicated host/VM/container. The normal browser desktop still needs no backend. [Detailed instructions →](bridge/README.md)
 
 ## Start
 
@@ -67,6 +75,7 @@ Appearance settings include light/dark/system themes, four original procedural r
 | Settings | Six working sections covering system preferences, personalization, app management, storage/backup, accessibility, and capability information. |
 | Task Manager | Actual Aster window instances, end-task with unsaved-change checks, renderer statistics, available browser heap information, and storage information. It cannot manage host-OS processes. |
 | App Center | Built-in app catalog, launch, desktop shortcuts, HTML app installation, and custom-launcher removal. No external store or paid app downloads. |
+| Windows Apps | Optional Wine companion pairing, real EXE/ZIP imports, launch/reconnect/stop, streamed display/input, compression/resolution controls, persistent native files and downloads. Requires a Linux x86-64 companion. |
 | Welcome | Desktop orientation, app shortcuts, customization entry points, and clear operating boundaries. |
 
 ## Shared files and local folders

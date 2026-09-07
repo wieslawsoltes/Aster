@@ -1,0 +1,9 @@
+.git
+.github
+tests
+__pycache__
+**/__pycache__
+**/*.pyc
+Aster.html
+*.zip
+_site

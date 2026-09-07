@@ -1,0 +1,22 @@
+services:
+  windows:
+    build:
+      context: ..
+      dockerfile: bridge/Dockerfile
+    platform: linux/amd64
+    ports: ["127.0.0.1:8787:8787"]
+    volumes: ["windows-data:/data"]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=1g,mode=1777
+      - /home/aster:rw,nosuid,nodev,size=64m,uid=1000,gid=1000,mode=0700
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 4g
+    cpus: 4
+    pids_limit: 512
+    shm_size: 256m
+    stop_grace_period: 30s
+    restart: "no"
+volumes:
+  windows-data:
