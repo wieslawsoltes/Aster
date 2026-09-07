@@ -48,7 +48,7 @@ class Session {
             if(!e.parent){
                 this.hwnd=e.hwnd;this.width=e.width;this.height=e.height;this.nodes.stage.replaceChildren();this.board=OS.el('div',{class:'win32-board'});this.nodes.stage.append(this.board);this.board.style.width=e.width+'px';this.board.style.height=e.height+'px';
                 this.renderer=await new AsterGDI(this.board,e.width,e.height,{requireGPU:!!globalThis.ASTER_WIN32_REQUIRE_GPU,onError:error=>this.error(error),onFrame:()=>this.metrics()}).init();
-                this.w.setTitle?.(e.title+' · Win32');this.bindInput(this.renderer.canvas);this.resize=new ResizeObserver(()=>this.fit());this.resize.observe(this.nodes.stage);this.fit();this.renderer.canvas.focus();
+                this.w.setTitle?.(e.title+' · Win32');this.bindInput(this.renderer.canvas);this.resize=new ResizeObserver(()=>this.fit());this.resize.observe(this.nodes.stage);this.fit();this.renderer.canvas.focus();if(e.credit)this.send({type:'ack',credit:e.credit});
             }else{
                 if(e.parent!==this.hwnd)throw Error('Nested child controls unsupported');
                 const type=e.className.toUpperCase();let control;
@@ -58,7 +58,7 @@ class Session {
                 else throw Error('No browser control for '+type);
                 control.style.cssText+=`;left:${e.x}px;top:${e.y}px;width:${e.width}px;height:${e.height}px`;control.hidden=!(e.style&0x10000000);control.dataset.hwnd=e.hwnd;this.controls.set(e.hwnd,control);this.board.append(control);
             }
-        }else if(e.type==='draw'){if(e.hwnd!==this.hwnd)throw Error('Drawing to child DC unsupported');this.renderer.enqueue(e.commands);}
+        }else if(e.type==='draw'){if(e.hwnd!==this.hwnd)throw Error('Drawing to child DC unsupported');this.renderer.enqueue(e.commands);if(e.credit){await new Promise(resolve=>requestAnimationFrame(resolve));this.renderer.flush();if(this.renderer.device)await this.renderer.device.queue.onSubmittedWorkDone();this.send({type:'ack',credit:e.credit});}}
         else if(e.type==='text'){const c=this.controls.get(e.hwnd);if(c){if(c.matches('input,textarea'))c.value=e.text;else c.textContent=e.text;}else if(e.hwnd===this.hwnd)this.w.setTitle?.(e.text+' · Win32');}
         else if(e.type==='show'){const c=this.controls.get(e.hwnd);if(c)c.hidden=!e.visible;else if(this.board)this.board.hidden=!e.visible;}
         else if(e.type==='destroy'){const c=this.controls.get(e.hwnd);if(c){c.remove();this.controls.delete(e.hwnd);}}

@@ -187,3 +187,5 @@ WinMine or any other untested third-party Windows executable works.
   to weaken normal browser security.
 
 Linux GPU CI also installs `libvulkan1 mesa-vulkan-drivers xvfb xauth`. It runs full Chrome on a virtual X display with a consistent SwiftShader Vulkan presentation path, and compares a screenshot pixel with the GPU readback. These are test-runner dependencies only, never Aster end-user dependencies.
+
+Graphics use acknowledged Worker credits: top-level window creation waits for the browser surface, and batches wait for presentation/GPU completion before guest drawing continues. A deliberately slow-display regression runs the real GDI EXE and verifies bounded outstanding batches. This prevents a fast guest from overflowing the renderer during GPU initialization or slow software rendering.

@@ -15,17 +15,17 @@ class Runtime {
         this.classes=new Map();this.messages=[];this.waiters=[];this.timers=new Map();this.requests=new Map();
         this.files=new Map();this.dirtyFiles=new Set();this.lastError=0;this.exitCode=null;this.stopped=false;
         this.pendingDraws=new Map();this.drawCount=0;this.started=performance.now();this.calls=0;this.depth=0;
-        this.nextRequest=1;this.logBytes=0;this.apiCounts=Object.create(null);this.mainWindow=0;this.fileRevision=0;
+        this.graphicsReady=Promise.resolve();this.drawBackpressure=false;this.nextRequest=1;this.logBytes=0;this.apiCounts=Object.create(null);this.mainWindow=0;this.fileRevision=0;
         this.registerAPIs();cpu.set_cache(options.cache===false?0:1);
     }
     handle(value) {if(this.handles.size>=4096)throw Error('Guest handle quota exceeded');const id=this.nextHandle++;this.handles.set(id,value);return id;}
     get(id,type) {const h=this.handles.get(id);if(!h||(type&&h.type!==type))throw Error(`Invalid ${type||'object'} handle ${hex(id)}`);return h;}
     register(dll,name,argc,fn,cdecl=false) {const address=HOOK+this.apis.size*16,api={dll,name,argc,fn,cdecl,address};this.apis.set(dll+'!'+name,api);this.hooks.set(address,api);}
     resolve(dll,name) {return this.apis.get(dll.toLowerCase()+'!'+name)?.address||0;}
-    emit(type,value={}) {this.host({type,...value});}
+    emit(type,value={}) {return this.host({type,...value});}
     log(text) {text=String(text).slice(0,8192);this.logBytes+=text.length;if(this.logBytes>1048576)throw Error('Guest output quota exceeded');this.emit('stdout',{text});}
     draw(hwnd,command) {if(++this.drawCount>4096)this.flush();let list=this.pendingDraws.get(hwnd);if(!list)this.pendingDraws.set(hwnd,list=[]);list.push(command);}
-    flush() {for(const [hwnd,commands]of this.pendingDraws)this.emit('draw',{hwnd,commands});this.pendingDraws.clear();this.drawCount=0;}
+    flush() {const jobs=[];for(const [hwnd,commands]of this.pendingDraws){const job=this.emit('draw',{hwnd,commands});if(job&&typeof job.then==='function')jobs.push(job);}this.pendingDraws.clear();this.drawCount=0;if(jobs.length){this.graphicsReady=Promise.all([this.graphicsReady,...jobs]);this.drawBackpressure=true;}return this.graphicsReady;}
     path(name) {
         name=String(name).replace(/\\/g,'/');if(name.startsWith('//'))throw Error('UNC and device paths are not available');
         if(/^[a-z]:/i.test(name)){if(!/^c:/i.test(name))throw Error('Only the private C: drive is available');name=name.slice(2);}
@@ -55,6 +55,7 @@ class Runtime {
         const sp=c.get_reg(4)>>>0,ret=this.mem.u32(sp),args=[];for(let i=0;i<api.argc;i++)args.push(this.mem.u32(sp+4+i*4));
         this.calls++;this.apiCounts[api.dll+'!'+api.name]=(this.apiCounts[api.dll+'!'+api.name]||0)+1;
         let value;try{value=api.fn(...args);if(value&&typeof value.then==='function')value=await value;}catch(error){throw Error(`${api.dll}!${api.name}: ${error.message}`);}
+        if(this.drawBackpressure){await this.graphicsReady;this.drawBackpressure=false;}
         c.set_reg(0,(value??0)>>>0);c.set_reg(4,sp+4+(api.cdecl?0:api.argc*4));c.set_reg(8,ret);
     }
     fault() {const code=this.cpu.get_fault();throw Error(`x86 fault ${code} at ${hex(this.cpu.get_fault_pc())}: ${({1:'out-of-bounds memory',2:'execution outside mapped code',3:'unsupported instruction',4:'invalid operand',5:'integer divide error'})[code]||'CPU error'}`);}
@@ -63,14 +64,14 @@ class Runtime {
         const c=this.cpu,oldPC=c.get_reg(8),oldSP=c.get_reg(4);for(let i=args.length-1;i>=0;i--)this.push(args[i]);this.push(RETURN);c.set_reg(8,address);
         const start=c.instruction_count();let yielded=performance.now();
         try {
-            while(!this.stopped){const code=c.run(20000);if(code===2)break;if(code===3)this.fault();if(code===1)await this.dispatch();if(c.instruction_count()-start>10000000)throw Error('Window callback instruction budget exceeded');if(performance.now()-yielded>8){this.flush();await new Promise(r=>setTimeout(r,0));yielded=performance.now();}}
+            while(!this.stopped){const code=c.run(20000);if(code===2)break;if(code===3)this.fault();if(code===1)await this.dispatch();if(c.instruction_count()-start>10000000)throw Error('Window callback instruction budget exceeded');if(performance.now()-yielded>8){await this.flush();await new Promise(r=>setTimeout(r,0));yielded=performance.now();}}
             if(!this.stopped&&c.get_reg(4)!==oldSP)throw Error('Callback did not preserve its stdcall stack');return c.get_reg(0)>>>0;
         } finally {c.set_reg(8,oldPC);c.set_reg(4,oldSP);this.depth--;}
     }
     async run() {
         if(!this.image||this.image.missing.length)throw Error('No compatible executable loaded');let lastYield=performance.now(),lastStats=lastYield;
         while(!this.stopped){const code=this.cpu.run(10000);if(code===3)this.fault();if(code===2){this.exit(this.cpu.get_reg(0));break;}if(code===1)await this.dispatch();const now=performance.now();
-            if(now-lastYield>=8){this.flush();await new Promise(r=>setTimeout(r,0));lastYield=performance.now();}
+            if(now-lastYield>=8){await this.flush();await new Promise(r=>setTimeout(r,0));lastYield=performance.now();}
             if(now-lastStats>=500){this.emit('stats',this.stats());lastStats=now;}
         }
         this.flush();return this.exitCode;
@@ -146,7 +147,7 @@ class Runtime {
             if([...this.handles.values()].filter(h=>h.type==='window').length>=128)throw Error('Window quota exceeded');
             width=(width|0)<=0?640:Math.min(width,2048);height=(height|0)<=0?420:Math.min(height,2048);
             const hwnd=this.handle({type:'window',className:name,text,width,height,parent:child?parent:0,id,style,wide,proc:cls?.proc||0,visible:!!(style&0x10000000)});
-            if(!child)this.mainWindow=hwnd;this.emit('window',{hwnd,parent:child?parent:0,className:name,title:text,width,height,x:x|0,y:y|0,style,ex});
+            if(!child)this.mainWindow=hwnd;await this.emit('window',{hwnd,parent:child?parent:0,className:name,title:text,width,height,x:x|0,y:y|0,style,ex});
             if(cls?.proc){const p=m.alloc(48);[param,instance,id,parent,height,width,y,x,style,pTitle,pClass,ex].forEach((v,i)=>m.w32(p+i*4,v));try{await this.invoke(cls.proc,[hwnd,0x81,0,p]);const result=await this.invoke(cls.proc,[hwnd,WM.CREATE,0,p]);if((result|0)===-1){await this.destroyWindow(hwnd);return 0;}}finally{m.free(p);}}
             return hwnd;
         });

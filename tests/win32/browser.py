@@ -24,7 +24,7 @@ def main(args):
         options={'headless':not args.headed,'args':flags}
         if args.browser:options['executable_path']=args.browser
         browser=p.chromium.launch(**options);context=browser.new_context(viewport={'width':1440,'height':1000},service_workers='block',accept_downloads=True)
-        page=context.new_page();page.set_default_timeout(15000)
+        page=context.new_page();page.set_default_timeout(45000 if args.gpu else 15000)
         page.on('pageerror',lambda e:report['errors'].append(str(e)))
         page.on('console',lambda m: print('BROWSER',m.text,flush=True) if m.type=='error' else None)
         page.on('request',lambda r:report['requests'].append({'url':r.url,'method':r.method}))
@@ -32,7 +32,7 @@ def main(args):
         def boot():
             if args.inject:page.set_content((ROOT/'Aster.html').read_text())
             else:page.goto(url,wait_until='networkidle')
-            page.wait_for_function('window.Aster?.booted');page.evaluate('async()=>{for(const w of [...Aster.windows.values()])await w.close(true);document.querySelectorAll(".toast").forEach(t=>t.remove());window.w=Aster.launch("win32");await w.ready;}')
+            page.wait_for_function('window.Aster?.booted');page.evaluate('async()=>{for(const w of [...Aster.windows.values()])await w.close(true);Aster.settings.motion=false;Aster.applySettings();document.querySelectorAll(".toast").forEach(t=>t.remove());window.w=Aster.launch("win32");await w.ready;}')
         def check(name,fn):
             start=time.perf_counter()
             try:detail=fn();report['tests'].append({'name':name,'status':'PASS','ms':(time.perf_counter()-start)*1000,'detail':detail});print('PASS',name,flush=True)
