@@ -302,6 +302,7 @@
                     note('Location: ' + OS.fs.parent(path)), note('Type: ' + (file.kind === 'directory' ? 'File folder' : file.mime || 'File')),
                     note('Size: ' + OS.formatBytes(file.size || 0)), note('Modified: ' + (file.modified ? new Date(file.modified).toLocaleString() : 'Not available')),
                     note(file.native ? 'Stored in your permission-connected folder.' : 'Stored in this browser’s Aster file system.'));
+                if(file.kind==='file'&&OS.showOpenWith){const id=OS.appForFile(path,file.mime),label=OS.apps.get(id)?.title||'File Explorer';content.append(OS.el('div',{class:'properties-open-with'},OS.el('span',{text:'Opens with: '+label}),button('Change…',async()=>{await OS.showOpenWith(path,{launch:false});await render('general');})));}
                 return;
             }
             if (file.native || file.kind !== 'file') { content.append(note('Previous versions are available for virtual files, not native folders or directories.')); return; }

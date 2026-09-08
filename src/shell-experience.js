@@ -301,13 +301,13 @@
         if (e.metaKey) startKey = false;
         let action;
         if (e.metaKey && !e.ctrlKey && !e.altKey) {
-            action = ({ v: OS.showClipboard, a: OS.toggleQuick, n: OS.showNotifications, w: OS.showWidgets, tab: OS.showTaskView,
+            action = ({ r: () => OS.showRun(), v: OS.showClipboard, a: OS.toggleQuick, n: OS.showNotifications, w: OS.showWidgets, tab: OS.showTaskView,
                 e: () => OS.openApp('files'), i: () => OS.openApp('settings'), d: OS.showDesktop, l: OS.lock,
                 z: () => OS.windows.get(OS.focused)?.showSnapLayouts(), arrowleft: () => OS.windows.get(OS.focused)?.snap('left'),
                 arrowright: () => OS.windows.get(OS.focused)?.snap('right'), arrowup: () => OS.windows.get(OS.focused)?.snap('max'), arrowdown: () => OS.windows.get(OS.focused)?.minimize() })[key];
             if (e.shiftKey && key === 's') action = () => OS.openApp('snips');
         } else if (e.ctrlKey && e.altKey) action = ({ v: OS.showClipboard, f: () => OS.openApp('clock', { mode: 'focus' }), w: OS.showTaskView,
-            u: () => OS.openApp('settings', { section: 'accessibility' }), r: () => OS.openApp('snips', { mode: 'record' }), a: OS.toggleQuick })[key];
+            u: () => OS.openApp('settings', { section: 'accessibility' }), o: () => OS.showRun(), r: () => OS.openApp('snips', { mode: 'record' }), a: OS.toggleQuick })[key];
         if (action) { e.preventDefault(); e.stopImmediatePropagation(); OS.guard(action)(); }
     }, true);
     document.addEventListener('keyup', e => { if (e.key === 'Meta' && startKey && !$('#dialog-layer').children.length && !$('.lock-screen')) { e.preventDefault(); startKey = false; OS.toggleStart(); } });

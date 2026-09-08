@@ -244,7 +244,7 @@
                 card.onclick = OS.guard(() => show(i));
                 grid.append(card);
             } w.setTitle('Gallery — Photos'); };
-            const refresh = async () => { const all = await OS.fs.list('/Pictures'); files = all.filter(f => f.kind === 'file' && OS.appForFile(f.path, f.mime) === 'photos'); if (options.path && !files.some(f => f.path === options.path)) {
+            const refresh = async () => { const all = await OS.fs.list('/Pictures'); files = all.filter(f => f.kind === 'file' && (OS.fileTypeApp||OS.appForFile)(f.path, f.mime) === 'photos'); if (options.path && !files.some(f => f.path === options.path)) {
                 const f = await OS.fs.stat(options.path);
                 if (f)
                     files.push(f);
@@ -391,7 +391,7 @@
                         OS.notify('Press Play to begin', e.message);
                     }
             }
-            async function refresh() { const current = files[index]?.path; files = [...await OS.fs.list('/Music'), ...await OS.fs.list('/Videos')].filter(f => f.kind === 'file' && OS.appForFile(f.path, f.mime) === 'media'); if (options.path && !files.some(f => f.path === options.path)) {
+            async function refresh() { const current = files[index]?.path; files = [...await OS.fs.list('/Music'), ...await OS.fs.list('/Videos')].filter(f => f.kind === 'file' && (OS.fileTypeApp||OS.appForFile)(f.path, f.mime) === 'media'); if (options.path && !files.some(f => f.path === options.path)) {
                 const f = await OS.fs.stat(options.path);
                 if (f)
                     files.push(f);

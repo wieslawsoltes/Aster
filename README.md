@@ -4,6 +4,20 @@
 
 Aster is a browser desktop, **not a bootable operating system or a general Windows replacement**. The experimental **Win32 Lab** runs a limited subset of real **32-bit x86 PE executables entirely in the browser**, using an original WebAssembly CPU interpreter, a JavaScript Windows API facade and WebGPU GDI rendering. No Wine, Docker, companion, OS image, native executable launch or streamed desktop is involved. Most existing Windows software is not yet compatible. Included applications are the original reduced 7-Zip console and legacy TinyCC binaries, plus a source-built Windows version of WineMine with unchanged upstream gameplay. TinyCC can compile a Windows EXE that Aster then runs. WineMine exercises PE resources, bitmap drawing, menus, modal dialogs and a private registry. Its game code runs as x86, not as a JavaScript port. See [the tested scope and instructions](docs/browser-win32.md) and [third-party licenses/source](third-party/README.md). Imported HTML/JavaScript apps continue to use isolated browser frames.
 
+## Shell launch integration (1.8)
+
+**Open with** lives in Explorer and file context menus. **Default apps** and
+**Startup apps** are part of Settings → Apps; **Properties → Opens with → Change**
+uses the same file associations. **Right-click Start → Run** opens apps, virtual
+files and supported `shell:` / `ms-settings:` destinations without a native helper.
+**Right-click a taskbar app** for real recent/pinned document Jump Lists. Recent
+tracking and Run history have controls in Settings → Privacy & permissions.
+
+Startup is opt-in, reuses restored windows, supports minimized launches, and can
+be skipped with `?startup=off`. There are no additional utility apps, native
+processes, protocol handlers or automatic external-app launches. See the
+[shell launch guide](docs/shell-launch.md) and [tests](tests/shell-launch/README.md).
+
 ## Integrated desktop shell (1.6)
 
 The 1.5 services now live in the shell, rather than a separate Essentials hub.

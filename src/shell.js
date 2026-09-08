@@ -111,7 +111,8 @@
             main.append(OS.el('div', { class: 'section-heading', html: '<span>Recommended</span><span class="muted" style="font-weight:400;font-size:10px">Your recent files</span>' }));
             const recent = OS.el('div', { class: 'recommended-grid' });
             main.append(recent);
-            const paths = [...new Set([...OS.recent, '/Documents/Welcome to Aster.md', '/Documents/Ideas.txt', '/Projects/Hello Aster.html', '/Music/First light.wav'])].slice(0, 4);
+            const paths = OS.shellLaunch?.state.trackRecent === false ? [] : [...new Set([...OS.recent, '/Documents/Welcome to Aster.md', '/Documents/Ideas.txt', '/Projects/Hello Aster.html', '/Music/First light.wav'])].slice(0, 4);
+            if (!paths.length) recent.append(OS.el('button', { class: 'recommended-item', text: 'Recent documents are turned off. Manage recent items.', onclick: () => OS.openApp('settings', { section: 'recentitems' }) }));
             for (const path of paths) {
                 const file = await OS.fs.stat(path).catch(() => null);
                 if (!start.isConnected)
@@ -142,6 +143,11 @@
                     list.append(OS.el('button', {class:'search-result system-result', html:OS.appIcon(id,30)+'<div><strong>'+esc(feature.title)+'</strong><small>'+esc(feature.group)+' · System feature</small></div>',onclick:()=>OS.openApp(id)}));
             for (const file of files)
                 list.append(OS.el('button', { class: 'search-result', html: OS.fileIcon(file, 30) + `<div><strong style="font-size:12px;font-weight:500">${esc(OS.fs.name(file.path))}</strong><small>${esc(OS.fs.parent(file.path))}</small></div>`, onclick: OS.guard(() => OS.openPath(file.path)) }));
+            for (const [id, glyph, title, keywords] of (OS.integrations?.navigation || []))
+                if (['defaultapps', 'startupapps', 'recentitems'].includes(id) && (title + ' ' + keywords).toLowerCase().includes(q))
+                    list.append(OS.el('button', { class: 'search-result system-result', 'data-settings-section': id,
+                        html: OS.icon(glyph, 30) + '<div><strong>' + esc(title) + '</strong><small>Settings</small></div>',
+                        onclick: () => OS.openApp('settings', { section: id }) }));
             const settingsMap = [['theme', 'Personalization', 'personalization'], ['wallpaper', 'Desktop background', 'personalization'], ['backup', 'Export or restore backup', 'recovery'], ['storage', 'Storage settings', 'storage'], ['sound', 'Sound and volume', 'sound'], ['text', 'Accessibility settings', 'accessibility']];
             for (const [term, label, section] of settingsMap)
                 if (term.includes(q) || q.includes(term))
@@ -219,8 +225,8 @@
         b.onmouseleave = () => { clearTimeout(previewTimer); if (panel === 'preview')
             previewTimer = setTimeout(() => { if (panel === 'preview')
                 OS.closePanels(); }, 250); };
-        b.oncontextmenu = e => OS.context(e, [{ text: app.title, icon: app.icon || 'play', action: () => OS.openApp(id) }, { text: OS.pins.includes(id) ? 'Unpin from taskbar' : 'Pin to taskbar', icon: 'pin', action: () => OS.togglePin(id) }, ...(windows.length ? [null, ...windows.slice(0, 5).map(w => ({ text: w.title, icon: 'restore', action: () => w.restore() })), { text: windows.length > 1 ? 'Close all windows' : 'Close window', icon: 'close', action: async () => { for (const w of windows)
-                        await w.close(); } }] : [])]);
+        b.oncontextmenu = e => {clearTimeout(previewTimer);if(OS.showJumpList)return OS.guard(OS.showJumpList)(e,id,b);return OS.context(e, [{ text: app.title, icon: app.icon || 'play', action: () => OS.openApp(id) }, { text: OS.pins.includes(id) ? 'Unpin from taskbar' : 'Pin to taskbar', icon: 'pin', action: () => OS.togglePin(id) }, ...(windows.length ? [null, ...windows.slice(0, 5).map(w => ({ text: w.title, icon: 'restore', action: () => w.restore() })), { text: windows.length > 1 ? 'Close all windows' : 'Close window', icon: 'close', action: async () => { for (const w of windows)
+                        await w.close(); } }] : [])]);};
         return b;
     }
     function renderTaskbar() {
@@ -255,7 +261,8 @@
             {text:'Task Manager',icon:'list',action:()=>OS.openApp('taskmanager')},
             {text:'Settings',icon:'settings',action:()=>OS.openApp('settings')},
             {text:'File Explorer',icon:'folder',action:()=>OS.openApp('files')},
-            {text:'Terminal',icon:'terminal',action:()=>OS.openApp('terminal')},null,
+            {text:'Terminal',icon:'terminal',action:()=>OS.openApp('terminal')},
+            {text:'Run',icon:'play',key:'Win+R',action:()=>OS.showRun()},null,
             {text:'Desktop',icon:'desktop',action:OS.showDesktop},
             {text:'Lock',icon:'lock',action:OS.lock}]);
         bar.oncontextmenu = e => { if(e.target===bar || e.target===center) OS.context(e,[
@@ -429,7 +436,7 @@
                 e.preventDefault();
                 renderDesktop();
             } };
-            b.oncontextmenu = e => { clear(); b.classList.add('selected'); OS.context(e, [{ text: 'Open', icon: 'play', action: open }, { text: 'Rename', icon: 'rename', key: 'F2', action: () => renameEntry(entry) }, { text: entry.file ? 'Delete' : 'Remove shortcut', icon: 'trash', key: 'Del', action: () => removeEntry(entry) }, ...(entry.file ? [null, { text: 'Open in Notepad', icon: 'file', disabled: entry.file.kind === 'directory', action: () => OS.openApp('notepad', { path: entry.file.path }) }] : [])]); };
+            b.oncontextmenu = e => { clear(); b.classList.add('selected'); OS.context(e, [{ text: 'Open', icon: 'play', action: open }, { text: 'Rename', icon: 'rename', key: 'F2', action: () => renameEntry(entry) }, { text: entry.file ? 'Delete' : 'Remove shortcut', icon: 'trash', key: 'Del', action: () => removeEntry(entry) }, ...(entry.file ? [null, { text: 'Open with…', icon: 'file', disabled: entry.file.kind === 'directory', action: () => OS.showOpenWith(entry.file.path) }] : [])]); };
             if (entry.shortcut)
                 b.ondragstart = e => e.dataTransfer.setData('application/x-aster-shortcut', entry.app);
             b.ondragover = e => { if (e.dataTransfer.types.includes('application/x-aster-shortcut'))
@@ -584,6 +591,7 @@
         }
         else
             OS.openApp('files');
+        await OS.runStartup?.();
         clockInterval = setInterval(() => { updateClock(); timerTick(); }, 1000);
         setInterval(() => calendarTick().catch(console.warn), 5000);
         navigator.getBattery?.().then(b => { OS.battery = b; renderTaskbar(); b.addEventListener('levelchange', renderTaskbar); b.addEventListener('chargingchange', renderTaskbar); }).catch(() => { });
