@@ -33,16 +33,17 @@ jobs:
               ("        const t=OS.themes.chrome,profile=t.profile,center=bar.querySelector('.task-center');if(!center)return;","        const t=OS.themes.chrome,profile=t.profile,center=bar.querySelector('.task-center');if(!center)return;\n        if(lastShellLayout===null)lastShellLayout=shellLayout();"),
               ("    OS.on('theme-change',()=>{OS.closePanels?.();OS.decorateTaskbar($('#taskbar'));});","    OS.on('theme-change',()=>{\n        // Legacy color settings persist asynchronously. Do not dismiss a newly\n        // opened flyout merely because that color-only transaction completed.\n        // Dock/profile changes invalidate anchors; those still dismiss panels.\n        const next=shellLayout();\n        if(lastShellLayout!==null&&lastShellLayout!==next)OS.closePanels?.();\n        lastShellLayout=next;OS.decorateTaskbar($('#taskbar'));\n    });")
           ])
-          replacement='''            def legacy_flyout():
-                          js('window.colorRevision=OS.themes.revision;await OS.setSetting("theme","dark");OS.showWidgets();window.colorFlyout=document.querySelector(".widgets-flyout");window.colorWindows=OS.windows.size;')
-                          page.wait_for_function('Aster.themes.revision>colorRevision')
-                          js('await OS.themes.pending;assert(colorFlyout?.isConnected);assert(document.querySelector(".widgets-flyout")===colorFlyout);assert(OS.windows.size===colorWindows);assert(document.body.dataset.theme==="dark");')
-                          page.locator('.widgets-flyout textarea').wait_for()
-                          js('OS.closePanels();await OS.themes.select("windows-light");')
-                          return 'The actual deferred legacy color save preserves the same open Widget flyout'
-                      check('Color-only theme persistence does not dismiss a newly opened shell flyout',legacy_flyout)
-                      def profiles():'''
-          lines=replacement.splitlines();replacement=lines[0]+'\n'+'\n'.join(line[10:] for line in lines[1:])
+          replacement='\n'.join([
+              '            def legacy_flyout():',
+              '                js(\'window.colorRevision=OS.themes.revision;await OS.setSetting("theme","dark");OS.showWidgets();window.colorFlyout=document.querySelector(".widgets-flyout");window.colorWindows=OS.windows.size;\')',
+              '                page.wait_for_function(\'Aster.themes.revision>colorRevision\')',
+              '                js(\'await OS.themes.pending;assert(colorFlyout?.isConnected);assert(document.querySelector(".widgets-flyout")===colorFlyout);assert(OS.windows.size===colorWindows);assert(document.body.dataset.theme==="dark");\')',
+              '                page.locator(\'.widgets-flyout textarea\').wait_for()',
+              '                js(\'OS.closePanels();await OS.themes.select("windows-light");\')',
+              "                return 'The actual deferred legacy color save preserves the same open Widget flyout'",
+              "            check('Color-only theme persistence does not dismiss a newly opened shell flyout',legacy_flyout)",
+              '            def profiles():'
+          ])
           edit('tests/themes/browser.py','9580bc56376d285f7711b7ed187a3871a24430ef5045a64b1b1d9f96128c9d32','845ab092b1ec824b61d370e80576f62dd52e265c119d78d767808d0557e1bcdc',[
               ('            def profiles():',replacement)
           ])
