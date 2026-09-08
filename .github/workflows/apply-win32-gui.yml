@@ -57,6 +57,12 @@ jobs:
               outputs.append((p,data))
           for p,data in outputs:
               p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)
+          # Removing an external tag can leave an indentation-only HTML line.
+          p=Path('build.py');s=p.read_text()
+          old="    destination.write_text(html,encoding='utf-8')"
+          assert s.count(old)==1
+          s=s.replace(old,"    html=re.sub(r'(?m)^[ \\t]+$', '', html)\n"+old)
+          p.write_text(s)
           print('Imported and verified',len(outputs),'source paths.')
           PY
           git diff --check
@@ -112,6 +118,7 @@ jobs:
           git add --all
           git commit -m 'Implement Win32 resources, dialogs, bitmap WebGPU, private registry and WineMine'
           git push origin HEAD:feat/win32-gui-resources
+          git archive --format=zip HEAD -o tests/win32/artifacts/gui-source.zip
       - name: Retain import test evidence
         if: always()
         uses: actions/upload-artifact@v4
