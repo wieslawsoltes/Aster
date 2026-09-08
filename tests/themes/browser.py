@@ -51,6 +51,14 @@ def main(args):
                 js('assert([...OS.apps.values()].filter(a=>a.webApp).length===74);assert(OS.themes.saved.length===0);')
                 page.screenshot(path=str(out/'windows-light.png'))
             check('Twelve theme presets are integrated in Settings with full-width previews',gallery)
+            def legacy_flyout():
+                js('window.colorRevision=OS.themes.revision;await OS.setSetting("theme","dark");OS.showWidgets();window.colorFlyout=document.querySelector(".widgets-flyout");window.colorWindows=OS.windows.size;')
+                page.wait_for_function('Aster.themes.revision>colorRevision')
+                js('await OS.themes.pending;assert(colorFlyout?.isConnected);assert(document.querySelector(".widgets-flyout")===colorFlyout);assert(OS.windows.size===colorWindows);assert(document.body.dataset.theme==="dark");')
+                page.locator('.widgets-flyout textarea').wait_for()
+                js('OS.closePanels();await OS.themes.select("windows-light");')
+                return 'The actual deferred legacy color save preserves the same open Widget flyout'
+            check('Color-only theme persistence does not dismiss a newly opened shell flyout',legacy_flyout)
             def profiles():
                 ident=js('window.editor=OS.openApp("notepad");await editor.ready;return editor.id;');page.locator(f'[data-window="{ident}"] textarea').fill('Unsaved editor preserved across profiles')
                 for name in ['windows-dark','macos26-light','macos26-dark','ubuntu-light','ubuntu-dark']:

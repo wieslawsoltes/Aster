@@ -2,6 +2,8 @@
 'use strict';
 (() => {
     const OS=Aster,$=OS.$;
+    let lastShellLayout=null;
+    const shellLayout=()=>JSON.stringify(OS.themes.chrome);
     const action=(label,fn,icon)=>OS.el('button',{'aria-label':label,title:label,...(icon?{html:OS.icon(icon,16)}:{text:label}),onclick:OS.guard(fn)});
     OS.placeThemePopup=(anchor,panel)=>{
         if(!OS.themes?.ready||!anchor?.isConnected||!panel?.isConnected)return;
@@ -14,6 +16,7 @@
     OS.decorateTaskbar=bar=>{
         if(!bar||!OS.themes?.ready)return;
         const t=OS.themes.chrome,profile=t.profile,center=bar.querySelector('.task-center');if(!center)return;
+        if(lastShellLayout===null)lastShellLayout=shellLayout();
         let top=$('#theme-topbar');if(!top){top=OS.el('nav',{id:'theme-topbar','aria-label':'Desktop menu bar'});bar.before(top);}
         const oldTray=bar.querySelector('.task-right')||top.querySelector('.task-right');
         const oldClock=top.querySelector('#tray-clock');if(oldClock&&oldTray&&!oldTray.querySelector('#tray-clock'))oldTray.append(oldClock);
@@ -44,7 +47,14 @@
         const start=center.querySelector('#start-button');if(start){start.title=profile==='ubuntu'?'Show Applications':'Applications';if(profile==='ubuntu')center.append(start);}
         bar.dataset.themeDock=dock;
     };
-    OS.on('theme-change',()=>{OS.closePanels?.();OS.decorateTaskbar($('#taskbar'));});
+    OS.on('theme-change',()=>{
+        // Legacy color settings persist asynchronously. Do not dismiss a newly
+        // opened flyout merely because that color-only transaction completed.
+        // Dock/profile changes invalidate anchors; those still dismiss panels.
+        const next=shellLayout();
+        if(lastShellLayout!==null&&lastShellLayout!==next)OS.closePanels?.();
+        lastShellLayout=next;OS.decorateTaskbar($('#taskbar'));
+    });
     const nativeOpen=OS.openPath;
     OS.openPath=async function(path,...args){
         if(!/\.(theme|themepack|deskthemepack|astertheme)$/i.test(path))return nativeOpen.call(OS,path,...args);
