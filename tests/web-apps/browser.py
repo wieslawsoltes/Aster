@@ -152,7 +152,7 @@ def main(args):
                 return 'Offline state offers an explicit browser fallback, without fabricating app success'
             check('Offline and unsupported-embed fallback stays available',failures)
             def mobile():
-                close_all();page.set_viewport_size({'width':390,'height':844});web_index()
+                close_all();page.evaluate('window.webResizeSeen=false;window.addEventListener("resize",()=>window.webResizeSeen=true,{once:true})');page.set_viewport_size({'width':390,'height':844});page.wait_for_function('window.webResizeSeen');web_index()
                 assert page.locator('[data-web-category]').count()==10
                 page.locator('[data-web-category="games"]').click();assert page.locator('[data-web-app]').count()==3
                 page.screenshot(path=str(out/'start-mobile.png'))
