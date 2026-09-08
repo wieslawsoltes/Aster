@@ -1,0 +1,31 @@
+name: Update offline test asset inventory
+on:
+  push:
+    branches: [feat/win32-gui-resources]
+    paths: ['.github/workflows/gui-offline-assets.yml']
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Preload all runtime modules before disconnecting the browser
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('tests/win32/apps-browser.py');s=p.read_text()
+          old="['pe.js','runtime.js','compat.js','worker.js','x86.wasm'"
+          new="['pe.js','runtime.js','compat.js','resources.js','registry.js','gui.js','bitmaps.js','worker.js','x86.wasm'"
+          assert s.count(old)==1
+          p.write_text(s.replace(old,new))
+          PY
+          python3 -m py_compile tests/win32/apps-browser.py
+          git diff --check
+          rm .github/workflows/gui-offline-assets.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m 'Preload GUI runtime modules for offline 7-Zip and TinyCC browser tests'
+          git push origin HEAD:feat/win32-gui-resources
