@@ -1,0 +1,33 @@
+name: Inspect staged theme source
+on:
+  push:
+    branches: [feat/theme-system]
+    paths: ['.github/workflows/inspect-theme-source.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v5
+      - name: Preserve committed bytes and bounded partial decompression
+        run: |
+          mkdir -p /tmp/theme-inspection
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,hashlib,json,lzma
+          parts=sorted(Path('.transfer').glob('theme-*.b64'))
+          data=base64.b64decode(''.join(p.read_text().strip() for p in parts),validate=True)
+          decoder=lzma.LZMADecompressor(memlimit=128*1024*1024)
+          raw=decoder.decompress(data,max_length=2*1024*1024)
+          Path('/tmp/theme-inspection/delta.partial').write_bytes(raw)
+          Path('/tmp/theme-inspection/report.json').write_text(json.dumps({'complete':decoder.eof,'compressedBytes':len(data),'decodedBytes':len(raw),'sha256':hashlib.sha256(data).hexdigest()},indent=2))
+          print(Path('/tmp/theme-inspection/report.json').read_text())
+          PY
+          git archive HEAD | gzip > /tmp/theme-inspection/source.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: theme-transfer-inspection
+          path: /tmp/theme-inspection/
+          retention-days: 14
