@@ -12,8 +12,9 @@ def build(destination:Path)->None:
     html=re.sub(r'<link\s+rel="manifest"[^>]*>','',html)
     icon=base64.b64encode((ROOT/'assets/icon.svg').read_bytes()).decode('ascii')
     html=html.replace('href="assets/icon.svg"','href="data:image/svg+xml;base64,'+icon+'"')
-    assets={str(p.relative_to(ROOT)):base64.b64encode(p.read_bytes()).decode('ascii') for p in sorted((ROOT/'src/win32').rglob('*')) if p.is_file() and p.name != 'gdi.js'}
+    assets={str(p.relative_to(ROOT)):base64.b64encode(p.read_bytes()).decode('ascii') for p in sorted((ROOT/'src/win32').rglob('*')) if p.is_file() and p.name not in ('gdi.js','gui-host.js')}
     assets['third-party/tinycc/tcc-0.9.27.tar.bz2']=base64.b64encode((ROOT/'third-party/tinycc/tcc-0.9.27.tar.bz2').read_bytes()).decode('ascii')
+    assets['third-party/winemine/winemine-source.zip']=base64.b64encode((ROOT/'third-party/winemine/winemine-source.zip').read_bytes()).decode('ascii')
     html=html.replace('</head>','<script>window.ASTER_WIN32_ASSETS='+json.dumps(assets,separators=(',',':'))+';</script>\n</head>')
     html=html.replace('</head>','<script>window.ASTER_STANDALONE=true;</script>\n</head>')
     def inline(match:re.Match)->str:
@@ -24,6 +25,7 @@ def build(destination:Path)->None:
         return '<script>\n/* '+relative+' */\n'+source+'\n</script>'
     html=re.sub(r'<script\s+src="([^"]+)"\s*>\s*</script>',inline,html)
     destination.parent.mkdir(parents=True,exist_ok=True)
+    html=re.sub(r'(?m)^[ \t]+$', '', html)
     destination.write_text(html,encoding='utf-8')
     print(f'Built {destination} ({destination.stat().st_size:,} bytes)')
 

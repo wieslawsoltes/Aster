@@ -1,41 +1,8 @@
-Aster bundled application notices
-
-Aster runtime: MIT; see LICENSE. Third-party code retains its own licenses.
-
-7-Zip reduced console 26.03 — Igor Pavlov. Public-domain LZMA SDK.
-Project and license: https://www.7-zip.org/sdk.html
-Original unmodified binary: https://github.com/ip7z/7zip/releases/download/26.03/7zr.exe
-
-Tiny C Compiler 0.9.27 — Fabrice Bellard and contributors; LGPL-2.1-or-later.
-Original compiler, DLL, headers and libraries are unmodified. MinGW header notices remain in their original files.
-This is a legacy compatibility fixture, not a current production-toolchain recommendation.
-Project: https://bellard.org/tcc/
-Complete corresponding source is bundled in Aster.html; download it using Win32 Lab > TinyCC source.
-It is also available at third-party/tinycc/tcc-0.9.27.tar.bz2 in the repository/hosted distribution.
-Original source: https://download-mirror.savannah.gnu.org/releases/tinycc/tcc-0.9.27.tar.bz2
-
-
-
-WineMine — source-built Windows GUI fixture
-==========================================
-Wine 9.0 source revision fd1153552d779e1ac14b0b1c48fbd1cde894eb0a.
-Copyright (C) 2000 Joshua Thielen and Wine contributors (see individual files).
-Licensed under GNU LGPL 2.1 or later. Aster's original runtime remains MIT.
-This is a standalone PE32 build of unchanged main.c, dialog.c and resources,
-not the Wine compatibility runtime and not an upstream precompiled release.
-Build adaptations: standalone Windows entry point and disabled debug/build
-macros. No gameplay or application logic was replaced by JavaScript.
-Complete corresponding source, build instructions and license are distributed
-in third-party/winemine/winemine-source.zip and via Win32 Lab → WineMine source.
-License also at third-party/winemine/COPYING.LIB. Exact upstream blob hashes,
-compiler command and binary checksums: third-party/winemine/provenance.json.
-The source-built application can be replaced with a user-selected compatible
-EXE; it is not required by the runtime. No warranty.
 		  GNU LESSER GENERAL PUBLIC LICENSE
 		       Version 2.1, February 1999
 
  Copyright (C) 1991, 1999 Free Software Foundation, Inc.
-     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  Everyone is permitted to copy and distribute verbatim copies
  of this license document, but changing it is not allowed.
 
@@ -509,7 +476,7 @@ convey the exclusion of warranty; and each file should have at least the
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
     License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
+    version 2.1 of the License, or (at your option) any later version.
 
     This library is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -518,7 +485,7 @@ convey the exclusion of warranty; and each file should have at least the
 
     You should have received a copy of the GNU Lesser General Public
     License along with this library; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 Also add information on how to contact you by electronic and paper mail.
 
@@ -533,5 +500,3 @@ necessary.  Here is a sample; alter the names:
   Ty Coon, President of Vice
 
 That's all there is to it!
-
-

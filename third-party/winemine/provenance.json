@@ -1,0 +1,93 @@
+{
+  "name": "WineMine",
+  "sourceRevision": "fd1153552d779e1ac14b0b1c48fbd1cde894eb0a",
+  "license": "LGPL-2.1-or-later",
+  "sourceBuiltWindowsBinary": true,
+  "unchangedApplicationSources": true,
+  "buildAdaptation": "Standalone entry point and disabled debug-trace/build macros; no gameplay modifications.",
+  "compiler": "i686-w64-mingw32-gcc (GCC) 13-win32",
+  "command": [
+    "i686-w64-mingw32-gcc",
+    "-Os",
+    "-mno-sse",
+    "-mno-sse2",
+    "-mfpmath=387",
+    "-fno-stack-protector",
+    "-D__USE_MINGW_ANSI_STDIO=0",
+    "-I.",
+    "-include",
+    "wine/debug.h",
+    "-nostartfiles",
+    "-mwindows",
+    "-Wl,--entry,_aster_entry,--no-insert-timestamp",
+    "-o",
+    "/tmp/aster-winemine-build/winemine.exe",
+    "main.c",
+    "dialog.c",
+    "entry.c",
+    "resources.o",
+    "-lcomctl32",
+    "-lshell32",
+    "-luser32",
+    "-lgdi32",
+    "-ladvapi32",
+    "-lmsvcrt",
+    "-lkernel32"
+  ],
+  "files": {
+    "main.c": {
+      "gitBlob": "cd0763042d389569ac074162b788b6d2984729ac",
+      "sha256": "b13790b322401a0b93ce4e04c2d47bfa7a47719e9832bfed9336bf9e33f25c43",
+      "url": "https://raw.githubusercontent.com/wine-mirror/wine/fd1153552d779e1ac14b0b1c48fbd1cde894eb0a/programs/winemine/main.c"
+    },
+    "dialog.c": {
+      "gitBlob": "47412413381bb032d1c21587d408dfe9a97cac5d",
+      "sha256": "d3322d13b3232e035a7a22dde5d762c880ef2daf21b29589062de1ab3f4e6d46",
+      "url": "https://raw.githubusercontent.com/wine-mirror/wine/fd1153552d779e1ac14b0b1c48fbd1cde894eb0a/programs/winemine/dialog.c"
+    },
+    "main.h": {
+      "gitBlob": "b3d95a2cc150727ce797d0da26f5c3409bb28c11",
+      "sha256": "bdf4b39f3247cf911b2461bcf39922875e821fd551c0352f9e4a25e95473f42c",
+      "url": "https://raw.githubusercontent.com/wine-mirror/wine/fd1153552d779e1ac14b0b1c48fbd1cde894eb0a/programs/winemine/main.h"
+    },
+    "resource.h": {
+      "gitBlob": "7a576a6564d0d1b5818fafbb4ac23c78c86ff5a3",
+      "sha256": "739f2b85fcd97a6dd9e095880509b48be4d8d72923cea06fd68604aa77ed79a5",
+      "url": "https://raw.githubusercontent.com/wine-mirror/wine/fd1153552d779e1ac14b0b1c48fbd1cde894eb0a/programs/winemine/resource.h"
+    },
+    "winemine.rc": {
+      "gitBlob": "1e1bdeae5bc5f31559ace67dfd9bdfaacf28a549",
+      "sha256": "318d06cedaf2cbffaa2ef2da7a1a0c36390ce1c30a7956e2aa3322a6fe366cf1",
+      "url": "https://raw.githubusercontent.com/wine-mirror/wine/fd1153552d779e1ac14b0b1c48fbd1cde894eb0a/programs/winemine/winemine.rc"
+    },
+    "faces.bmp": {
+      "gitBlob": "77f20f441156df2bae0f34bd4f4440e7d60b83e4",
+      "sha256": "23cfe4327485d8824e2aa4e8208e8d731e97ca5497e47af47b756ae25756695b",
+      "url": "https://raw.githubusercontent.com/wine-mirror/wine/fd1153552d779e1ac14b0b1c48fbd1cde894eb0a/programs/winemine/faces.bmp"
+    },
+    "leds.bmp": {
+      "gitBlob": "487c7095aa218d49b40cd26da5e26e8b7f449c7b",
+      "sha256": "b358161fe6314ea097bc719ceda119dbc792cbc649699bda3ee11d0911256abe",
+      "url": "https://raw.githubusercontent.com/wine-mirror/wine/fd1153552d779e1ac14b0b1c48fbd1cde894eb0a/programs/winemine/leds.bmp"
+    },
+    "mines.bmp": {
+      "gitBlob": "6850b6eb8ee5446f018b619f3e4407d4ebb11958",
+      "sha256": "553bb402498875f3f1827fb2827eca79ada583866a8aef06046783affbf0cbae",
+      "url": "https://raw.githubusercontent.com/wine-mirror/wine/fd1153552d779e1ac14b0b1c48fbd1cde894eb0a/programs/winemine/mines.bmp"
+    },
+    "winemine.ico": {
+      "gitBlob": "1c57b4e05492c434e6520896ce33e62123c1ba0e",
+      "sha256": "006fd9c01880c5c8b489033f0242f29d450c00f62b8da43ff45a2d4c02094808",
+      "url": "https://raw.githubusercontent.com/wine-mirror/wine/fd1153552d779e1ac14b0b1c48fbd1cde894eb0a/programs/winemine/winemine.ico"
+    },
+    "winemine.manifest": {
+      "gitBlob": "d0fe0a892c4d650054bfa302013b859e32dd4add",
+      "sha256": "a611fc9db0322ef414f0d115d268d00b9c34cc8f8ac6da9b8c2f46dd974e397f",
+      "url": "https://raw.githubusercontent.com/wine-mirror/wine/fd1153552d779e1ac14b0b1c48fbd1cde894eb0a/programs/winemine/winemine.manifest"
+    }
+  },
+  "sha256": {
+    "winemine.exe": "2d170125877b81b6a5313276dfa1885f9103ca9f2c8cc1e42d563a75864f813a",
+    "winemine-source.zip": "45c982f3de5115cd39335d06631e70c7ef754713acf844f35b2f28bc4071eeee"
+  }
+}

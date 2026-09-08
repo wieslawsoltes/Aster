@@ -1,0 +1,29 @@
+[
+  {
+    "file": "faces.bmp",
+    "id": 2,
+    "width": 24,
+    "height": 120,
+    "sourceSha256": "23cfe4327485d8824e2aa4e8208e8d731e97ca5497e47af47b756ae25756695b",
+    "rgbaSha256": "49c29bbb8c5b039ba2902a70cc6091618b2e5f76cab03b9146a5403a3f9ee570",
+    "referenceDecoder": "Pillow BMP decoder"
+  },
+  {
+    "file": "leds.bmp",
+    "id": 3,
+    "width": 13,
+    "height": 276,
+    "sourceSha256": "b358161fe6314ea097bc719ceda119dbc792cbc649699bda3ee11d0911256abe",
+    "rgbaSha256": "f89a75ca4486bd0d02bc20840a0a0fcaa193d3ad6666a8c3f16a38f01a3f48e8",
+    "referenceDecoder": "Pillow BMP decoder"
+  },
+  {
+    "file": "mines.bmp",
+    "id": 4,
+    "width": 16,
+    "height": 256,
+    "sourceSha256": "553bb402498875f3f1827fb2827eca79ada583866a8aef06046783affbf0cbae",
+    "rgbaSha256": "bb07c118cd680303f535a142bd15f8204c25bc50c909c5f2fd3c754225e59f20",
+    "referenceDecoder": "Pillow BMP decoder"
+  }
+]

@@ -52,6 +52,132 @@
     },
     {
       "dll": "advapi32.dll",
+      "name": "RegCreateKeyA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegCreateKeyExA",
+      "argc": 9,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegCreateKeyExW",
+      "argc": 9,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegCreateKeyW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegDeleteKeyA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegDeleteKeyW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegDeleteTreeA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegDeleteTreeW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegDeleteValueA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegDeleteValueW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegEnumKeyA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegEnumKeyExA",
+      "argc": 8,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegEnumKeyExW",
+      "argc": 8,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegEnumKeyW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegEnumValueA",
+      "argc": 8,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegEnumValueW",
+      "argc": 8,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegFlushKey",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegOpenKeyA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
       "name": "RegOpenKeyExA",
       "argc": 5,
       "callingConvention": "stdcall",
@@ -61,6 +187,27 @@
       "dll": "advapi32.dll",
       "name": "RegOpenKeyExW",
       "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegOpenKeyW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegQueryInfoKeyA",
+      "argc": 12,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegQueryInfoKeyW",
+      "argc": 12,
       "callingConvention": "stdcall",
       "status": "partial"
     },
@@ -80,6 +227,20 @@
     },
     {
       "dll": "advapi32.dll",
+      "name": "RegSetValueExA",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
+      "name": "RegSetValueExW",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "advapi32.dll",
       "name": "SetFileSecurityA",
       "argc": 3,
       "callingConvention": "stdcall",
@@ -89,6 +250,55 @@
       "dll": "advapi32.dll",
       "name": "SetFileSecurityW",
       "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "comctl32.dll",
+      "name": "InitCommonControls",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "comctl32.dll",
+      "name": "InitCommonControlsEx",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "BitBlt",
+      "argc": 9,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "CreateCompatibleBitmap",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "CreateCompatibleDC",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "CreateDIBSection",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "CreateDIBitmap",
+      "argc": 6,
       "callingConvention": "stdcall",
       "status": "partial"
     },
@@ -122,6 +332,13 @@
     },
     {
       "dll": "gdi32.dll",
+      "name": "DeleteDC",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
       "name": "DeleteObject",
       "argc": 1,
       "callingConvention": "stdcall",
@@ -143,7 +360,56 @@
     },
     {
       "dll": "gdi32.dll",
+      "name": "GetCurrentObject",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "GetDIBits",
+      "argc": 7,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "GetObjectA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "GetObjectType",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "GetObjectW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "GetPixel",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
       "name": "GetStockObject",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "GetStretchBltMode",
       "argc": 1,
       "callingConvention": "stdcall",
       "status": "partial"
@@ -206,6 +472,20 @@
     },
     {
       "dll": "gdi32.dll",
+      "name": "SetDIBits",
+      "argc": 7,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "SetDIBitsToDevice",
+      "argc": 12,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
       "name": "SetPixel",
       "argc": 4,
       "callingConvention": "stdcall",
@@ -213,8 +493,29 @@
     },
     {
       "dll": "gdi32.dll",
+      "name": "SetStretchBltMode",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
       "name": "SetTextColor",
       "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "StretchBlt",
+      "argc": 11,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "gdi32.dll",
+      "name": "StretchDIBits",
+      "argc": 13,
       "callingConvention": "stdcall",
       "status": "partial"
     },
@@ -466,6 +767,34 @@
     },
     {
       "dll": "kernel32.dll",
+      "name": "FindResourceA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FindResourceExA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FindResourceExW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FindResourceW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
       "name": "FlushFileBuffers",
       "argc": 1,
       "callingConvention": "stdcall",
@@ -502,6 +831,13 @@
     {
       "dll": "kernel32.dll",
       "name": "FreeLibrary",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "FreeResource",
       "argc": 1,
       "callingConvention": "stdcall",
       "status": "partial"
@@ -1166,6 +1502,13 @@
     },
     {
       "dll": "kernel32.dll",
+      "name": "LoadResource",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
       "name": "LocalAlloc",
       "argc": 2,
       "callingConvention": "stdcall",
@@ -1195,6 +1538,13 @@
     {
       "dll": "kernel32.dll",
       "name": "LocalUnlock",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "LockResource",
       "argc": 1,
       "callingConvention": "stdcall",
       "status": "partial"
@@ -1511,6 +1861,13 @@
     },
     {
       "dll": "kernel32.dll",
+      "name": "SizeofResource",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
       "name": "Sleep",
       "argc": 1,
       "callingConvention": "stdcall",
@@ -1669,6 +2026,20 @@
       "dll": "kernel32.dll",
       "name": "lstrcpyW",
       "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrcpynA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "kernel32.dll",
+      "name": "lstrcpynW",
+      "argc": 3,
       "callingConvention": "stdcall",
       "status": "partial"
     },
@@ -2068,6 +2439,20 @@
     },
     {
       "dll": "msvcrt.dll",
+      "name": "_time32",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "_time64",
+      "argc": 1,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
       "name": "_unlink",
       "argc": 1,
       "callingConvention": "cdecl",
@@ -2439,6 +2824,13 @@
     },
     {
       "dll": "msvcrt.dll",
+      "name": "rand",
+      "argc": 0,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
       "name": "realloc",
       "argc": 2,
       "callingConvention": "cdecl",
@@ -2483,6 +2875,13 @@
       "dll": "msvcrt.dll",
       "name": "sprintf",
       "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "msvcrt.dll",
+      "name": "srand",
+      "argc": 1,
       "callingConvention": "cdecl",
       "status": "partial"
     },
@@ -2739,9 +3138,65 @@
       "status": "partial"
     },
     {
+      "dll": "shell32.dll",
+      "name": "ShellAboutA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "shell32.dll",
+      "name": "ShellAboutW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "AdjustWindowRect",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "AdjustWindowRectEx",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "AppendMenuA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "AppendMenuW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
       "dll": "user32.dll",
       "name": "BeginPaint",
       "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CallWindowProcA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CallWindowProcW",
+      "argc": 5,
       "callingConvention": "stdcall",
       "status": "partial"
     },
@@ -2761,6 +3216,111 @@
     },
     {
       "dll": "user32.dll",
+      "name": "CheckDlgButton",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CheckMenuItem",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CheckMenuRadioItem",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CheckRadioButton",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "ClientToScreen",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CopyRect",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreateAcceleratorTableA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreateAcceleratorTableW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreateDialogIndirectParamA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreateDialogIndirectParamW",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreateDialogParamA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreateDialogParamW",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreateMenu",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreatePopupMenu",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreateWindowA",
+      "argc": 11,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
       "name": "CreateWindowExA",
       "argc": 12,
       "callingConvention": "stdcall",
@@ -2770,6 +3330,27 @@
       "dll": "user32.dll",
       "name": "CreateWindowExW",
       "argc": 12,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "CreateWindowW",
+      "argc": 11,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DefDlgProcA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DefDlgProcW",
+      "argc": 4,
       "callingConvention": "stdcall",
       "status": "partial"
     },
@@ -2789,8 +3370,57 @@
     },
     {
       "dll": "user32.dll",
+      "name": "DeleteMenu",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DestroyAcceleratorTable",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DestroyMenu",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
       "name": "DestroyWindow",
       "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DialogBoxIndirectParamA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DialogBoxIndirectParamW",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DialogBoxParamA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "DialogBoxParamW",
+      "argc": 5,
       "callingConvention": "stdcall",
       "status": "partial"
     },
@@ -2810,7 +3440,42 @@
     },
     {
       "dll": "user32.dll",
+      "name": "DrawMenuBar",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "EnableMenuItem",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "EnableWindow",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "EndDialog",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
       "name": "EndPaint",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "EqualRect",
       "argc": 2,
       "callingConvention": "stdcall",
       "status": "partial"
@@ -2824,6 +3489,48 @@
     },
     {
       "dll": "user32.dll",
+      "name": "GetActiveWindow",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetAncestor",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetAsyncKeyState",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetCapture",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetClassNameA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetClassNameW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
       "name": "GetClientRect",
       "argc": 2,
       "callingConvention": "stdcall",
@@ -2831,8 +3538,127 @@
     },
     {
       "dll": "user32.dll",
+      "name": "GetCursor",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
       "name": "GetDC",
       "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetDialogBaseUnits",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetDlgCtrlID",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetDlgItem",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetDlgItemInt",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetDlgItemTextA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetDlgItemTextW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetFocus",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetForegroundWindow",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetKeyState",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetKeyboardState",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetMenu",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetMenuItemCount",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetMenuItemID",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetMenuState",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetMenuStringA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetMenuStringW",
+      "argc": 5,
       "callingConvention": "stdcall",
       "status": "partial"
     },
@@ -2847,6 +3673,104 @@
       "dll": "user32.dll",
       "name": "GetMessageW",
       "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetMonitorInfoA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetMonitorInfoW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetParent",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetSubMenu",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetSysColor",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetSysColorBrush",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetSystemMetrics",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetUpdateRect",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindow",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindowLongA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindowLongPtrA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindowLongPtrW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindowLongW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "GetWindowRect",
+      "argc": 2,
       "callingConvention": "stdcall",
       "status": "partial"
     },
@@ -2880,6 +3804,34 @@
     },
     {
       "dll": "user32.dll",
+      "name": "InflateRect",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "InsertMenuA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "InsertMenuW",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "IntersectRect",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
       "name": "InvalidateRect",
       "argc": 3,
       "callingConvention": "stdcall",
@@ -2887,8 +3839,218 @@
     },
     {
       "dll": "user32.dll",
+      "name": "IsChild",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "IsDialogMessageA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "IsDialogMessageW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "IsDlgButtonChecked",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "IsIconic",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "IsMenu",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "IsRectEmpty",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "IsWindow",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "IsWindowEnabled",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "IsWindowUnicode",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "IsWindowVisible",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "IsZoomed",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
       "name": "KillTimer",
       "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadAcceleratorsA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadAcceleratorsW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadBitmapA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadBitmapW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadCursorA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadCursorW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadIconA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadIconW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadImageA",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadImageW",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadMenuA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadMenuIndirectA",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadMenuIndirectW",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadMenuW",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadStringA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "LoadStringW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "MapDialogRect",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "MapWindowPoints",
+      "argc": 4,
       "callingConvention": "stdcall",
       "status": "partial"
     },
@@ -2903,6 +4065,55 @@
       "dll": "user32.dll",
       "name": "MessageBoxW",
       "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "ModifyMenuA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "ModifyMenuW",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "MonitorFromPoint",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "MonitorFromRect",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "MonitorFromWindow",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "MoveWindow",
+      "argc": 6,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "OffsetRect",
+      "argc": 3,
       "callingConvention": "stdcall",
       "status": "partial"
     },
@@ -2943,6 +4154,20 @@
     },
     {
       "dll": "user32.dll",
+      "name": "PtInRect",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "RedrawWindow",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
       "name": "RegisterClassA",
       "argc": 1,
       "callingConvention": "stdcall",
@@ -2971,6 +4196,13 @@
     },
     {
       "dll": "user32.dll",
+      "name": "ReleaseCapture",
+      "argc": 0,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
       "name": "ReleaseDC",
       "argc": 2,
       "callingConvention": "stdcall",
@@ -2978,8 +4210,162 @@
     },
     {
       "dll": "user32.dll",
+      "name": "RemoveMenu",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "ScreenToClient",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SendDlgItemMessageA",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SendDlgItemMessageW",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SendMessageA",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SendMessageW",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetActiveWindow",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetCapture",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetCursor",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetDlgItemInt",
+      "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetDlgItemTextA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetDlgItemTextW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetFocus",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetForegroundWindow",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetMenu",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetRect",
+      "argc": 5,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetRectEmpty",
+      "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
       "name": "SetTimer",
       "argc": 4,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetWindowLongA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetWindowLongPtrA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetWindowLongPtrW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetWindowLongW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "SetWindowPos",
+      "argc": 7,
       "callingConvention": "stdcall",
       "status": "partial"
     },
@@ -3006,8 +4392,43 @@
     },
     {
       "dll": "user32.dll",
+      "name": "TranslateAcceleratorA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "TranslateAcceleratorW",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
       "name": "TranslateMessage",
       "argc": 1,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "UnionRect",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "UnregisterClassA",
+      "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "UnregisterClassW",
+      "argc": 2,
       "callingConvention": "stdcall",
       "status": "partial"
     },
@@ -3022,6 +4443,34 @@
       "dll": "user32.dll",
       "name": "ValidateRect",
       "argc": 2,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "wsprintfA",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "wsprintfW",
+      "argc": 2,
+      "callingConvention": "cdecl",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "wvsprintfA",
+      "argc": 3,
+      "callingConvention": "stdcall",
+      "status": "partial"
+    },
+    {
+      "dll": "user32.dll",
+      "name": "wvsprintfW",
+      "argc": 3,
       "callingConvention": "stdcall",
       "status": "partial"
     }

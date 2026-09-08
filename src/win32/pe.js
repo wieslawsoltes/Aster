@@ -135,7 +135,8 @@ function loadPE(data, mem, resolve, options = {}) {
         const callbacks=[];if(array){let terminated=false;for(let i=0;i<64;i++){const address=mem.u32(imageRange(array-base+i*4,4,true));if(!address){terminated=true;break;}if(!sectionInfo.some(s=>s.executable&&address>=base+s.rva&&address<base+s.rva+s.size))throw Error('TLS callback outside executable section');callbacks.push(address);}if(!terminated)throw Error('TLS callback quota exceeded');}
         const alignmentCode=(characteristics>>>20)&15;if(alignmentCode===15)throw Error('Invalid TLS alignment');tls={start,size:end-start,zero,index,callbacks,alignment:alignmentCode?2**(alignmentCode-1):16};
     }
-    return {machine:'i386',format:'PE32',base,preferred,imageSize,entry:entryRva?base+entryRva:0,subsystem,imports,missing,relocated:!!delta,isDLL,exports,tls,sections:sectionInfo};
+    const [resourceRva,resourceSize]=dir(2);if(resourceRva)imageRange(resourceRva,resourceSize,true);
+    return {resources:{rva:resourceRva,size:resourceSize},machine:'i386',format:'PE32',base,preferred,imageSize,entry:entryRva?base+entryRva:0,subsystem,imports,missing,relocated:!!delta,isDLL,exports,tls,sections:sectionInfo};
 }
 globalThis.AsterWin32 = {Memory,loadPE,RAM,HOOK,RETURN,hex};
 if(typeof module!=='undefined'&&module.exports)module.exports=globalThis.AsterWin32;

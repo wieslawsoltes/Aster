@@ -1,7 +1,7 @@
 /* Browser-only PE32 launcher. All guest execution is isolated in a Worker. MIT. */
 'use strict';
 (() => {
-const OS=Aster,activeSessions=new Map(),assetCache=new Map(),allowed=new Set(['src/win32/pe.js','src/win32/runtime.js','src/win32/compat.js','src/win32/worker.js','src/win32/x86.wasm','src/win32/third-party/7zr.exe','src/win32/third-party/tcc.exe','src/win32/third-party/tcc-files.json','src/win32/third-party/NOTICE.txt','third-party/tinycc/tcc-0.9.27.tar.bz2',...['hello','pad','gdi','compute'].map(n=>'src/win32/examples/'+n+'.exe')]);
+const OS=Aster,activeSessions=new Map(),assetCache=new Map(),allowed=new Set(['src/win32/pe.js','src/win32/runtime.js','src/win32/compat.js','src/win32/worker.js',...['resources','registry','gui','bitmaps'].map(n=>'src/win32/'+n+'.js'),'src/win32/x86.wasm','src/win32/third-party/7zr.exe','src/win32/third-party/tcc.exe','src/win32/third-party/tcc-files.json','src/win32/third-party/NOTICE.txt','third-party/tinycc/tcc-0.9.27.tar.bz2','src/win32/third-party/winemine.exe','third-party/winemine/winemine-source.zip',...['hello','pad','gdi','compute'].map(n=>'src/win32/examples/'+n+'.exe')]);
 async function asset(path){
     if(!allowed.has(path))throw Error('Unknown runtime asset');
     if(!assetCache.has(path))assetCache.set(path,(async()=>{
@@ -23,7 +23,7 @@ async function digest(bytes){
 let wasmModule,workerSource;
 async function runtimeAssets(){
     wasmModule||=asset('src/win32/x86.wasm').then(b=>WebAssembly.compile(b)).catch(e=>{wasmModule=null;throw e;});
-    workerSource||=Promise.all(['pe','runtime','compat','worker'].map(n=>asset('src/win32/'+n+'.js'))).then(list=>list.map(b=>new TextDecoder().decode(b)).join('\n')).catch(e=>{workerSource=null;throw e;});
+    workerSource||=Promise.all(['pe','runtime','compat','resources','registry','gui','bitmaps','worker'].map(n=>asset('src/win32/'+n+'.js'))).then(list=>list.map(b=>new TextDecoder().decode(b)).join('\n')).catch(e=>{workerSource=null;throw e;});
     return {wasm:await wasmModule,source:await workerSource};
 }
 class Session {
@@ -37,41 +37,24 @@ class Session {
         const url=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));this.worker=new Worker(url,{name:'Aster Win32: '+name});URL.revokeObjectURL(url);
         this.worker.onerror=e=>this.error(Error(e.message||'Worker failed'));
         this.worker.onmessage=({data})=>{
-            if(['files','stopped','stats'].includes(data.type))this.receive(data).catch(error=>this.error(error));
+            if(['files','registry','stopped','stats'].includes(data.type))this.receive(data).catch(error=>this.error(error));
             else this.sequence=this.sequence.then(()=>this.receive(data)).catch(error=>this.error(error));
         };
-        const exe=bytes.slice().buffer;this.send({type:'start',wasm,exe,name,files:[...this.files].map(([path,bytes])=>({path,bytes})),options:{cache:true,args:options.args||'',stdin:options.stdin||''}});
+        this.registrySnapshot=await OS.db.get('win32-registry:'+this.key)||null;this.guiHost=new AsterWin32GUIHost(this);
+        const exe=bytes.slice().buffer;this.send({type:'start',wasm,exe,name,registry:this.registrySnapshot,files:[...this.files].map(([path,bytes])=>({path,bytes})),options:{cache:true,args:options.args||'',stdin:options.stdin||''}});
         this.nodes.stage.replaceChildren();this.nodes.log.textContent='';this.output='';this.nodes.phase.textContent='Loading '+name+'…';this.nodes.stop.disabled=false;this.nodes.run.disabled=true;this.nodes.sampleRun.disabled=true;
         this.renderFiles();
     }
-    error(error){if(this.failed||this.closed||this.halted)return;console.error('Win32 runtime:',error);this.failed=true;this.nodes.phase.textContent='Stopped: '+error.message;this.nodes.log.textContent+='\n'+error.message;this.nodes.details.open=true;this.nodes.run.disabled=false;this.nodes.sampleRun.disabled=false;this.nodes.stop.disabled=true;this.worker?.terminate();this.worker=null;if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);this.renderer?.destroy();}
+    error(error){if(this.failed||this.closed||this.halted)return;console.error('Win32 runtime:',error);this.failed=true;this.nodes.phase.textContent='Stopped: '+error.message;this.nodes.log.textContent+='\n'+error.message;this.nodes.details.open=true;this.nodes.run.disabled=false;this.nodes.sampleRun.disabled=false;this.nodes.stop.disabled=true;this.worker?.terminate();this.worker=null;if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);this.guiHost?.destroy();this.renderer?.destroy();}
     async receive(e){
-        if((this.closed||this.failed||this.halted)&&!['files','stopped','error'].includes(e.type))return;
+        if((this.closed||this.failed||this.halted)&&!['files','registry','stopped','error'].includes(e.type))return;
+        if(this.guiHost?.handles(e.type)){await this.guiHost.receive(e);return;}
+        if(e.type==='registry'){
+            const snapshot=e.snapshot;if(!snapshot||snapshot.version!==1||!Array.isArray(snapshot.keys)||snapshot.keys.length>256)throw Error('Invalid registry response');let bytes=0,count=0;
+            for(const key of snapshot.keys){if(typeof key.path!=='string'||key.path.length>512||typeof key.name!=='string'||key.name.length>255||!Array.isArray(key.values))throw Error('Invalid registry key response');for(const value of key.values){if(typeof value.name!=='string'||value.name.length>255||!(value.bytes instanceof Uint8Array)||value.bytes.length>16384)throw Error('Invalid registry value response');bytes+=value.bytes.length;if(++count>512||bytes>1048576)throw Error('Registry snapshot quota exceeded');}}
+            this.registrySnapshot=snapshot;this.persist=this.persist.then(()=>OS.db.set('win32-registry:'+this.key,snapshot)).then(()=>{this.registryPersisted=true;}).catch(error=>{this.nodes.phase.textContent='Registry storage failed: '+error.message;});return;
+        }
         if(e.type==='loaded'){this.image=e.image;this.nodes.log.textContent=JSON.stringify({name:e.name,...e.image,supportedAPIs:e.supportedAPIs},null,2);this.nodes.phase.textContent='Running '+e.name;if(e.image.subsystem===3){this.console=OS.el('pre',{class:'win32-console','aria-label':'Windows console output'});this.nodes.stage.replaceChildren(this.console);}}
-        else if(e.type==='window'){
-            if(!e.parent){
-                this.hwnd=e.hwnd;this.width=e.width;this.height=e.height;this.nodes.stage.replaceChildren();this.board=OS.el('div',{class:'win32-board'});this.nodes.stage.append(this.board);this.board.style.width=e.width+'px';this.board.style.height=e.height+'px';
-                this.renderer=await new AsterGDI(this.board,e.width,e.height,{requireGPU:!!globalThis.ASTER_WIN32_REQUIRE_GPU,onError:error=>this.error(error),onFrame:()=>this.metrics()}).init();
-                if(this.closed||this.halted){this.renderer.destroy();return;}
-                this.w.setTitle?.(e.title+' · Win32');this.bindInput(this.renderer.canvas);this.resize=new ResizeObserver(()=>this.fit());this.resize.observe(this.nodes.stage);this.fit();this.renderer.canvas.focus();if(e.credit)this.send({type:'ack',credit:e.credit});
-            }else{
-                if(e.parent!==this.hwnd)throw Error('Nested child controls unsupported');
-                const type=e.className.toUpperCase();let control;
-                if(type==='EDIT'){control=OS.el((e.style&4)?'textarea':'input',{class:'win32-edit','aria-label':'Windows edit control',maxlength:32767,spellcheck:'false'});control.value=e.title;control.addEventListener('input',()=>this.send({type:'text',hwnd:e.hwnd,text:control.value.replace(/\r?\n/g,'\r\n')}));}
-                else if(type==='BUTTON'){if((e.style&15)>1)throw Error('Only push buttons supported');control=OS.el('button',{class:'win32-button',text:e.title.replace(/&/g,''),onclick:()=>this.send({type:'button',hwnd:e.hwnd})});}
-                else if(type==='STATIC')control=OS.el('div',{class:'win32-static',text:e.title});
-                else throw Error('No browser control for '+type);
-                control.style.cssText+=`;left:${e.x}px;top:${e.y}px;width:${e.width}px;height:${e.height}px`;control.hidden=!(e.style&0x10000000);control.dataset.hwnd=e.hwnd;this.controls.set(e.hwnd,control);this.board.append(control);
-            }
-        }else if(e.type==='draw'){if(e.hwnd!==this.hwnd)throw Error('Drawing to child DC unsupported');await this.renderer.submit(e.commands);if(e.credit)this.send({type:'ack',credit:e.credit});}
-        else if(e.type==='text'){const c=this.controls.get(e.hwnd);if(c){if(c.matches('input,textarea'))c.value=e.text;else c.textContent=e.text;}else if(e.hwnd===this.hwnd)this.w.setTitle?.(e.text+' · Win32');}
-        else if(e.type==='show'){const c=this.controls.get(e.hwnd);if(c)c.hidden=!e.visible;else if(this.board)this.board.hidden=!e.visible;}
-        else if(e.type==='destroy'){const c=this.controls.get(e.hwnd);if(c){c.remove();this.controls.delete(e.hwnd);}}
-        else if(e.type==='messagebox'){
-            const body=OS.el('div',{class:'win32-messagebox'},OS.el('h2',{text:e.title||'Windows application'}),OS.el('p',{text:e.text}));
-            const answer=()=>{this.send({type:'response',id:e.id,value:1});body.remove();};body.append(OS.el('button',{class:'primary',text:'OK',onclick:answer}));
-            if(e.cancel)body.append(OS.el('button',{class:'secondary',text:'Cancel',onclick:()=>{this.send({type:'response',id:e.id,value:2});body.remove();}}));this.nodes.stage.append(body);
-        }else if(e.type==='measure'){const measure=this.renderer?.measure(e.text,e.size);if(!measure)throw Error('No window for text measurement');this.send({type:'response',id:e.id,value:measure});}
         else if(e.type==='stdout'){
             // Console chunks are bytes decoded by the facade, not HTML. Preserve
             // line breaks and overwrite progress lines on carriage return.
@@ -88,20 +71,11 @@ class Session {
         else if(e.type==='stopped'){this.stopAck?.();}
         else if(e.type==='error'){this.stats=e.stats||this.stats;this.error(Error(e.message));}
     }
-    fit(){if(!this.board)return;const rect=this.nodes.stage.getBoundingClientRect(),scale=Math.min(1,(rect.width-24)/this.width,(rect.height-24)/this.height);this.board.style.transform=`translate(-50%,-50%) scale(${Math.max(.2,scale)})`;}
-    bindInput(canvas){
-        const message=(type,wp=0,lp=0)=>this.send({type:'message',hwnd:this.hwnd,message:type,wParam:wp,lParam:lp});
-        const point=e=>{const rect=canvas.getBoundingClientRect(),x=Math.round((e.clientX-rect.left)*this.width/rect.width),y=Math.round((e.clientY-rect.top)*this.height/rect.height);return (x&65535)|((y&65535)<<16);};
-        canvas.addEventListener('pointerdown',e=>{e.preventDefault();canvas.focus();canvas.setPointerCapture(e.pointerId);message(e.button===2?0x204:0x201,e.buttons,point(e));});
-        canvas.addEventListener('pointerup',e=>{e.preventDefault();message(e.button===2?0x205:0x202,e.buttons,point(e));});
-        let latest,scheduled=0;canvas.addEventListener('pointermove',e=>{latest={buttons:e.buttons,point:point(e)};if(!scheduled)scheduled=requestAnimationFrame(()=>{scheduled=0;if(this.worker)message(0x200,latest.buttons,latest.point);});});
-        canvas.addEventListener('contextmenu',e=>e.preventDefault());
-        canvas.addEventListener('keydown',e=>{if(e.metaKey||e.altKey)return;e.preventDefault();e.stopPropagation();message(0x100,e.keyCode||e.which,1);if(e.key.length===1&&!e.ctrlKey)for(let i=0;i<e.key.length;i++)message(0x102,e.key.charCodeAt(i),1);});
-        canvas.addEventListener('keyup',e=>{if(e.metaKey||e.altKey)return;e.preventDefault();e.stopPropagation();message(0x101,e.keyCode||e.which,0xc0000001);});
-    }
-    metrics(){const s=this.stats,g=this.renderer?.stats(),hit=s.instructions?100*(s.cacheHits||0)/s.instructions:0;this.nodes.metrics.textContent=[g?.mode||'WebAssembly',s.instructions?Math.round(s.instructions).toLocaleString()+' x86 instructions':'',s.instructions?hit.toFixed(1)+'% decode-cache hits':'',g?g.frames+' presented frames':'',this.persisted?'C: saved ('+OS.db.mode+')':'C: private to this EXE'].filter(Boolean).join(' · ');}
+    fit(){this.guiHost?.fit();}
+    metrics(){const s=this.stats,g=this.renderer?.stats(),hit=s.instructions?100*(s.cacheHits||0)/s.instructions:0;this.nodes.metrics.textContent=[g?.mode||'WebAssembly',s.instructions?Math.round(s.instructions).toLocaleString()+' x86 instructions':'',s.instructions?hit.toFixed(1)+'% decode-cache hits':'',g?g.frames+' presented frames':'',g?.bitmaps?g.bitmapUploads+' sprite uploads / '+g.blits+' blits':'',this.registryPersisted?'Registry saved':'',this.persisted?'C: saved ('+OS.db.mode+')':'C: private to this EXE'].filter(Boolean).join(' · ');}
     renderFiles(){
         const panel=this.nodes.files;panel.replaceChildren(OS.el('h3',{text:'Private C: drive'}),OS.el('p',{text:'Saved in this browser, separately for each executable. No host folders are mounted.'}));
+        if(this.registrySnapshot)panel.append(OS.el('button',{class:'secondary',text:'Export registry',onclick:()=>{const snapshot={...this.registrySnapshot,keys:this.registrySnapshot.keys.map(k=>({...k,values:k.values.map(v=>({...v,bytes:Array.from(v.bytes)}))}))};OS.download(new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}),this.name+'.registry.json');}}));
         if(!this.files.size)panel.append(OS.el('p',{text:'No files created yet.'}));
         for(const [path,bytes]of [...this.files].sort((a,b)=>(this.seedPaths?.has(a[0])?1:0)-(this.seedPaths?.has(b[0])?1:0)||a[0].localeCompare(b[0]))){const row=OS.el('div',{class:'win32-file-row'},OS.el('span',{text:path+' · '+OS.formatBytes(bytes.length)}));row.append(OS.el('button',{class:'secondary',text:'Download',onclick:()=>OS.download(new Blob([bytes]),path.split('/').pop())}),OS.el('button',{class:'secondary',text:'Copy to Aster',onclick:OS.guard(async()=>{
             const safe=path.split('/');if(safe.some(x=>!x||x==='.'||x==='..'||/[\\\x00]/.test(x)))throw Error('Invalid guest path');
@@ -113,7 +87,7 @@ class Session {
         if(this.stopping)return this.stopping;this.halted=true;
         this.stopping=(async()=>{if(!this.worker){if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);return;}const worker=this.worker;await new Promise(resolve=>{this.stopAck=resolve;worker.postMessage({type:'stop'});setTimeout(resolve,500);});worker.terminate();await this.persist;this.nodes.stop.disabled=true;this.nodes.run.disabled=false;this.nodes.sampleRun.disabled=false;if(!this.failed&&this.exitCode===null)this.nodes.phase.textContent='Stopped';if(this.worker===worker)this.worker=null;if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);})();return this.stopping;
     }
-    async close(){if(this.closed)return;this.closed=true;this.resize?.disconnect();this.renderer?.destroy();await this.stop();}
+    async close(){if(this.closed)return;this.closed=true;this.guiHost?.destroy();this.resize?.disconnect();this.renderer?.destroy();await this.stop();}
 }
 OS.win32={asset,digest,Session};
 OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x86 Windows executables entirely in this browser.',category:'Development',width:1000,height:750,minWidth:360,minHeight:420,
@@ -121,18 +95,18 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
         let selected=null,session=null,launching=false;w.body.classList.add('win32-app');
         const header=OS.el('div',{class:'win32-header'},OS.el('div',{},OS.el('strong',{text:'Windows apps. Inside your browser.'}),OS.el('small',{text:'Experimental PE32 compatibility · No companion or Windows installation'})),OS.el('span',{class:'pill',text:'x86 → Wasm · GDI → WebGPU'}));
         const open=OS.el('button',{class:'secondary',text:'Open .exe'}),name=OS.el('span',{class:'win32-filename',text:'No executable selected'}),run=OS.el('button',{class:'primary',text:'Run selected',disabled:true}),stop=OS.el('button',{class:'secondary',text:'Stop',disabled:true}),filesButton=OS.el('button',{class:'secondary',text:'Files'}),importFiles=OS.el('button',{class:'secondary',text:'Import files'});
-        const select=OS.el('select',{'aria-label':'Win32 sample'});for(const [id,title]of[['gdi','GDI Playground'],['pad','Win32 Pad'],['hello','Hello Win32'],['compute','Integer checksum'],['7zr','7-Zip 26.03 · original EXE'],['tcc','TinyCC 0.9.27 · legacy original EXE']])select.append(OS.el('option',{value:id,text:title}));
+        const select=OS.el('select',{'aria-label':'Win32 sample'});for(const [id,title]of[['winemine','WineMine · real Windows GUI'],['gdi','GDI Playground'],['pad','Win32 Pad'],['hello','Hello Win32'],['compute','Integer checksum'],['7zr','7-Zip 26.03 · original EXE'],['tcc','TinyCC 0.9.27 · legacy original EXE']])select.append(OS.el('option',{value:id,text:title}));
         const sampleRun=OS.el('button',{class:'secondary',text:'Run sample'}),stage=OS.el('div',{class:'win32-stage'}),files=OS.el('aside',{class:'win32-files',hidden:true}),details=OS.el('details',{class:'win32-diagnostics'}),log=OS.el('pre'),phase=OS.el('span',{text:'Ready'}),metrics=OS.el('span',{class:'win32-metrics',text:'Select an EXE or run one of the included compiled Windows samples.'});
         details.append(OS.el('summary',{text:'Compatibility and execution diagnostics'}),log);
-        stage.append(OS.el('div',{class:'win32-empty'},OS.el('div',{html:OS.icon('gpu',46)}),OS.el('h2',{text:'The executable stays here.'}),OS.el('p',{text:'Aster loads the PE file, executes its x86 instructions in a dedicated WebAssembly worker, and maps supported Windows calls to browser controls and GPU drawing.'}),OS.el('p',{text:'Run original 7-Zip and TinyCC Windows binaries, or the compiled GUI samples. TinyCC builds hello-aster.exe; open Files and click Run EXE to execute its output. Import files into the private C: drive and pass arguments above. Compatibility is limited; missing APIs and instructions are reported explicitly.'})));
+        stage.append(OS.el('div',{class:'win32-empty'},OS.el('div',{html:OS.icon('gpu',46)}),OS.el('h2',{text:'The executable stays here.'}),OS.el('p',{text:'Aster loads the PE file, executes its x86 instructions in a dedicated WebAssembly worker, and maps supported Windows calls to browser controls and GPU drawing.'}),OS.el('p',{text:'Play the source-built WineMine Windows GUI, run original 7-Zip and TinyCC Windows binaries, or try the compiled GUI samples. TinyCC builds hello-aster.exe; open Files and click Run EXE to execute its output. Import files into the private C: drive and pass arguments above. Compatibility is limited; missing APIs and instructions are reported explicitly.'})));
         const argumentsInput=OS.el('input',{class:'win32-arguments','aria-label':'Windows command line arguments',placeholder:'Command line arguments (no shell)',maxlength:8192}),stdinInput=OS.el('input',{class:'win32-stdin','aria-label':'Windows standard input',placeholder:'Optional standard input',maxlength:65536});
-        const licenses=OS.el('button',{class:'secondary',text:'Licenses',onclick:OS.guard(async()=>OS.download(new Blob([await asset('src/win32/third-party/NOTICE.txt')]),'Aster-third-party-notices.txt'))}),source=OS.el('button',{class:'secondary',text:'TinyCC source',onclick:OS.guard(async()=>OS.download(new Blob([await asset('third-party/tinycc/tcc-0.9.27.tar.bz2')]),'tcc-0.9.27.tar.bz2'))});details.append(OS.el('div',{},licenses,source));
+        const licenses=OS.el('button',{class:'secondary',text:'Licenses',onclick:OS.guard(async()=>OS.download(new Blob([await asset('src/win32/third-party/NOTICE.txt')]),'Aster-third-party-notices.txt'))}),source=OS.el('button',{class:'secondary',text:'TinyCC source',onclick:OS.guard(async()=>OS.download(new Blob([await asset('third-party/tinycc/tcc-0.9.27.tar.bz2')]),'tcc-0.9.27.tar.bz2'))});const guiSource=OS.el('button',{class:'secondary',text:'WineMine source',onclick:OS.guard(async()=>OS.download(new Blob([await asset('third-party/winemine/winemine-source.zip')]),'winemine-source.zip'))});details.append(OS.el('div',{},licenses,source,guiSource));
         const nodes={stage,log,details,phase,metrics,files,run,stop,sampleRun};w.body.append(header,OS.el('div',{class:'win32-toolbar'},open,name,run,stop,filesButton,importFiles),OS.el('div',{class:'win32-samples'},OS.el('span',{text:'Compiled PE32 samples'}),select,sampleRun),OS.el('div',{class:'win32-options'},argumentsInput,stdinInput),OS.el('div',{class:'win32-workspace'},stage,files),details,OS.el('div',{class:'win32-status'},phase,metrics));
         const launch=async(bytes,title,seeds=[])=>{if(launching)return;launching=true;run.disabled=sampleRun.disabled=true;try{if(session)await session.close();session=new Session(w,nodes);w.win32Session=session;await session.start(bytes,title,{args:argumentsInput.value,stdin:stdinInput.value,files:seeds});}catch(error){session?.error(error);throw error;}finally{launching=false;}};
         const choose=async(file)=>{if(!file)return;if(file.size>16*1024*1024)throw Error('Executable exceeds 16 MiB');selected={bytes:new Uint8Array(await file.arrayBuffer()),name:file.name};name.textContent=file.name;run.disabled=false;};
         open.onclick=OS.guard(async()=>{const [f]=await OS.readFile('.exe');await choose(f);});run.onclick=OS.guard(async()=>{if(selected)await launch(selected.bytes,selected.name);});
         sampleRun.onclick=OS.guard(async()=>{
-            const sample=select.value,thirdParty=['7zr','tcc'].includes(sample),bytes=await asset(thirdParty?'src/win32/third-party/'+sample+'.exe':'src/win32/examples/'+sample+'.exe');selected={bytes,name:sample+'.exe'};name.textContent=selected.name;let seeds=[];
+            const sample=select.value,thirdParty=['7zr','tcc','winemine'].includes(sample),bytes=await asset(thirdParty?'src/win32/third-party/'+sample+'.exe':'src/win32/examples/'+sample+'.exe');selected={bytes,name:sample+'.exe'};name.textContent=selected.name;let seeds=[];
             if(sample==='7zr')seeds=[{path:'welcome.txt',bytes:new TextEncoder().encode('Created locally in Aster. This file is compressed by the original Windows 7-Zip executable.\n')}];
             if(sample==='tcc'){const packaged=JSON.parse(new TextDecoder().decode(await asset('src/win32/third-party/tcc-files.json')));seeds=packaged.map(f=>({path:f.path,bytes:Uint8Array.from(atob(f.base64),c=>c.charCodeAt(0))}));seeds.push({path:'hello-aster.c',bytes:new TextEncoder().encode("#include <stdio.h>\nint main(void) {\n    unsigned value = 2166136261u;\n    for (int i=0;i<100;i++) value=(value^(unsigned)i)*16777619u;\n    FILE *f = fopen(\"compiled-result.txt\", \"wb\");\n    if (!f) return 2;\n    fprintf(f,\"TCC compiled inside Aster: %u\\n\",value);\n    fclose(f);\n    puts(\"Hello from a real Windows EXE compiled inside Aster!\");\n    return 0;\n}\n")});}
             await launch(bytes,selected.name,seeds);

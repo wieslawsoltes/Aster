@@ -2,6 +2,7 @@
 'use strict';
 const fs=require('node:fs'),assert=require('node:assert/strict'),path=require('node:path');
 const root=path.resolve(__dirname,'../..');require(root+'/src/win32/pe.js');const{Runtime}=require(root+'/src/win32/runtime.js');
+for(const module of ['resources','registry','gui','bitmaps'])require(root+'/src/win32/'+module+'.js');
 (async()=>{
  let runtime,credits=0,peak=0,frames=0,windowReady=false,paintBeforeWindow=false;
  const host=event=>{

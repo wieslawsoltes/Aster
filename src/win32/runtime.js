@@ -16,7 +16,8 @@ class Runtime {
         this.files=new Map();this.dirtyFiles=new Set();this.lastError=0;this.exitCode=null;this.stopped=false;
         this.pendingDraws=new Map();this.drawCount=0;this.started=performance.now();this.calls=0;this.depth=0;
         this.graphicsReady=Promise.resolve();this.drawBackpressure=false;this.nextRequest=1;this.logBytes=0;this.apiCounts=Object.create(null);this.mainWindow=0;this.fileRevision=0;
-        this.registerAPIs();globalThis.AsterWin32.installCompat?.(this);cpu.set_cache(options.cache===false?0:1);
+        this.registerAPIs();globalThis.AsterWin32.installCompat?.(this);
+        for(const install of ['installResources','installRegistry','installGUI','installBitmaps'])globalThis.AsterWin32[install]?.(this);cpu.set_cache(options.cache===false?0:1);
     }
     handle(value) {if(this.handles.size>=4096)throw Error('Guest handle quota exceeded');const id=this.nextHandle++;this.handles.set(id,value);return id;}
     get(id,type) {const h=this.handles.get(id);if(!h||(type&&h.type!==type))throw Error(`Invalid ${type||'object'} handle ${hex(id)}`);return h;}

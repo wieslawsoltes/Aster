@@ -14,3 +14,20 @@ Complete corresponding source is bundled in Aster.html; download it using Win32 
 It is also available at third-party/tinycc/tcc-0.9.27.tar.bz2 in the repository/hosted distribution.
 Original source: https://download-mirror.savannah.gnu.org/releases/tinycc/tcc-0.9.27.tar.bz2
 
+
+
+WineMine — source-built Windows GUI fixture
+==========================================
+Wine 9.0 source revision fd1153552d779e1ac14b0b1c48fbd1cde894eb0a.
+Copyright (C) 2000 Joshua Thielen and Wine contributors (see individual files).
+Licensed under GNU LGPL 2.1 or later. Aster's original runtime remains MIT.
+This is a standalone PE32 build of unchanged main.c, dialog.c and resources,
+not the Wine compatibility runtime and not an upstream precompiled release.
+Build adaptations: standalone Windows entry point and disabled debug/build
+macros. No gameplay or application logic was replaced by JavaScript.
+Complete corresponding source, build instructions and license are distributed
+in third-party/winemine/winemine-source.zip and via Win32 Lab → WineMine source.
+License also at third-party/winemine/COPYING.LIB. Exact upstream blob hashes,
+compiler command and binary checksums: third-party/winemine/provenance.json.
+The source-built application can be replaced with a user-selected compatible
+EXE; it is not required by the runtime. No warranty.

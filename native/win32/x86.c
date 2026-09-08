@@ -19,6 +19,19 @@ typedef unsigned long long u64; typedef signed long long i64;
 #define HOOK 0xf0000000u
 #define SENTINEL 0xfffffff0u
 static u8 ram[RAM_SIZE], executable[RAM_SIZE / 4096];
+/* Only DIB-backed pages are watched. Stack/data writes elsewhere do not dirty
+ * images or invalidate code. Refcounts allow several small DIBs on one page. */
+static u16 watch_refs[RAM_SIZE / 4096];
+static u32 page_versions[RAM_SIZE / 4096];
+static void dirty_page(u32 page) { if(watch_refs[page]){++page_versions[page];if(!page_versions[page])++page_versions[page];} }
+EXPORT u32 page_version(u32 page) { return page<RAM_SIZE/4096?page_versions[page]:0; }
+EXPORT void watch_memory(u32 addr,u32 size,u32 enable) {
+ if(addr>=RAM_SIZE||size>RAM_SIZE-addr||!size)return;
+ for(u32 i=addr/4096;i<(addr+size+4095)/4096;i++){
+  if(enable){if(watch_refs[i]<65535)watch_refs[i]++;}else if(watch_refs[i])watch_refs[i]--;
+  ++page_versions[i];if(!page_versions[i])++page_versions[i];
+ }
+}
 static u32 r[8], pc, flags=2, fsbase, fault, faultpc, epoch=1, cache_on=1;
 static u64 instructions, cache_hits, cache_misses;
 EXPORT u32 guest_base(void) { return (u32)ram; }
@@ -35,7 +48,7 @@ EXPORT void set_cache(u32 enabled) { cache_on=enabled; }
 EXPORT void invalidate(void) { ++epoch; if(!epoch)epoch=1; }
 EXPORT void touch(u32 addr,u32 size) {
  if(addr>=RAM_SIZE||size>RAM_SIZE-addr||!size)return;
- for(u32 i=addr/4096;i<((addr+size+4095)/4096);i++)if(executable[i]){invalidate();return;}
+ for(u32 i=addr/4096;i<((addr+size+4095)/4096);i++){dirty_page(i);if(executable[i])invalidate();}
 }
 EXPORT void fpu_reset(void);
 EXPORT void reset(void) { for(u32 i=0;i<8;i++)r[i]=0; pc=0;flags=2;fault=0;instructions=cache_hits=cache_misses=0;fpu_reset();invalidate(); }
@@ -44,7 +57,7 @@ static void fail(u32 code) { if(!fault){fault=code;faultpc=pc;} }
 static int bounds(u32 a,u32 n) { if(a<4096||a>RAM_SIZE||n>RAM_SIZE-a){fail(1);return 0;}return 1; }
 static u32 mask(int w) { return w==4?0xffffffffu:(1u<<(8*w))-1; }
 static u32 rd(u32 a,int w) { if(!bounds(a,w))return 0;u32 v=ram[a];if(w>=2)v|=(u32)ram[a+1]<<8;if(w==4)v|=((u32)ram[a+2]<<16)|((u32)ram[a+3]<<24);return v; }
-static void wr(u32 a,u32 v,int w) { if(!bounds(a,w))return;if(executable[a/4096]||executable[(a+w-1)/4096])invalidate(); for(int i=0;i<w;i++)ram[a+i]=(u8)(v>>(i*8)); }
+static void wr(u32 a,u32 v,int w) { if(!bounds(a,w))return;if(executable[a/4096]||executable[(a+w-1)/4096])invalidate();dirty_page(a/4096);if(a/4096!=(a+w-1)/4096)dirty_page((a+w-1)/4096);for(int i=0;i<w;i++)ram[a+i]=(u8)(v>>(i*8)); }
 static u32 regread(int n,int w) { if(w==1&&n>=4)return (r[n-4]>>8)&255;return r[n]&mask(w); }
 static void regwrite(int n,u32 v,int w) { if(w==4)r[n]=v;else if(w==1&&n>=4)r[n-4]=(r[n-4]&~0xff00u)|((v&255)<<8);else r[n]=(r[n]&~mask(w))|(v&mask(w)); }
 static void push(u32 v,int w) { r[4]-=w;wr(r[4],v,w); }

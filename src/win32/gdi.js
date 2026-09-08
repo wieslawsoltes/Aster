@@ -24,6 +24,7 @@ struct Vertex { @builtin(position) position:vec4f, @location(0) local:vec2f,
  var alpha=v.color.a;
  if(v.kind==1u||v.kind==4u){let p=v.local*2-1;if(dot(p,p)>1){discard;}
   if(v.kind==4u){let inner=max(v.data.xy-vec2f(2*v.data.z),vec2f(0.001));let q=p*v.data.xy/inner;if(dot(q,q)<1){discard;}}}
+ if(v.kind==5u){return textureSampleLevel(atlas,gdiSampler,v.uv,0);}
  if(v.kind==2u){alpha*=textureSampleLevel(atlas,gdiSampler,v.uv,0).a;}
  return vec4f(v.color.rgb*alpha,alpha);
 }`;
@@ -37,7 +38,7 @@ const css=c=>`rgba(${c[0]},${c[1]},${c[2]},${(c[3]??255)/255})`;
 class GDIRenderer {
     constructor(container,width,height,options={}) {
         this.width=width;this.height=height;this.options=options;this.canvas=document.createElement('canvas');this.canvas.width=width;this.canvas.height=height;this.canvas.className='win32-canvas';this.canvas.tabIndex=0;this.canvas.setAttribute('aria-label','Windows application graphics');container.prepend(this.canvas);
-        this.mode='Initializing';this.pending=[];this.frames=0;this.drawCalls=0;this.primitives=0;this.glyphs=new Map();this.dead=false;this.errors=[];this.peakQueuedCommands=0;this.acknowledgedBatches=0;
+        this.mode='Initializing';this.pending=[];this.frames=0;this.drawCalls=0;this.primitives=0;this.glyphs=new Map();this.dead=false;this.errors=[];this.peakQueuedCommands=0;this.acknowledgedBatches=0;this.bitmaps=new Map();this.bitmapBytes=0;this.bitmapUploads=0;this.bitmapUploadBytes=0;this.blitCount=0;
         this.scratch=document.createElement('canvas');this.scratch.width=512;this.scratch.height=192;this.fontContext=this.scratch.getContext('2d',{willReadFrequently:true});
     }
     async init() {
@@ -109,55 +110,104 @@ class GDIRenderer {
         this.atlasX+=width+2;this.atlasRow=Math.max(this.atlasRow,height);this.glyphs.set(key,item);return item;
     }
     validate(c) {
-        if(!c||!['rect','ellipse','line','text'].includes(c.op))throw Error('Invalid GDI command');
-        for(const key of ['x','y','w','h','x2','y2','width','size'])if(c[key]!==undefined&&(!Number.isFinite(c[key])||Math.abs(c[key])>0x80000000))throw Error('Invalid GDI coordinate');
+        if(!c||!['rect','ellipse','line','text','bitmap','deletebitmap','blit'].includes(c.op))throw Error('Invalid GDI command');
+        for(const key of ['x','y','w','h','x2','y2','width','height','size','sx','sy','sw','sh'])if(c[key]!==undefined&&(!Number.isFinite(c[key])||Math.abs(c[key])>0x80000000))throw Error('Invalid GDI coordinate');
         if(c.op==='text'&&(typeof c.text!=='string'||c.text.length>4096||c.size<8||c.size>128))throw Error('Invalid GDI text');
+        if(['bitmap','deletebitmap','blit'].includes(c.op)&&(!Number.isInteger(c.id)||c.id<1||c.id>0xffffffff))throw Error('Invalid bitmap identifier');
+        if(c.op==='bitmap'&&(!Number.isInteger(c.width)||!Number.isInteger(c.height)||c.width<1||c.height<1||c.width>2048||c.height>2048||!(c.pixels instanceof Uint8Array)||c.pixels.length!==c.width*c.height*4))throw Error('Invalid bitmap pixel payload');
         for(const key of ['color','stroke','background'])if(c[key]&&(!Array.isArray(c[key])||c[key].length!==4||c[key].some(n=>!Number.isFinite(n)||n<0||n>255)))throw Error('Invalid GDI color');
     }
+    bitmap(c) {
+        this.validate(c);const old=this.bitmaps.get(c.id),bytes=c.width*c.height*4;
+        if(!old&&this.bitmaps.size>=128||this.bitmapBytes-(old?.bytes||0)+bytes>32*1024*1024)throw Error('GPU bitmap storage quota exceeded');
+        const b={width:c.width,height:c.height,bytes,revision:c.revision};
+        if(this.mode==='WebGPU'){
+            // flush() submits earlier drawing before updating an existing texture.
+            // This preserves old/new bitmap contents within the same guest batch.
+            b.texture=old&&old.width===c.width&&old.height===c.height?old.texture:this.device.createTexture({size:[c.width,c.height],format:'rgba8unorm',usage:GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST});
+            if(old&&old.texture!==b.texture)old.texture.destroy();
+            this.device.queue.writeTexture({texture:b.texture},c.pixels,{bytesPerRow:c.width*4},[c.width,c.height]);
+            b.bind=this.device.createBindGroup({layout:this.pipeline.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.buffer}},{binding:1,resource:{buffer:this.viewport}},{binding:2,resource:b.texture.createView()},{binding:3,resource:this.sampler}]});
+        }else{
+            b.canvas=old?.canvas||document.createElement('canvas');b.canvas.width=c.width;b.canvas.height=c.height;
+            b.canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(c.pixels),c.width,c.height),0,0);
+        }
+        this.bitmapBytes+=bytes-(old?.bytes||0);this.bitmaps.set(c.id,b);this.bitmapUploads++;this.bitmapUploadBytes+=bytes;
+    }
     expand(commands) {
-        const out=[];
-        const primitive=(x,y,w,h,color,kind=0,thickness=0,uv=[0,0,0,0])=>{if(!color||!w||!h)return;if(out.length>=65536*16)throw Error('GDI primitive budget exceeded');out.push(x,y,w,h,...color.map(n=>n/255),...uv,kind,thickness,0,0);};
+        const out=[],runs=[];
+        const primitive=(x,y,w,h,color,kind=0,thickness=0,uv=[0,0,0,0],material=0)=>{
+            if(!color||(!w||!h)&&kind!==3)return;if(out.length>=65536*16)throw Error('GDI primitive budget exceeded');
+            let run=runs.at(-1);if(!run||run.material!==material){run={material,first:out.length/16,count:0};runs.push(run);}run.count++;
+            out.push(x,y,w,h,...color.map(n=>n/255),...uv,kind,thickness,0,0);
+        };
         for(const c of commands){this.validate(c);
+            if(c.op==='blit'){
+                const b=this.bitmaps.get(c.id);if(!b)throw Error('Blit references an undefined bitmap');
+                if(c.w<=0||c.h<=0||c.sw<=0||c.sh<=0||c.sx<0||c.sy<0||c.sx+c.sw>b.width+.001||c.sy+c.sh>b.height+.001)throw Error('Blit source outside bitmap');
+                primitive(c.x,c.y,c.w,c.h,[255,255,255,255],5,0,[c.sx/b.width,c.sy/b.height,(c.sx+c.sw)/b.width,(c.sy+c.sh)/b.height],c.id);this.blitCount++;continue;
+            }
             if(c.op==='text'){
                 if(c.background)primitive(c.x,c.y,this.measure(c.text,c.size).width,Math.ceil(c.size*1.35),c.background);
                 let x=c.x;for(const char of c.text){const g=this.glyph(char,c.size);primitive(x-g.left,c.y-2,g.width,g.height,c.color,2,0,g.uv);x+=g.advance;}continue;
             }
-            if(c.op==='line'){const dx=c.x2-c.x,dy=c.y2-c.y;if(dx||dy){ // horizontal/vertical lines must not be dropped by the zero-size rectangle guard.
-                if(out.length>=65536*16)throw Error('GDI primitive budget exceeded');out.push(c.x,c.y,dx,dy,...c.color.map(n=>n/255),0,0,0,0,3,c.width||1,0,0);
-            }continue;}
+            if(c.op==='line'){const dx=c.x2-c.x,dy=c.y2-c.y;if(dx||dy)primitive(c.x,c.y,dx,dy,c.color,3,c.width||1);continue;}
             if(c.w<=0||c.h<=0)continue;primitive(c.x,c.y,c.w,c.h,c.color,c.op==='ellipse'?1:0);
             if(c.stroke){const t=Math.min(c.width||1,c.w/2,c.h/2);if(c.op==='ellipse')primitive(c.x,c.y,c.w,c.h,c.stroke,4,t);else{
                 primitive(c.x,c.y,c.w,t,c.stroke);primitive(c.x,c.y+c.h-t,c.w,t,c.stroke);primitive(c.x,c.y,t,c.h,c.stroke);primitive(c.x+c.w-t,c.y,t,c.h,c.stroke);
             }}
         }
-        return new Float32Array(out);
+        this.drawRuns=runs;return new Float32Array(out);
     }
-    flush() {
-        if(this.frame)cancelAnimationFrame(this.frame);if(this.frameTimer)clearTimeout(this.frameTimer);this.frame=this.frameTimer=0;
-        if(this.dead||!this.pending.length)return;const commands=this.pending.splice(0);
+    render(commands){
+        if(!commands.length)return false;
         if(this.mode==='WebGPU'){
-            const data=this.expand(commands);if(!data.length)return;const d=this.device;d.queue.writeBuffer(this.buffer,0,data);
-            const encoder=d.createCommandEncoder();const pass=encoder.beginRenderPass({colorAttachments:[{view:this.target.createView(),loadOp:this.initial?'clear':'load',clearValue:{r:1,g:1,b:1,a:1},storeOp:'store'}]});
-            pass.setPipeline(this.pipeline);pass.setBindGroup(0,this.bind);pass.draw(6,data.length/16);pass.end();this.initial=false;
-            const present=encoder.beginRenderPass({colorAttachments:[{view:this.context.getCurrentTexture().createView(),loadOp:'clear',clearValue:{r:1,g:1,b:1,a:1},storeOp:'store'}]});present.setPipeline(this.blitPipeline);present.setBindGroup(0,this.blitBind);present.draw(3);present.end();d.queue.submit([encoder.finish()]);this.drawCalls+=2;this.primitives+=data.length/16;
-        } else {
+            const data=this.expand(commands);if(!data.length)return false;const d=this.device;d.queue.writeBuffer(this.buffer,0,data);
+            const encoder=d.createCommandEncoder(),pass=encoder.beginRenderPass({colorAttachments:[{view:this.target.createView(),loadOp:this.initial?'clear':'load',clearValue:{r:1,g:1,b:1,a:1},storeOp:'store'}]});
+            pass.setPipeline(this.pipeline);for(const run of this.drawRuns){pass.setBindGroup(0,run.material?this.bitmaps.get(run.material).bind:this.bind);pass.draw(6,run.count,0,run.first);}
+            pass.end();d.queue.submit([encoder.finish()]);this.initial=false;this.drawCalls+=this.drawRuns.length;this.primitives+=data.length/16;
+        }else{
             const ctx=this.ctx;for(const c of commands){this.validate(c);ctx.lineWidth=c.width||1;
-                if(c.op==='text'){ctx.font=`${c.size}px sans-serif`;ctx.textBaseline='top';if(c.background){ctx.fillStyle=css(c.background);ctx.fillRect(c.x,c.y,ctx.measureText(c.text).width,c.size*1.35);}ctx.fillStyle=css(c.color);ctx.fillText(c.text,c.x,c.y);}
+                if(c.op==='blit'){const b=this.bitmaps.get(c.id);if(!b)throw Error('Blit references an undefined bitmap');if(c.sx<0||c.sy<0||c.sw<=0||c.sh<=0||c.sx+c.sw>b.width+.001||c.sy+c.sh>b.height+.001)throw Error('Blit source outside bitmap');ctx.imageSmoothingEnabled=false;ctx.drawImage(b.canvas,c.sx,c.sy,c.sw,c.sh,c.x,c.y,c.w,c.h);this.blitCount++;}
+                else if(c.op==='text'){ctx.font=`${c.size}px sans-serif`;ctx.textBaseline='top';if(c.background){ctx.fillStyle=css(c.background);ctx.fillRect(c.x,c.y,ctx.measureText(c.text).width,c.size*1.35);}ctx.fillStyle=css(c.color);ctx.fillText(c.text,c.x,c.y);}
                 else if(c.op==='line'){ctx.strokeStyle=css(c.color);ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(c.x2,c.y2);ctx.stroke();}
                 else if(c.w>0&&c.h>0){ctx.beginPath();if(c.op==='ellipse')ctx.ellipse(c.x+c.w/2,c.y+c.h/2,c.w/2,c.h/2,0,0,Math.PI*2);else ctx.rect(c.x,c.y,c.w,c.h);if(c.color){ctx.fillStyle=css(c.color);ctx.fill();}if(c.stroke){ctx.strokeStyle=css(c.stroke);ctx.stroke();}}
             }
             this.drawCalls+=commands.length;this.primitives+=commands.length;
+        }return true;
+    }
+    flush() {
+        if(this.frame)cancelAnimationFrame(this.frame);if(this.frameTimer)clearTimeout(this.frameTimer);this.frame=this.frameTimer=0;
+        if(this.dead||!this.pending.length)return;const commands=this.pending.splice(0);let group=[],painted=false,bytes=0;
+        for(const command of commands){
+            if(command.op==='bitmap'||command.op==='deletebitmap'){
+                painted=this.render(group)||painted;group=[];this.validate(command);
+                if(command.op==='bitmap'){bytes+=command.pixels.length;if(bytes>32*1024*1024)throw Error('Bitmap batch upload quota exceeded');this.bitmap(command);}
+                else{const old=this.bitmaps.get(command.id);if(old){old.texture?.destroy();this.bitmapBytes-=old.bytes;this.bitmaps.delete(command.id);}}
+            }else group.push(command);
+        }
+        painted=this.render(group)||painted;if(!painted)return;
+        if(this.mode==='WebGPU'){
+            const encoder=this.device.createCommandEncoder(),present=encoder.beginRenderPass({colorAttachments:[{view:this.context.getCurrentTexture().createView(),loadOp:'clear',clearValue:{r:1,g:1,b:1,a:1},storeOp:'store'}]});present.setPipeline(this.blitPipeline);present.setBindGroup(0,this.blitBind);present.draw(3);present.end();this.device.queue.submit([encoder.finish()]);this.drawCalls++;
         }
         this.frames++;this.options.onFrame?.(this.stats());
     }
-    stats() {return {mode:this.mode,adapter:this.adapter?{vendor:this.adapter.info?.vendor,architecture:this.adapter.info?.architecture,description:this.adapter.info?.description}:null,frames:this.frames,acknowledgedBatches:this.acknowledgedBatches,peakQueuedCommands:this.peakQueuedCommands,queuedCommands:this.pending.length,drawCalls:this.drawCalls,primitives:this.primitives,glyphs:this.glyphs.size,errors:this.errors.slice()};}
+    resize(width,height){
+        if(this.dead)return;if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>2048||height>2048)throw Error('Invalid GDI surface dimensions');
+        if(width===this.width&&height===this.height)return;this.flush();this.width=width;this.height=height;this.canvas.width=width;this.canvas.height=height;
+        if(this.mode==='WebGPU'){
+            this.target.destroy();this.target=this.device.createTexture({size:[width,height],format:'rgba8unorm',usage:GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_SRC});
+            this.device.queue.writeBuffer(this.viewport,0,new Float32Array([width,height,0,0]));this.blitBind=this.device.createBindGroup({layout:this.blitPipeline.getBindGroupLayout(0),entries:[{binding:0,resource:this.target.createView()},{binding:1,resource:this.sampler}]});this.initial=true;
+        }else{this.ctx.fillStyle='white';this.ctx.fillRect(0,0,width,height);}
+    }
+    stats() {return {mode:this.mode,adapter:this.adapter?{vendor:this.adapter.info?.vendor,architecture:this.adapter.info?.architecture,description:this.adapter.info?.description}:null,frames:this.frames,acknowledgedBatches:this.acknowledgedBatches,peakQueuedCommands:this.peakQueuedCommands,queuedCommands:this.pending.length,drawCalls:this.drawCalls,primitives:this.primitives,glyphs:this.glyphs.size,bitmaps:this.bitmaps.size,bitmapBytes:this.bitmapBytes,bitmapUploads:this.bitmapUploads,bitmapUploadBytes:this.bitmapUploadBytes,blits:this.blitCount,errors:this.errors.slice()};}
     async pixel(x,y) {
         this.flush();x=Math.floor(x);y=Math.floor(y);if(x<0||y<0||x>=this.width||y>=this.height)throw Error('Pixel out of bounds');
         if(this.mode!=='WebGPU')return [...this.ctx.getImageData(x,y,1,1).data];
         const d=this.device,b=d.createBuffer({size:256,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
         try{const encoder=d.createCommandEncoder();encoder.copyTextureToBuffer({texture:this.target,origin:[x,y]},{buffer:b,bytesPerRow:256},[1,1]);d.queue.submit([encoder.finish()]);await b.mapAsync(GPUMapMode.READ);return [...new Uint8Array(b.getMappedRange(),0,4)];}finally{b.destroy();}
     }
-    destroy() {if(this.dead)return;this.dead=true;if(this.frame)cancelAnimationFrame(this.frame);if(this.frameTimer)clearTimeout(this.frameTimer);this.frame=this.frameTimer=0;this.pending=[];this.target?.destroy();this.atlas?.destroy();this.buffer?.destroy();this.viewport?.destroy();this.device?.destroy();}
+    destroy() {if(this.dead)return;this.dead=true;if(this.frame)cancelAnimationFrame(this.frame);if(this.frameTimer)clearTimeout(this.frameTimer);this.frame=this.frameTimer=0;this.pending=[];for(const b of this.bitmaps.values())b.texture?.destroy();this.bitmaps.clear();this.bitmapBytes=0;this.target?.destroy();this.atlas?.destroy();this.buffer?.destroy();this.viewport?.destroy();this.device?.destroy();}
 }
 globalThis.AsterGDI=GDIRenderer;
 })();

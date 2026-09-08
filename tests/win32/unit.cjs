@@ -10,6 +10,7 @@ async function check(name,fn){const t=performance.now();try{const detail=await f
 async function cpu(bytes,setup=()=>{}){const r=await runtime();r.mem.copy(0x401000,Uint8Array.from(bytes));r.cpu.mark_executable(0x401000,4096);r.cpu.set_reg(4,0x3e00000);r.mem.w32(0x3e00000,RETURN);r.cpu.set_reg(8,0x401000);setup(r);const status=r.cpu.run(10000);return {r,c:r.cpu,m:r.mem,status};}
 const u32=n=>[n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255];
 const mutate=(name,fn)=>{const b=Uint8Array.from(exe(name)),v=new DataView(b.buffer);const pe=v.getUint32(60,true),opt=pe+24;fn(b,v,pe,opt);return b;};
+for(const module of ['resources','registry','gui','bitmaps'])require(root+'/src/win32/'+module+'.js');
 (async()=>{
 await check('Wasm has no WASI, network or other imported host functions',async()=>{const module=await WebAssembly.compile(wasm);assert.equal(WebAssembly.Module.imports(module).length,0);});
 await check('x86 MOV, IMUL and RET execute machine code',async()=>{const {c,status}=await cpu([0xb8,7,0,0,0,0x6b,0xc0,6,0xc3]);assert.equal(status,2);assert.equal(c.get_reg(0),42);});

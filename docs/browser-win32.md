@@ -12,7 +12,7 @@ instruction cache. It is **not a complete Rosetta-style optimizing JIT**. No fil
 name or executable hash selects a mock implementation. SHA-256 identifies each
 private C: drive; the program's machine code owns its computation and callbacks.
 
-## Two real upstream applications
+## Original upstream binaries
 
 These exact original Windows binaries are bundled, with hashes and provenance
 in [`third-party/manifest.json`](../third-party/manifest.json). They are not
@@ -22,6 +22,14 @@ recompiled or patched for Aster.
 | --- | --- |
 | **7-Zip reduced console 26.03 (`7zr.exe`)** | Create an LZMA2 `.7z` from text and arbitrary binary bytes; test it in a fresh process; extract all bytes; extract an independently generated py7zr archive; reject corruption. Use `-mmt=off`; sample creation uses `-mx=1 -md=1m`. This is the reduced console, **not the 7-Zip GUI**, and full format/encryption coverage is not claimed. |
 | **Tiny C Compiler 0.9.27 (`tcc.exe` + original `libtcc.dll`, headers/libraries)** | Load and relocate the original DLL, initialize main/DLL static TLS, compile ordinary C using `stdio.h`, write a normal Windows EXE, then run that EXE in a separate Aster Worker and verify its computed file. Invalid C produces a real compiler error, not an output EXE. This is a **legacy 2017 compatibility fixture**, not a current production-toolchain recommendation. `-run`, self-hosting, every compiler flag and arbitrary generated programs are not certified. |
+
+A third application, **WineMine from Wine 9.0**, is built from pinned, unchanged
+upstream gameplay and resource sources into a standard Windows EXE. Its build-only
+entry/debug shims do not change the game. **No Wine runtime is used.** Select
+**WineMine** and **Run sample** for the bitmap board, menus and modal dialogs.
+This source-built fixture is distinct from the two unmodified upstream binaries
+above. [GUI compatibility details](win32-gui.md) and the complete
+[corresponding source](../third-party/winemine/winemine-source.zip) are included.
 
 Four original compiled GUI/CPU examples remain: **Win32 Pad**, **GDI Playground**,
 **Hello Win32**, and **Integer checksum**. The general runtime executes both the
@@ -72,9 +80,9 @@ the virtual process, never to a host shell. The optional stdin field supplies a
 closed, preloaded input stream, not an interactive terminal.
 
 The single-file edition embeds the runtime, both upstream applications/support
-files, all samples, license notices **and TinyCC's complete corresponding source
-archive**. End users need no build tools, account or extra download. Win32 Lab's
-expanded diagnostics contain **Licenses** and **TinyCC source** download buttons.
+files, WineMine, all samples, license notices **and the complete corresponding
+TinyCC and WineMine source archives**. End users need no build tools, account or extra download. Win32 Lab's
+expanded diagnostics contain **Licenses**, **TinyCC source** and **WineMine source** download buttons.
 The source edition uses ordinary static HTTP/HTTPS hosting; GitHub Pages is
 sufficient. WebGPU and durable storage depend on browser/context. Fallback to
 Canvas 2D or memory storage is clearly labeled.
@@ -89,20 +97,24 @@ Canvas 2D or memory storage is clearly labeled.
 | Loader lifecycle | Up to four private in-memory DLLs, at most 2 MiB mapped image each; acyclic dependencies; bounded exports; process-attach DllMain and TLS callbacks; aligned static TLS data and emulated TEB. Private DLL unload/detach, loader-lock semantics, forwarded exports and delay imports are not implemented. No DLL is loaded into the host OS. |
 | Kernel services | Bounded allocations and heap ownership/reallocation, module queries, private synchronous files, sizes/seeks/truncation, directory enumeration, rename/copy/delete, DOS attributes, times, UTF-8/UTF-16/1252/OEM437 conversions, argument/environment strings and single-thread synchronization/TLS. Unsupported privileged operations return documented failures, not host privileges. |
 | C runtime | Selected MSVCRT startup/data globals, cdecl/varargs, args/env, stdio/descriptors, memory/string operations, formatting, integer/numeric conversion, guest callbacks and bounded setjmp/longjmp. This is **not** a full MSVC/UCRT implementation. File translation/locale/format semantics are partial; CRT streams are unbuffered. |
-| USER32 / GDI | One top-level window, EDIT/BUTTON/STATIC children, WNDPROC messages, timers, pointer/key events, solid brushes/pens, primitives, text and measured fonts. GDI batches render directly through WebGPU; browser controls overlay the surface. |
+| USER32 | Up to eight top-level/owned windows per process, EDIT/BUTTON/STATIC controls, window-extra data, ordered destruction, message/timer/input dispatch, menus, accelerators, standard/extended resource dialogs and nested modal DLGPROC callbacks. Browser controls overlay the client surfaces. |
+| Resources / registry | Bounded PE resource lookup, string tables, standard/extended menus/dialogs, accelerators and bitmap decoding. Bounded private per-executable registry with typed values, enumeration, access checks and browser persistence. No host registry access. |
+| GDI / WebGPU | Retained client surfaces, primitives/text, memory DCs, bitmaps, DIB sections, cropped SRCCOPY BitBlt/StretchBlt and nearest-neighbor GPU sprites. Immutable sprites upload once per revision/surface; watched guest-memory pages track direct DIB writes. |
 | OLE data subset | BSTR allocation and scalar/BSTR VARIANT operations with correct ordinal aliases. No COM/Automation server or object activation. |
 
-The generated [export manifest](browser-win32-exports.json) lists **430 function
-entries**: **416 partial implementations** and **14 explicit fail-on-call entries**,
-plus **7 ordinal aliases** and **16 data imports**. This count does not imply 430
+The generated [export manifest](browser-win32-exports.json) lists **637 function
+entries**: **623 partial implementations** and **14 explicit fail-on-call entries**,
+plus **7 ordinal aliases** and **16 data imports**. This count does not imply 637
 complete Windows APIs. Some real programs import optional threading/exception
 paths that are never used in the tested scenario; those named entries bind but
 **throw an explicit unsupported error if called**. Completely unknown imports
-reject the image. Exact behavior lives in `src/win32/runtime.js` and `compat.js`.
+reject the image. Exact behavior lives in `src/win32/` and the generated manifest.
+The GUI round adds 207 function names; this is not 207 complete Windows APIs.
 
 Not implemented: x64/ARM/Win16/DOS, kernel services/drivers, general SEH/C++
 exceptions, threads/child processes, dynamic executable memory, COM/.NET/UWP,
-MFC, full CRT/UCRT, native menus/resources/dialogs, DirectX/OpenGL, audio, guest
+MFC, full CRT/UCRT, advanced common/owner-drawn controls, general raster operations,
+DirectX/OpenGL, audio, guest
 networking, host clipboard/printers/devices or arbitrary DLL discovery. Browser
 controls/GDI font metrics are not pixel-identical Windows widgets. Most existing
 Windows programs remain incompatible.
@@ -120,7 +132,12 @@ presents that texture. Cached browser-rasterized glyphs avoid repeating text
 rasterization. There is no remote framebuffer and no full-screen CPU screenshot
 upload. Credits wait for surface readiness and GPU completion, prevent unbounded
 queues, and work even when animation callbacks are suspended. Stop/file messages
-bypass the rendering queue. **WebGPU does not accelerate 7-Zip compression or
+bypass the rendering queue. Bitmap resources are decoded once and static sprite
+blits reuse retained GPU textures rather than sending RGBA pixels repeatedly.
+Writable DIB sections use reference-counted guest-page watches; ordinary guest
+stack/data writes outside those pages do not invalidate the sprites. Texture
+updates and deletes preserve ordering relative to previously submitted draws.
+**WebGPU does not accelerate 7-Zip compression or
 TinyCC's CPU work**; those execute in Wasm.
 
 `unit.cjs` measures cached versus uncached execution of the same checksum PE,
@@ -151,6 +168,15 @@ are not part of normal Aster backups: use **Download** or **Copy to Aster** firs
 Clearing site data erases them. Only one live instance per EXE hash is allowed to
 avoid persistence races. The launcher does not retain arbitrary imported EXEs.
 
+Registry state is separate from private files and also keyed by the full EXE
+SHA-256. Nonvolatile typed values are snapshotted to IndexedDB; volatile branches
+remain process-only. **Normal Aster backups do not yet include private registries
+or private C: drives.** Use **Files → Export registry** and export important files.
+Registry APIs never read or modify the host OS registry. Snapshot completion is
+asynchronous; `RegFlushKey` does not provide native synchronous disk-flush semantics.
+A program must run its own normal exit path to save its preferences; force Stop
+cannot invent unsaved application state.
+
 Use trusted programs and trusted input. This is **not a formally verified
 malware-analysis sandbox**; emulator/browser/GPU vulnerabilities and resource
 exhaustion risks remain. Never enable unsafe Chromium GPU test flags for normal
@@ -162,19 +188,23 @@ maintainer/CI tools only, not application dependencies.
 ```sh
 node tests/win32/unit.cjs
 node tests/win32/compat.cjs
+node tests/win32/gui.cjs
 node tests/win32/exports.cjs --check
 node tests/win32/backpressure.cjs
 python build.py
 xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/browser.py --gpu --headed
 xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/apps-browser.py --gpu --headed
 xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/apps-browser.py --gpu --headed --standalone --output tests/win32/artifacts/standalone-apps
+xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/gui-browser.py --gpu --headed
 python tests/smoke.py
 ```
 
 Maintainers can rebuild the original CPU/four local examples with
 `python native/win32/build.py` (LLVM), but the two third-party EXEs are always
 unaltered upstream binaries. `python third-party/fetch.py` reproduces their
-hash-pinned packaging. [Test documentation](../tests/win32/README.md) explains
+hash-pinned packaging. WineMine has its own pinned source build,
+`python third-party/winemine/build.py`; MinGW is a maintainer-only dependency.
+[Test documentation](../tests/win32/README.md) explains
 negative tests, artifacts and independent native references. The workflow must
 pass at the exact head being merged; screenshots alone do not establish success.
 
@@ -189,5 +219,6 @@ pass at the exact head being merged; screenshots alone do not establish success.
 - [Chromium SwiftShader guidance](https://chromium.googlesource.com/chromium/src/+/main/docs/gpu/swiftshader.md): software-GPU CI. Our tests execute real WebGPU/WGSL and compare readback with presented pixels, not physical GPU throughput.
 
 All CPU/PE/API implementation here is original Aster code. No Windows system DLL,
-OS image, Microsoft program, proprietary font or copied Wine implementation is
-bundled. Third-party application licenses are in [the notices/source directory](../third-party/README.md).
+OS image, Microsoft program, proprietary font or Wine runtime implementation is
+bundled. The separately licensed WineMine application and its corresponding
+source are included as an explicitly identified compatibility fixture. Third-party application licenses are in [the notices/source directory](../third-party/README.md).

@@ -2,11 +2,12 @@
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'../..');
 require(root+'/src/win32/pe.js');require(root+'/src/win32/runtime.js');require(root+'/src/win32/compat.js');
+for(const name of ['resources','registry','gui','bitmaps'])if(fs.existsSync(root+'/src/win32/'+name+'.js'))require(root+'/src/win32/'+name+'.js');
 const wasm=fs.readFileSync(root+'/src/win32/x86.wasm');
 const {Runtime,RETURN}=globalThis.AsterWin32;
 const tccFiles=()=>JSON.parse(fs.readFileSync(root+'/src/win32/third-party/tcc-files.json')).map(f=>({path:f.path,bytes:Buffer.from(f.base64,'base64')}));
 async function runGuest(bytes,name,args='',files=[],options={}){
- let output='',timer;const r=await Runtime.create(wasm,e=>{if(e.type==='stdout')output+=e.text;options.host?.(e,r);},{args,...options});
+ let output='',timer;const r=await Runtime.create(wasm,e=>{if(e.type==='stdout')output+=e.text;return options.host?.(e,r);},{args,...options});
  try{for(const f of files)r.addFile(f.path,f.bytes);r.load(bytes,name);const begin=performance.now();timer=setTimeout(()=>r.exit(124),options.timeout||15000);await r.run();return {r,output,exitCode:r.exitCode,ms:performance.now()-begin,files:[...r.files].map(([path,bytes])=>({path,bytes})),stats:r.stats()};}finally{clearTimeout(timer);if(!r.stopped)r.exit(125);}
 }
 async function machine(code,setup=()=>{}){
