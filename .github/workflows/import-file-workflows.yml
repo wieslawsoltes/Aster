@@ -1,0 +1,79 @@
+name: Import Explorer workflow source
+on:
+  push:
+    branches: [feat/explorer-file-workflows]
+    paths: ['.github/workflows/import-file-workflows.yml']
+permissions:
+  contents: write
+concurrency:
+  group: import-file-workflows
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify and expand the bounded source delta
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import base64, hashlib, json, lzma
+          encoded=''.join(Path(f'.transfer/files-{i}.b64').read_text().strip() for i in range(3))
+          assert len(encoded)==23880
+          compressed=base64.b64decode(encoded,validate=True)
+          assert hashlib.sha256(compressed).hexdigest()=='dd1895be475f8b4426dbead62d05d9814c5fadfc2e83e3887e81489d75e4d52c'
+          decoder=lzma.LZMADecompressor(memlimit=128*1024*1024)
+          raw=decoder.decompress(compressed,max_length=59037)
+          assert decoder.eof and not decoder.unused_data and len(raw)==59036
+          assert hashlib.sha256(raw).hexdigest()=='6425125cc344e700cfbe30caa99d16afd5ed4b4790c5713a586ef0c353ba7452'
+          changes=json.loads(raw)
+          allowed={'.gitignore','README.md','docs/file-workflows.md','index.html','src/apps-files.js','src/core.js','src/explorer-operations.js','src/file-operations.js','src/file-workflows.css','sw.js','tests/file-workflows/browser.py','tests/file-workflows/models.cjs'}
+          assert len(changes)==12 and {c['path'] for c in changes}==allowed
+          outputs=[]
+          for c in changes:
+              path=PurePosixPath(c['path']);p=Path(path)
+              assert not path.is_absolute() and '..' not in path.parts and not p.is_symlink()
+              if c['before'] is None:
+                  assert not p.exists(),str(p)
+                  data=c['content'].encode('utf-8')
+              else:
+                  before=p.read_bytes()
+                  assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent change: '+str(p)
+                  text=before.decode('utf-8');last=0
+                  for a,b,value in c['ops']:
+                      assert last<=a<=b<=len(text) and isinstance(value,str)
+                      last=b
+                  for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+                  data=text.encode('utf-8')
+              assert hashlib.sha256(data).hexdigest()==c['after'],str(p)
+              outputs.append((p,data))
+          for p,data in outputs:p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)
+          print('Verified all 12 editable source files.')
+          PY
+      - name: Check planners, shell contracts and standalone build
+        run: |
+          for file in src/*.js; do node --check "$file"; done
+          node --test tests/file-workflows/models.cjs tests/integrated-shell/contracts.cjs tests/desktop-features/models.cjs tests/web-apps/catalog.cjs
+          python3 -m py_compile tests/file-workflows/browser.py
+          python3 build.py
+          git diff --check
+      - name: Commit sources without modifying workflow permissions
+        run: |
+          rm -rf .transfer
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m 'Integrate atomic Explorer operations, conflict resolution, batch rename and undo'
+          git push origin HEAD:feat/explorer-file-workflows
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: explorer-import-diagnostics
+          path: |
+            src/file-operations.js
+            src/explorer-operations.js
+          retention-days: 7
