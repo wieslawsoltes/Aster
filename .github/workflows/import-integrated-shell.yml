@@ -1,0 +1,91 @@
+name: Import integrated shell source
+on:
+  push:
+    branches: [feat/integrated-shell]
+    paths: ['.github/workflows/import-integrated-shell.yml']
+permissions:
+  contents: write
+concurrency:
+  group: import-integrated-shell
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify and expand source without overwriting concurrent changes
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, lzma
+          from pathlib import Path, PurePosixPath
+          folder=Path('.bootstrap/shell')
+          m=json.loads((folder/'manifest.json').read_text())
+          assert m['rawBytes']==174075 and m['archiveBytes']==43920
+          assert m['rawSHA256']=='77340ee8fb09bb7265ea44f097ed477a63c819041f5036b8de72c5034afa4c1a'
+          assert m['archiveSHA256']=='4f19d2d62d0eef24061b682593ab69863292c8f977fd5d87556c133ca43f05ed'
+          archive=b''.join((folder/f'part-{i:02}.xz').read_bytes() for i in range(4))
+          assert len(archive)==m['archiveBytes'] and hashlib.sha256(archive).hexdigest()==m['archiveSHA256']
+          decoder=lzma.LZMADecompressor(memlimit=128*1024*1024)
+          raw=decoder.decompress(archive,max_length=m['rawBytes']+1)
+          assert decoder.eof and not decoder.unused_data and len(raw)==m['rawBytes']
+          assert hashlib.sha256(raw).hexdigest()==m['rawSHA256']
+          changes=json.loads(raw)
+          allowed={'.gitignore','README.md','build.py','docs/integrated-shell.md','index.html','src/apps-accessibility.js','src/apps-creative.js','src/apps-desktop.js','src/apps-files.js','src/apps-recorder.js','src/apps-system.js','src/core.js','src/desktop-services.js','src/integrated-desktop.js','src/shell-design.css','src/shell-experience.js','src/shell.js','src/windows.js','sw.js','tests/desktop-features/browser.py','tests/integrated-shell/README.md','tests/integrated-shell/browser.py','tests/integrated-shell/contracts.cjs','tests/smoke.py'}
+          assert len(changes)==24 and {c['path'] for c in changes}==allowed==set(m['paths'])
+          outputs={}
+          def apply(c, original):
+              if c['before'] is None:
+                  assert original is None, 'New file already exists: '+c['path']
+                  text=c['content']
+              else:
+                  assert original is not None and hashlib.sha256(original).hexdigest()==c['before'], 'Source changed: '+c['path']
+                  text=original.decode('utf-8');last=0
+                  for a,b,value in c['ops']:
+                      assert last<=a<=b<=len(text) and isinstance(value,str)
+                      last=b
+                  for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+              data=text.encode('utf-8')
+              assert hashlib.sha256(data).hexdigest()==c['after'], 'Output checksum: '+c['path']
+              return data
+          for c in changes:
+              path=PurePosixPath(c['path']);p=Path(path)
+              assert not path.is_absolute() and '..' not in path.parts and not p.is_symlink()
+              outputs[c['path']]=apply(c,p.read_bytes() if p.exists() else None)
+          fixes=json.loads((folder/'fixups.json').read_text())
+          assert len(fixes)==2 and {c['path'] for c in fixes}=={'src/core.js','tests/integrated-shell/contracts.cjs'}
+          for c in fixes:outputs[c['path']]=apply(c,outputs[c['path']])
+          for name,data in outputs.items():
+              p=Path(name);p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)
+          print('Verified and expanded',len(outputs),'editable files and two tested fixups.')
+          PY
+      - name: Validate full source and inherited local runtime contracts
+        run: |
+          for f in src/*.js src/win32/*.js sw.js; do node --check "$f"; done
+          python3 -m py_compile build.py tests/integrated-shell/browser.py tests/desktop-features/browser.py tests/smoke.py
+          python3 build.py
+          node --test tests/integrated-shell/contracts.cjs tests/desktop-features/models.cjs tests/web-apps/catalog.cjs
+          node tests/win32/unit.cjs
+          node tests/win32/compat.cjs
+          node tests/win32/gui.cjs
+          node tests/win32/backpressure.cjs
+          git diff --check
+      - name: Commit editable source to this feature branch only
+        run: |
+          rm -rf .bootstrap/shell
+          git restore tests/results.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m 'Integrate Windows-style shell flyouts, Settings, Explorer, Task View and Snips'
+          git push origin HEAD:feat/integrated-shell
+      - name: Retain import diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrated-shell-import-diagnostics
+          path: tests/win32/artifacts/
+          retention-days: 7
