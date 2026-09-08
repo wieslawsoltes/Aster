@@ -2,10 +2,11 @@ name: Import verified Win32 GUI source
 on:
   push:
     branches: [feat/win32-gui-resources]
-    paths: ['.bootstrap/gui/ready']
+    paths: ['.bootstrap/gui/ready', '.github/workflows/apply-win32-gui.yml']
   workflow_dispatch:
 permissions:
   contents: write
+  actions: read
 jobs:
   apply:
     runs-on: ubuntu-24.04
@@ -65,6 +66,13 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends clang-18 lld-18 llvm-18 gcc-mingw-w64-i686 binutils-mingw-w64-i686
+      - name: Retrieve the already-verified pinned source without an upstream network dependency
+        uses: actions/download-artifact@v4
+        with:
+          name: win32-gui-upstream-fixture
+          run-id: 34190297118
+          github-token: ${{ github.token }}
+          path: /tmp/aster-winemine-fixture
       - name: Rebuild CPU and pinned upstream application, preserving original EXE fixtures
         env:
           CLANG: clang-18
@@ -76,7 +84,7 @@ jobs:
           python3 native/win32/build.py
           cp /tmp/aster-original-exes/*.exe src/win32/examples/
           chmod 644 src/win32/x86.wasm src/win32/examples/*.exe
-          python3 third-party/winemine/build.py --output /tmp/aster-winemine-build
+          python3 third-party/winemine/build.py --source /tmp/aster-winemine-fixture/source --output /tmp/aster-winemine-build
           python3 - <<'PY'
           from pathlib import Path
           import hashlib, shutil
