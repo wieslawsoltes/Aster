@@ -1,0 +1,55 @@
+name: Shell launch workflows — defaults, Run, Jump Lists and startup
+on:
+  pull_request:
+    paths: ['src/**', 'tests/**', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/shell-launch.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'tests/shell-launch/**', 'index.html', 'Aster.html', 'sw.js', '.github/workflows/shell-launch.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: shell-launch-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  shell-launch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate command boundaries, handlers and standalone build
+        run: |
+          for f in src/*.js; do node --check "$f"; done
+          node --test tests/shell-launch/models.cjs
+          python build.py
+          git diff --exit-code -- Aster.html
+          git diff --check
+      - name: Install verification browser
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Exercise Explorer and shell controls, persisted defaults and actual startup
+        run: python tests/shell-launch/browser.py
+      - name: Repeat using the standalone edition
+        run: python tests/shell-launch/browser.py --standalone --output tests/shell-launch/artifacts/standalone
+      - name: Preserve exact source and provenance
+        if: always()
+        run: |
+          mkdir -p tests/shell-launch/artifacts
+          git archive --format=zip HEAD -o tests/shell-launch/artifacts/source.zip
+          git rev-parse HEAD > tests/shell-launch/artifacts/commit.txt
+          sha256sum Aster.html > tests/shell-launch/artifacts/standalone.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shell-launch-evidence
+          path: |
+            tests/shell-launch/artifacts/
+            Aster.html
+          retention-days: 14
