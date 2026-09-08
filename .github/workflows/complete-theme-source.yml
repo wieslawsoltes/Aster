@@ -17,67 +17,77 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify and expand only the previously staged source delta
+      - name: Recover exactly 19 complete original records and apply checked completion
         run: |
           python3 - <<'PY'
           from pathlib import Path, PurePosixPath
           import base64, hashlib, json, lzma, re
-          parts = sorted(Path('.transfer').glob('theme-*.b64'))
-          assert [p.name for p in parts] == [f'theme-{i}.b64' for i in range(6)]
-          encoded = ''.join(p.read_text().strip() for p in parts)
-          assert len(encoded) < 1024 * 1024
-          compressed = base64.b64decode(encoded, validate=True)
-          decoder = lzma.LZMADecompressor(memlimit=128*1024*1024)
-          raw = decoder.decompress(compressed, max_length=2*1024*1024)
-          assert decoder.eof and not decoder.unused_data
-          changes = json.loads(raw)
-          assert isinstance(changes, list) and 1 <= len(changes) <= 60
-          assert len({c['path'] for c in changes}) == len(changes)
-          root_files = {'.gitignore','README.md','TESTING.md','index.html','sw.js','build.py'}
-          outputs = []
-          for c in changes:
-              name = c['path']; path = PurePosixPath(name); p = Path(name)
-              assert not path.is_absolute() and '..' not in path.parts and not p.is_symlink(), name
-              assert name in root_files or name.startswith(('src/','tests/','docs/')), name
-              assert not any(part.startswith('.') for part in path.parts) or name == '.gitignore', name
-              assert re.fullmatch('[0-9a-f]{64}', c['after']), name
+          encoded=''.join(Path(f'.transfer/theme-{i}.b64').read_text().strip() for i in range(6))
+          data=base64.b64decode(encoded,validate=True)
+          assert hashlib.sha256(data).hexdigest()=='a4a0018f9b7e4d4a681a27703b98148960c15791fd747f96d863e8ce33f510ce'
+          decoder=lzma.LZMADecompressor(memlimit=128*1024*1024)
+          raw=decoder.decompress(data,max_length=2*1024*1024)
+          assert not decoder.eof and len(raw)==137470
+          text=raw.decode('utf-8'); parser=json.JSONDecoder(); position=1; recovered=[]
+          while True:
+              while position<len(text) and text[position] in ' \n\r\t,':position+=1
+              try:item,end=parser.raw_decode(text,position)
+              except json.JSONDecodeError:break
+              recovered.append(item);position=end
+          expected=['.gitignore','README.md','docs/themes.md','index.html','src/apps-files.js','src/apps-win32.js','src/core.js','src/explorer-operations.js','src/renderer.js','src/shell-command-models.js','src/shell-experience.js','src/shell-launch.js','src/shell.js','src/theme-assets.js','src/theme-engine.js','src/theme-models.js','src/theme-packs.js','src/theme-settings.js','src/theme-shell.js']
+          assert [c['path'] for c in recovered]==expected
+          assert 'src/themes.css' in text[position:position+100]
+          encoded=''.join(Path(f'.transfer/finish-{i}.b64').read_text().strip() for i in range(3))
+          assert len(encoded)==26188
+          completed=base64.b64decode(encoded,validate=True)
+          assert hashlib.sha256(completed).hexdigest()=='63acfd95147c8a710f0f87af660160fe1cef68895a3d086e5b111f0df51176f0'
+          decoder=lzma.LZMADecompressor(memlimit=128*1024*1024)
+          raw=decoder.decompress(completed,max_length=68473)
+          assert decoder.eof and not decoder.unused_data and len(raw)==68472
+          assert hashlib.sha256(raw).hexdigest()=='62739e5eda97f7198eef63b94ebc90edd8b6608bf9d5ad74a3ddcac6865d72df'
+          tail=json.loads(raw)
+          assert [c['path'] for c in tail]==['src/themes.css','src/windows.js','src/win32/gui.js','src/win32/worker.js','sw.js','tests/themes/README.md','tests/themes/fixtures.cjs','tests/themes/models.cjs','tests/themes/win32.cjs','tests/themes/browser.py','tests/themes/native.py']
+          outputs={}
+          for c in recovered+tail:
+              name=c['path'];path=PurePosixPath(name);p=Path(name)
+              assert not path.is_absolute() and '..' not in path.parts and not p.is_symlink()
+              assert re.fullmatch('[0-9a-f]{64}',c['after'])
               if c['before'] is None:
-                  assert not p.exists(), 'Unexpected existing file: '+name
-                  data = c['content'].encode('utf-8')
+                  assert not p.exists() and name not in outputs,name
+                  data=c['content'].encode('utf-8')
               else:
-                  before = p.read_bytes()
-                  assert hashlib.sha256(before).hexdigest() == c['before'], 'Changed base: '+name
-                  text = before.decode('utf-8'); last = 0
+                  before=outputs[name] if name in outputs else p.read_bytes()
+                  assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent change: '+name
+                  source=before.decode('utf-8');last=0
                   for a,b,value in c['ops']:
-                      assert isinstance(a,int) and isinstance(b,int) and last <= a <= b <= len(text) and isinstance(value,str)
-                      last = b
-                  for a,b,value in reversed(c['ops']):
-                      text = text[:a]+value+text[b:]
-                  data = text.encode('utf-8')
-              assert hashlib.sha256(data).hexdigest() == c['after'], 'Bad output: '+name
-              outputs.append((p,data))
-          for p,data in outputs:
-              p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(data)
-          report = {'compressedSHA256':hashlib.sha256(compressed).hexdigest(),'deltaSHA256':hashlib.sha256(raw).hexdigest(),'files':[{'path':str(p),'bytes':len(d),'sha256':hashlib.sha256(d).hexdigest()} for p,d in outputs]}
+                      assert isinstance(a,int) and isinstance(b,int) and last<=a<=b<=len(source) and isinstance(value,str)
+                      last=b
+                  for a,b,value in reversed(c['ops']):source=source[:a]+value+source[b:]
+                  data=source.encode('utf-8')
+              assert hashlib.sha256(data).hexdigest()==c['after'],'Output mismatch: '+name
+              outputs[name]=data
+          for name,data in outputs.items():
+              p=Path(name);p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)
+          report={'originalRecoveredRecords':len(recovered),'separatelyCompletedRecords':len(tail),'files':[{'path':n,'sha256':hashlib.sha256(d).hexdigest(),'bytes':len(d)} for n,d in outputs.items()]}
           Path('/tmp/theme-recovery.json').write_text(json.dumps(report,indent=2))
           print(json.dumps(report,indent=2))
           PY
-      - name: Validate JavaScript, Python, models and standalone build
+      - name: Validate source, 95 model and guest checks, and standalone build
         run: |
           for f in src/*.js src/win32/*.js sw.js; do node --check "$f"; done
           python3 -m py_compile build.py tests/themes/*.py
           python3 build.py
           node --test tests/themes/models.cjs tests/themes/win32.cjs tests/shell-launch/models.cjs tests/file-workflows/models.cjs tests/integrated-shell/contracts.cjs tests/desktop-features/models.cjs tests/web-apps/catalog.cjs
           git diff --check
-      - name: Commit recovered source on the existing PR branch
+      - name: Commit editable theme source to the existing PR branch
         run: |
           rm -rf .transfer
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add --all
-          git commit -m 'Integrate staged theme service, Windows format support and desktop shell profiles'
+          git commit -m 'Integrate recovered theme system, complete shell profiles and rebuild verification'
           git push origin HEAD:feat/theme-system
-      - name: Preserve source for independent review
+      - name: Preserve independently reviewable source
         if: always()
         run: |
           mkdir -p /tmp/theme-review
