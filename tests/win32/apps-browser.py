@@ -51,7 +51,7 @@ def main(args):
             page.evaluate('async()=>{for(const w of [...Aster.windows.values()])await w.close(true);Aster.settings.motion=false;Aster.applySettings();document.querySelectorAll(".toast").forEach(t=>t.remove());window.w=Aster.launch("win32");await w.ready;}')
             report['environment'] = page.evaluate('({userAgent:navigator.userAgent,storage:Aster.db.mode,secure:isSecureContext,gpuAPI:!!navigator.gpu})')
             # Ordinary static resources only. All execution below happens with networking disabled.
-            page.evaluate("Promise.all(['pe.js','runtime.js','compat.js','worker.js','x86.wasm','third-party/7zr.exe','third-party/tcc.exe','third-party/tcc-files.json'].map(p=>Aster.win32.asset('src/win32/'+p)))")
+            page.evaluate("Promise.all(['pe.js','runtime.js','compat.js','resources.js','registry.js','gui.js','bitmaps.js','worker.js','x86.wasm','third-party/7zr.exe','third-party/tcc.exe','third-party/tcc-files.json'].map(p=>Aster.win32.asset('src/win32/'+p)))")
             report['requestsBeforeOffline'] = len(report['requests'])
             context.set_offline(True)
 
