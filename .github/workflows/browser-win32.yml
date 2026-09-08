@@ -8,7 +8,7 @@ on:
       - 'examples/win32/**'
       - 'tests/**'
       - 'third-party/**'
-      - 'docs/browser-win32-exports.json'
+      - 'docs/**'
       - 'Aster.html'
       - 'index.html'
       - 'build.py'
@@ -61,12 +61,15 @@ jobs:
           node tests/win32/exports.cjs --check
           node tests/win32/compat.cjs
           node tests/win32/backpressure.cjs
+          node tests/win32/gui.cjs
           python build.py
           git diff --exit-code -- Aster.html
           cp Aster.html tests/win32/artifacts/Aster-shipped.html
           xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/browser.py --gpu --headed
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/gui-browser.py --gpu --headed
           cp tests/win32/artifacts/browser-results.json tests/win32/artifacts/browser-shipped-results.json
           cp tests/win32/artifacts/unit-results.json tests/win32/artifacts/unit-shipped-results.json
+          cp -R tests/win32/artifacts/gui tests/win32/artifacts/gui-shipped
           cp tests/win32/artifacts/compat/results.json tests/win32/artifacts/compat-shipped-results.json
           xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/apps-browser.py --gpu --headed
           xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/apps-browser.py --gpu --headed --standalone --output tests/win32/artifacts/standalone-apps
@@ -81,8 +84,10 @@ jobs:
           node tests/win32/exports.cjs --check
           node tests/win32/compat.cjs
           node tests/win32/backpressure.cjs
+          node tests/win32/gui.cjs
           python build.py
           xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/browser.py --gpu --headed
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/gui-browser.py --gpu --headed
       - name: Regress the browser desktop
         run: python tests/smoke.py
       - name: Retain reports, genuine screenshots, and offline standalone HTML
@@ -138,4 +143,61 @@ jobs:
         with:
           name: upstream-win32-native-cross-check
           path: tests/win32/native-artifacts/
+          retention-days: 14
+
+  gui-native-reference:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Execute the identical WineMine EXE with native Windows menus and dialogs
+        run: python tests/win32/native-gui.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: win32-gui-native-reference
+          path: tests/win32/native-artifacts/native-gui.json
+          retention-days: 14
+
+  gui-reproducible-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install maintainer-only cross compiler (not the Wine runtime)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-i686 binutils-mingw-w64-i686
+      - name: Rebuild the original gameplay offline from bundled corresponding source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import zipfile
+          source=Path('/tmp/aster-winemine-source')
+          with zipfile.ZipFile('third-party/winemine/winemine-source.zip') as archive:
+              assert sum(i.file_size for i in archive.infolist()) < 2*1024*1024
+              for info in archive.infolist():
+                  p=PurePosixPath(info.filename)
+                  assert not p.is_absolute() and '..' not in p.parts and not info.is_dir()
+                  out=source/p;out.parent.mkdir(parents=True,exist_ok=True);out.write_bytes(archive.read(info))
+          PY
+          python3 third-party/winemine/build.py --source /tmp/aster-winemine-source --output tests/win32/artifacts/winemine-rebuilt
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          original=Path('src/win32/third-party/winemine.exe').read_bytes()
+          rebuilt=Path('tests/win32/artifacts/winemine-rebuilt/winemine.exe').read_bytes()
+          assert original==rebuilt, 'WineMine binary differs from pinned source rebuild'
+          sha=hashlib.sha256(rebuilt).hexdigest()
+          assert sha==json.loads(Path('third-party/winemine/provenance.json').read_text())['sha256']['winemine.exe']
+          Path('tests/win32/artifacts/winemine-rebuilt/reproducibility.json').write_text(json.dumps({'status':'PASS','binarySHA256':sha,'byteIdentical':True}))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: win32-gui-rebuilt-source
+          path: tests/win32/artifacts/winemine-rebuilt/
           retention-days: 14
