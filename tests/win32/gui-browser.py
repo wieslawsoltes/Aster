@@ -41,7 +41,7 @@ def main(args):
             else:page.goto((ROOT/'Aster.html').as_uri() if standalone else url,wait_until='load')
             page.wait_for_function('window.Aster?.booted');page.evaluate('async()=>{for(const w of [...Aster.windows.values()])await w.close(true);Aster.settings.motion=false;Aster.applySettings();window.w=Aster.launch("win32");await w.ready;}')
         def launch():
-            page.get_by_label('Win32 sample').select_option('winemine');page.get_by_role('button',name='Run sample',exact=True).click();page.wait_for_function('w.win32Session.renderer?.frames>=2 || w.win32Session.failed')
+            page.get_by_label('Win32 sample').select_option('winemine');page.get_by_role('button',name='Run sample',exact=True).click();page.wait_for_function('w.win32Session?.renderer?.frames>=2 || w.win32Session?.failed')
             assert not page.evaluate('w.win32Session.failed'),page.locator('.win32-status').inner_text()
         def shape():return page.evaluate('({width:w.win32Session.width,height:w.win32Session.height})')
         def canvas():return page.locator('.win32-guest-frame:not(.win32-guest-dialog) .win32-canvas')

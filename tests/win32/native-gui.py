@@ -60,7 +60,17 @@ def main():
         main=wait(lambda:named('WineMine'));assert user.PostMessageW(main,0x111,1005,0);wait(lambda:size(main)==[154,182]);report['checks'].append({'name':'Beginner board','size':size(main)})
         assert user.PostMessageW(main,0x111,1006,0);wait(lambda:size(main)==[266,294]);report['checks'].append({'name':'Intermediate menu','size':size(main)})
         assert user.PostMessageW(main,0x111,1008,0);dialog=wait(lambda:named('Custom Game'))
-        for id,value in [(1032,'12'),(1031,'13'),(1033,'20')]:assert user.SetWindowTextW(user.GetDlgItem(dialog,id),value)
+        def text(hwnd):
+            buffer=C.create_unicode_buffer(128)
+            user.GetWindowTextW(hwnd,buffer,128)
+            return buffer.value
+        # Wait until WM_INITDIALOG has populated all fields.
+        wait(lambda: all(text(user.GetDlgItem(dialog,id))==value for id,value in [(1032,'16'),(1031,'16'),(1033,'40')]))
+        for id,value in [(1032,'12'),(1031,'13'),(1033,'20')]:
+            control=user.GetDlgItem(dialog,id)
+            assert control and user.SetWindowTextW(control,value)
+            assert text(control)==value
+        report['customControls']={str(id):text(user.GetDlgItem(dialog,id)) for id in [1032,1031,1033]}
         user.SendMessageW(user.GetDlgItem(dialog,1),0xf5,0,0);wait(lambda:not named('Custom Game'));wait(lambda:size(main)==[218,230]);report['checks'].append({'name':'Real Custom Game dialog result','size':size(main)})
         assert user.PostMessageW(main,0x111,1002,0);assert process.wait(timeout=15)==0
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER,keypath,0,access) as key:
@@ -68,7 +78,7 @@ def main():
         assert settings['Width']==13 and settings['Height']==12 and settings['Mines']==20,settings
         report.update({'status':'PASS','exitCode':0,'registry':settings})
     except Exception as e:
-        report.update({'status':'FAIL','error':str(e)});raise
+        report.update({'status':'FAIL','error':str(e),'windows':windows(),'mainClient':size(main) if isinstance(main,int) else None});raise
     finally:
         if process.poll() is None:process.kill();process.wait(timeout=5)
         try:
