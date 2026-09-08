@@ -14,7 +14,7 @@
     };
     const mountPanel = (type, el) => { OS.closePanels(); panel = type; OS.shellPanelType = type; $('#panel-layer').append(el); return el; };
     OS.mountShellPanel = (type, el, cleanup, anchor) => { mountPanel(type, el); OS.panelCleanup = cleanup; OS.panelReturnFocus = anchor; return el; };
-    document.addEventListener('pointerdown', e => { if (!e.target.closest('#panel-layer,#taskbar,#context-menu,#dialog-layer'))
+    document.addEventListener('pointerdown', e => { if (!e.target.closest('#panel-layer,#taskbar,#theme-topbar,#context-menu,#dialog-layer'))
         OS.closePanels(); });
     document.addEventListener('contextmenu', e => { if (!e.target.closest('input,textarea,audio,video,iframe'))
         e.preventDefault(); });
@@ -29,7 +29,7 @@
         resume.focus();
     } }; resume.focus(); };
     OS.restart = async () => { if (!await OS.confirm('Restart Aster?', 'Your virtual files are kept. Save open drawings and other unsaved work before restarting the browser desktop.', 'Restart'))
-        return; await OS.persistSessionNow(); OS.ignoreUnload = true; location.reload(); };
+        return; await OS.persistSessionNow(); await OS.themes?.playSound('SystemExit'); OS.ignoreUnload = true; location.reload(); };
     const powerMenu = e => OS.context(e, [{ text: 'Lock desktop', icon: 'lock', action: OS.lock }, { text: 'Restart Aster', icon: 'refresh', action: OS.restart }, { text: 'Close all apps', icon: 'power', action: async () => { for (const w of Array.from(OS.windows.values()))
                 await w.close(); } }]);
     OS.toggleStart = (focusSearch = false) => {
@@ -144,7 +144,7 @@
             for (const file of files)
                 list.append(OS.el('button', { class: 'search-result', html: OS.fileIcon(file, 30) + `<div><strong style="font-size:12px;font-weight:500">${esc(OS.fs.name(file.path))}</strong><small>${esc(OS.fs.parent(file.path))}</small></div>`, onclick: OS.guard(() => OS.openPath(file.path)) }));
             for (const [id, glyph, title, keywords] of (OS.integrations?.navigation || []))
-                if (['defaultapps', 'startupapps', 'recentitems'].includes(id) && (title + ' ' + keywords).toLowerCase().includes(q))
+                if (['defaultapps', 'startupapps', 'recentitems','themes','background','colors','theme-sounds','theme-cursors','taskbar-theme','theme-metrics','contrast-themes'].includes(id) && (title + ' ' + keywords).toLowerCase().includes(q))
                     list.append(OS.el('button', { class: 'search-result system-result', 'data-settings-section': id,
                         html: OS.icon(glyph, 30) + '<div><strong>' + esc(title) + '</strong><small>Settings</small></div>',
                         onclick: () => OS.openApp('settings', { section: id }) }));
@@ -188,7 +188,7 @@
         card.onkeydown = e => { if (e.key === 'Enter')
             card.click(); };
         p.append(card);
-    } mountPanel('preview', p); const r = anchor.getBoundingClientRect(); p.style.left = Math.max(8, Math.min(innerWidth - p.getBoundingClientRect().width - 8, r.left + r.width / 2 - p.getBoundingClientRect().width / 2)) + 'px'; p.onmouseenter = () => clearTimeout(previewTimer); p.onmouseleave = () => { previewTimer = setTimeout(() => { if (panel === 'preview')
+    } mountPanel('preview', p); const r = anchor.getBoundingClientRect(); p.style.left = Math.max(8, Math.min(innerWidth - p.getBoundingClientRect().width - 8, r.left + r.width / 2 - p.getBoundingClientRect().width / 2)) + 'px'; OS.placeThemePopup?.(anchor,p); p.onmouseenter = () => clearTimeout(previewTimer); p.onmouseleave = () => { previewTimer = setTimeout(() => { if (panel === 'preview')
         OS.closePanels(); }, 250); }; }
     function taskAppButton(id, extra = false) {
         const app = OS.apps.get(id);
@@ -267,7 +267,8 @@
             {text:'Lock',icon:'lock',action:OS.lock}]);
         bar.oncontextmenu = e => { if(e.target===bar || e.target===center) OS.context(e,[
             {text:'Task Manager',icon:'list',action:()=>OS.openApp('taskmanager')},
-            {text:'Taskbar settings',icon:'settings',action:()=>OS.openApp('settings',{section:'personalization'})}]); };
+            {text:'Taskbar settings',icon:'settings',action:()=>OS.openApp('settings',{section:'taskbar-theme'})}]); };
+        OS.decorateTaskbar?.(bar);
         updateClock();
     }
     function updateClock() { const el = $('#tray-clock'); if (el) {
@@ -454,6 +455,7 @@
             } };
             container.append(b);
         }
+        OS.emit('desktop-rendered');
     }
     const renameEntry = OS.guard(async (entry) => { const title = await OS.prompt('Rename', entry.title); if (title === null || !title.trim())
         return; if (entry.file) {
@@ -506,7 +508,7 @@
             OS.audioContext.resume();
     }
     catch { } };
-    OS.tone = () => { if (OS.settings.muted || OS.settings.volume === 0 || OS.quiet?.active())
+    OS.tone = () => { if (OS.themes?.ready) { void OS.themes.playSound('SystemAsterisk'); return; } if (OS.settings.muted || OS.settings.volume === 0 || OS.quiet?.active())
         return; try {
         const c = OS.audioContext;
         if (!c || c.state !== 'running')

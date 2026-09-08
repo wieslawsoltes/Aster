@@ -38,7 +38,13 @@
     function trim(){while(undo.length>M.LIMITS.journal||undo.reduce((n,r)=>n+r.bytes,0)>M.LIMITS.bytes)undo.shift();}
     async function checkpoint(job){
         if(job.cancelled)throw new DOMException('File operation cancelled.','AbortError');
-        while(job.paused){job.status='paused';changed();await new Promise(r=>setTimeout(r,60));if(job.cancelled)throw new DOMException('File operation cancelled.','AbortError');}
+        while(job.paused){
+            // Preserve the focused/clicked controls while paused. Repainting every
+            // poll detached the Cancel button under a real pointer interaction.
+            if(job.status!=='paused'){job.status='paused';changed();}
+            await new Promise(r=>setTimeout(r,60));
+            if(job.cancelled)throw new DOMException('File operation cancelled.','AbortError');
+        }
         job.status='preparing';
     }
     async function conflicts(list){

@@ -4,6 +4,26 @@
 
 Aster is a browser desktop, **not a bootable operating system or a general Windows replacement**. The experimental **Win32 Lab** runs a limited subset of real **32-bit x86 PE executables entirely in the browser**, using an original WebAssembly CPU interpreter, a JavaScript Windows API facade and WebGPU GDI rendering. No Wine, Docker, companion, OS image, native executable launch or streamed desktop is involved. Most existing Windows software is not yet compatible. Included applications are the original reduced 7-Zip console and legacy TinyCC binaries, plus a source-built Windows version of WineMine with unchanged upstream gameplay. TinyCC can compile a Windows EXE that Aster then runs. WineMine exercises PE resources, bitmap drawing, menus, modal dialogs and a private registry. Its game code runs as x86, not as a JavaScript port. See [the tested scope and instructions](docs/browser-win32.md) and [third-party licenses/source](third-party/README.md). Imported HTML/JavaScript apps continue to use isolated browser frames.
 
+## Integrated themes and shell profiles (1.9)
+
+**Settings → Personalization → Themes** now controls a shared theme service:
+Windows light/dark/custom modes; macOS 26-style menu bar, traffic-light controls
+and Dock; Ubuntu GNOME-style Activities/top bar and side dock; plus original
+custom and contrast presets. Themes preserve the same running windows/documents.
+
+Customize colors, materials, wallpapers/slideshows, per-desktop backgrounds,
+cursors (including CUR/ANI), opt-in WAV event sounds, fonts/metrics, icons and
+Dock/taskbar behavior. Import/export documented Windows `.theme` settings,
+stored/MSZIP CAB `.themepack` files, ZIP or complete portable `.astertheme` files.
+Running Win32 Workers receive system-color updates and theme-change messages.
+
+This is browser theme interoperability and original profile styling, **not native
+UxTheme/.msstyles, AppKit or GTK execution or complete OS/pixel parity**. LZX/Quantum
+cabinets and native resource binaries are not supported; supplied supported assets
+are decoded locally. External app interiors retain their own styling unless they
+opt into the theme message. See [the theme guide and compatibility matrix](docs/themes.md)
+and [verification instructions](tests/themes/README.md).
+
 ## Shell launch integration (1.8)
 
 **Open with** lives in Explorer and file context menus. **Default apps** and

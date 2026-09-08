@@ -1,0 +1,127 @@
+/* Aster theme engine. Original desktop profiles, not native OS assets or binaries. */
+body.theme-managed,body.theme-managed.shell-integrated,body.theme-managed.shell-integrated[data-theme=dark]{--text:var(--app-text);--muted:var(--app-muted);--surface:var(--app-surface);--surface2:var(--app-surface2);--surface3:var(--app-surface3);--mica:var(--app-mica);--glass:color-mix(in srgb,var(--app-glass) 88%,transparent);--border:var(--app-border);--hover:var(--app-hover);--radius:var(--theme-radius);--taskbar:color-mix(in srgb,var(--shell-glass) 86%,transparent);--shadow:0 16px 48px #0003,0 1px 5px #0002;color:var(--text);cursor:var(--cursor-arrow,default)}
+body.theme-managed[data-theme=dark]{--shadow:0 18px 52px #0008,0 2px 8px #0005;color-scheme:dark}body.theme-managed[data-theme=light]{color-scheme:light}
+.theme-managed #desktop,.theme-managed #window-layer{inset:var(--work-top,0px) var(--work-right,0px) var(--work-bottom,50px) var(--work-left,0px)}
+#theme-background{position:fixed;inset:0;z-index:0;pointer-events:none;transition:background-color .18s ease}
+.theme-managed .window{border-width:var(--theme-border-width);border-color:var(--sys-activeborder,var(--app-border));border-radius:var(--theme-radius);background:var(--mica);outline-color:var(--sys-windowframe,#0002)}
+.theme-managed .window.inactive{border-color:var(--sys-inactiveborder,var(--app-border))}
+.theme-managed .window>.titlebar{height:var(--theme-title-height);min-height:var(--theme-title-height);background:var(--mica);border-radius:var(--theme-radius) var(--theme-radius) 0 0;color:var(--app-text);cursor:var(--cursor-arrow,default)}
+.theme-managed .window.inactive>.titlebar{background:var(--theme-inactive-title);color:var(--theme-inactive-title-text)}
+.theme-managed.theme-accent-title .window:not(.inactive)>.titlebar{background:linear-gradient(90deg,var(--theme-active-title),var(--sys-gradientactivetitle,var(--theme-active-title)));color:var(--theme-title-text)}
+.theme-managed.theme-accent-title .window.inactive>.titlebar{background:linear-gradient(90deg,var(--theme-inactive-title),var(--sys-gradientinactivetitle,var(--theme-inactive-title)))}
+.theme-managed .window.maximized{border:0;border-radius:0;outline:0}.theme-managed .window.maximized>.titlebar{border-radius:0}
+.theme-managed .window-body{border-radius:0 0 var(--theme-radius) var(--theme-radius);background:var(--surface2)}
+.theme-managed .window.maximized>.window-body{border-radius:0}
+.theme-managed .primary{color:var(--accent-text)!important}.theme-managed ::selection{background:var(--selection);color:var(--selection-text)}
+.theme-managed button,.theme-managed a{cursor:var(--cursor-hand,pointer)}.theme-managed input,.theme-managed textarea,[contenteditable=true]{cursor:var(--cursor-ibeam,text)}
+.theme-managed button:disabled{cursor:var(--cursor-no,not-allowed)}.theme-managed .resize-handle.n,.theme-managed .resize-handle.s{cursor:var(--cursor-sizens,ns-resize)}.theme-managed .resize-handle.e,.theme-managed .resize-handle.w{cursor:var(--cursor-sizewe,ew-resize)}
+.theme-managed .resize-handle.nw,.theme-managed .resize-handle.se{cursor:var(--cursor-sizenwse,nwse-resize)}.theme-managed .resize-handle.ne,.theme-managed .resize-handle.sw{cursor:var(--cursor-sizenesw,nesw-resize)}
+.theme-managed [aria-busy=true]{cursor:var(--cursor-appstarting,progress)}.theme-managed [draggable=true]:active{cursor:var(--cursor-sizeall,move)}
+.theme-managed ::-webkit-scrollbar{width:var(--theme-scrollbar);height:var(--theme-scrollbar)}.theme-managed ::-webkit-scrollbar-track{background:var(--sys-scrollbar,transparent)}
+.theme-managed .menu-bar{background:var(--sys-menu,var(--surface2));color:var(--sys-menutext,var(--text))}.theme-managed .secondary{background:var(--sys-buttonface,var(--surface));color:var(--sys-buttontext,var(--text));border-color:var(--sys-buttonshadow,var(--border))}
+.theme-managed .paint-workspace{background:var(--sys-appworkspace,var(--surface3))}
+/* Shell/app appearance can be chosen independently. */
+.theme-managed #taskbar,.theme-managed #theme-topbar,.theme-managed .panel,.theme-managed .task-preview,.theme-managed .snap-layouts,.theme-managed .context-menu,.theme-managed .file-operation-panel{--text:var(--shell-text);--muted:var(--shell-muted);--surface:var(--shell-surface);--surface2:var(--shell-surface2);--surface3:var(--shell-surface3);--mica:var(--shell-mica);--glass:color-mix(in srgb,var(--shell-glass) 89%,transparent);--border:var(--shell-border);--hover:var(--shell-hover);color:var(--shell-text)}
+.theme-managed .context-menu{background:var(--sys-menu,var(--glass));color:var(--sys-menutext,var(--text))}
+.theme-managed .flyout{background:var(--glass);border:1px solid var(--border);border-radius:max(4px,var(--theme-radius));backdrop-filter:blur(30px) saturate(1.3)}
+.theme-managed #taskbar{height:var(--bar-height);background:var(--taskbar);border-color:var(--shell-border);transition:none}
+.theme-managed .task-button{width:var(--theme-icon-size);height:var(--theme-icon-size);min-width:var(--theme-icon-size);flex:none;padding:6px}
+.theme-managed .task-button .app-icon{--icon-size:calc(var(--theme-icon-size) - 12px)!important}
+.theme-managed .task-button.active{background:color-mix(in srgb,var(--surface) 75%,transparent)}
+.theme-managed.theme-accent-shell #taskbar{background:color-mix(in srgb,var(--accent) 72%,var(--shell-mica));color:var(--accent-text)}
+.theme-managed.theme-accent-shell .start-menu{--shell-glass:color-mix(in srgb,var(--accent) 15%,var(--shell-mica))}
+.theme-hide-search #taskbar .task-search,.theme-hide-taskview #taskbar [aria-label="Task View"],.theme-hide-widgets #taskbar .task-left,.theme-hide-widgets #theme-topbar [aria-label="Open your day widgets"],.theme-hide-search #theme-topbar [aria-label="Search apps and files"]{display:none}
+/* macOS 26 profile: original glass surfaces, a real menu bar and floating Dock. */
+#theme-topbar{position:fixed;left:0;right:0;top:0;height:30px;z-index:10000;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:color-mix(in srgb,var(--shell-glass) 74%,transparent);backdrop-filter:blur(32px) saturate(1.6);border-bottom:1px solid var(--shell-border);font-size:12px;gap:6px}
+.theme-global-menus,.theme-top-tools{display:flex;align-items:center;height:100%;gap:2px;min-width:0}.theme-global-menus>button{height:27px;padding:2px 8px;border-radius:6px}.theme-active-app{padding:0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
+#theme-topbar .task-right{position:static;height:30px;display:flex;gap:1px;flex:none}#theme-topbar .tray-clock{display:flex;align-items:center;gap:6px;font-size:11px;line-height:1;min-width:0;padding:4px 8px}#theme-topbar .tray-clock br{display:none}#theme-topbar .tray-clock small{font-size:inherit}#theme-topbar button.icon-button{height:27px;min-width:25px;padding:3px}#theme-topbar .tray-status{height:27px;padding:3px 6px;gap:5px}#theme-topbar .show-desktop{display:none}
+.theme-managed[data-profile=macos26] #taskbar{left:50%;right:auto;bottom:9px;width:max-content;max-width:calc(100vw - 24px);height:var(--dock-thickness);padding:7px 9px;border:1px solid #ffffff55;border-radius:22px;background:color-mix(in srgb,var(--shell-glass) 63%,transparent);box-shadow:0 4px 22px #0003,inset 0 1px #ffffff66;transform:translateX(-50%);backdrop-filter:blur(34px) saturate(1.8)}
+.theme-managed[data-profile=macos26][data-glass=tinted] #taskbar{background:color-mix(in srgb,var(--accent) 14%,color-mix(in srgb,var(--shell-mica) 88%,transparent))}
+.theme-managed[data-profile=macos26] #taskbar .task-left,.theme-managed[data-profile=ubuntu] #taskbar .task-left{display:none}
+.theme-managed:not([data-profile=windows]) #taskbar .task-center{margin:0;gap:4px;min-width:0;max-width:100%;height:100%;overflow-x:auto;scrollbar-width:none}
+.theme-managed:not([data-profile=windows]) #taskbar .task-search{width:var(--theme-icon-size);height:var(--theme-icon-size);min-width:var(--theme-icon-size);justify-content:center;padding:0;background:transparent;box-shadow:none}
+.theme-managed:not([data-profile=windows]) #taskbar .task-search span{display:none}
+.theme-managed[data-profile=macos26] .task-button{border-radius:12px;transition:background .15s,translate .15s}.theme-managed[data-profile=macos26] .task-button:hover{translate:0 -3px;background:#ffffff26}
+.theme-managed[data-profile=macos26] .task-button:after{bottom:-3px;width:4px!important;height:4px;border-radius:50%;background:var(--shell-text)}
+.theme-managed[data-profile=macos26] .task-button.active:after{background:var(--accent)}
+.theme-managed[data-profile=macos26] .window>.titlebar{flex-direction:row-reverse;position:relative;background:var(--mica);box-shadow:inset 0 -1px var(--border)}
+.theme-managed[data-profile=macos26] .window-title{padding:0 88px 0 8px;justify-content:center;font-weight:600;gap:5px;font-size:12px}
+.theme-managed[data-profile=macos26] .window-title>.app-icon{display:none}
+.theme-managed[data-profile=macos26] .window-controls{position:absolute;left:13px;top:0;display:flex;align-items:center;gap:8px;margin:0;height:100%}
+.theme-managed[data-profile=macos26] .window-controls>button{width:13px;height:13px;min-width:13px;border-radius:50%;border:1px solid #0002;padding:0;color:#0009;order:2;background:#ffbd2e}
+.theme-managed[data-profile=macos26] .window-controls>button:nth-child(2){order:3;background:#28c840}
+.theme-managed[data-profile=macos26] .window-controls>button:last-child{order:1;background:#ff5f57;border-radius:50%}
+.theme-managed[data-profile=macos26] .window-controls svg{opacity:0;width:9px;height:9px;stroke-width:1.8}.theme-managed[data-profile=macos26] .window-controls:hover svg,.theme-managed[data-profile=macos26] .window-controls:focus-within svg{opacity:1}
+.theme-managed[data-profile=macos26] .window.inactive .window-controls:not(:hover)>button{background:#9996}
+.theme-managed[data-profile=macos26] .window-body{border-top:0}.theme-managed[data-profile=macos26] .toolbar{background:var(--surface2)}
+.theme-managed[data-profile=macos26] .secondary,.theme-managed[data-profile=macos26] input,.theme-managed[data-profile=macos26] select{border-radius:7px}
+/* Ubuntu GNOME profile: actual Activities/system bar and side dock. */
+.theme-managed[data-profile=ubuntu] #theme-topbar{background:#242424;color:#fff;border:0;font-size:13px;backdrop-filter:none;padding:0 9px}
+.theme-managed[data-profile=ubuntu] #theme-topbar .theme-center-clock{position:absolute;left:50%;transform:translateX(-50%);height:30px;font-weight:600}
+.theme-managed[data-profile=ubuntu] #theme-topbar .theme-global-menus>button{font-weight:600;border-radius:16px;padding:3px 15px}
+.theme-managed[data-profile=ubuntu] #taskbar{background:#242424ed;border:0;box-shadow:none;padding:6px;height:var(--dock-thickness)}
+.theme-managed[data-profile=ubuntu] #taskbar .task-button{border-radius:8px}.theme-managed[data-profile=ubuntu] #taskbar #start-button{border:1px solid #ffffff20;margin-left:5px}
+.theme-managed[data-profile=ubuntu] #taskbar .task-button.active{background:#ffffff25}.theme-managed[data-profile=ubuntu] #taskbar .task-button:after{background:var(--accent);height:4px}
+.theme-managed[data-profile=ubuntu] .window>.titlebar{border-bottom:1px solid var(--border);background:var(--mica)}
+.theme-managed[data-profile=ubuntu] .window-title{font-weight:650;font-size:13px}
+.theme-managed[data-profile=ubuntu] .window-controls{align-items:center;padding:0 9px;gap:4px}
+.theme-managed[data-profile=ubuntu] .window-controls>button{width:26px;height:26px;border-radius:50%;padding:5px}
+.theme-managed[data-profile=ubuntu] .window-controls>button:last-child{background:var(--surface3);border-radius:50%}
+.theme-managed[data-profile=ubuntu] .window-controls>button:last-child:hover{background:var(--danger);color:#fff}
+.theme-managed[data-profile=ubuntu] .secondary,.theme-managed[data-profile=ubuntu] .primary{border-radius:8px;padding:8px 14px}
+/* Both custom profiles support a left/right dock with the same live task buttons. */
+.theme-managed:not([data-profile=windows])[data-dock-side=true] #taskbar{top:var(--work-top);bottom:0;left:0;right:auto;width:var(--dock-thickness);height:auto;max-width:none;transform:none;border-radius:0;padding:10px 6px}
+.theme-managed:not([data-profile=windows])[data-dock-side=true][data-dock-position=right] #taskbar{left:auto;right:0}
+.theme-managed:not([data-profile=windows])[data-dock-side=true] #taskbar .task-center{flex-direction:column;justify-content:flex-start;width:100%;height:100%;overflow-x:hidden;overflow-y:auto}
+.theme-managed:not([data-profile=windows])[data-dock-side=true] #taskbar .task-button,.theme-managed:not([data-profile=windows])[data-dock-side=true] #taskbar .task-search{flex:none}
+.theme-managed[data-profile=ubuntu][data-dock-side=true] #taskbar #start-button{margin:8px 0 0;margin-top:auto}
+.theme-managed:not([data-profile=windows])[data-dock-side=true] #taskbar .task-button:after{left:0;bottom:calc(50% - 3px);width:3px!important;height:6px;border-radius:3px}
+.theme-managed[data-profile=macos26][data-dock-side=true] #taskbar{top:calc(var(--work-top) + 12px);bottom:12px;border-radius:20px;border:1px solid #ffffff55;width:calc(var(--dock-thickness) - 8px);margin:0 4px;max-height:calc(100vh - var(--work-top) - 24px)}
+/* Auto-hide retains a 4px reveal edge; keyboard focus also reveals the dock. */
+.theme-managed[data-auto-hide=true][data-profile=windows] #taskbar:not(:hover):not(:focus-within){transform:translateY(calc(100% - 4px))}
+.theme-managed[data-auto-hide=true][data-profile=macos26][data-dock-side=false] #taskbar:not(:hover):not(:focus-within){transform:translate(-50%,calc(100% + 5px))}
+.theme-managed[data-auto-hide=true][data-profile=ubuntu][data-dock-side=false] #taskbar:not(:hover):not(:focus-within){transform:translateY(calc(100% - 4px))}
+.theme-managed[data-auto-hide=true][data-dock-side=true] #taskbar:not(:hover):not(:focus-within){transform:translateX(calc(-100% + 4px))}
+.theme-managed[data-auto-hide=true][data-dock-side=true][data-dock-position=right] #taskbar:not(:hover):not(:focus-within){transform:translateX(calc(100% - 4px))}
+/* All shell panels honor bars/docks. Anchor-based popups additionally use live bounds. */
+.theme-managed .start-menu{bottom:calc(var(--work-bottom) + 10px);max-height:calc(100dvh - var(--work-top) - var(--work-bottom) - 24px)}
+.theme-managed:not([data-profile=windows]) .start-menu{left:50%!important;transform:translateX(-50%);border-radius:18px}
+.theme-managed[data-profile=ubuntu][data-dock-side=true] .start-menu{left:calc(var(--work-left) + 12px)!important;top:calc(var(--work-top) + 12px);bottom:auto;transform:none}
+.theme-managed[data-profile=ubuntu][data-dock-side=true][data-dock-position=right] .start-menu{left:auto!important;right:calc(var(--work-right) + 12px)}
+.theme-managed:not([data-profile=windows]) .quick-integrated,.theme-managed:not([data-profile=windows]) .notifications-integrated{top:40px;right:10px;bottom:auto;max-height:calc(100dvh - 54px);border-radius:16px}
+.theme-managed .widgets-flyout{left:calc(var(--work-left) + 10px);top:calc(var(--work-top) + 10px);bottom:calc(var(--work-bottom) + 10px);max-height:calc(100dvh - var(--work-top) - var(--work-bottom) - 20px)}
+.theme-managed .clipboard-flyout,.theme-managed .file-operation-panel{bottom:calc(var(--work-bottom) + 10px);right:calc(var(--work-right) + 10px);max-height:calc(100dvh - var(--work-top) - var(--work-bottom) - 20px)}
+.theme-managed .integrated-task-view{inset:var(--work-top) var(--work-right) var(--work-bottom) var(--work-left)}
+.theme-managed .context-menu{max-height:calc(100dvh - 40px);overflow:auto}
+.theme-managed [data-icon-style]{isolation:isolate}
+.theme-managed[data-icon-style=tinted] .app-icon{background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 60%,#fff),var(--accent));color:var(--accent-text);clip-path:none;border:1px solid #ffffff33}
+.theme-managed[data-icon-style=dark] .app-icon{background:linear-gradient(145deg,#3b3e45,#171a21);color:var(--accent);clip-path:none;border:1px solid #ffffff25}
+.theme-managed[data-icon-style=clear] .app-icon{background:color-mix(in srgb,var(--surface) 30%,transparent);color:var(--text);clip-path:none;border:1px solid #ffffff66;backdrop-filter:blur(8px);box-shadow:inset 0 1px #fff5}
+.theme-managed .desktop-icon[data-theme-icon] .app-icon:has(+span){background-image:var(--custom-desktop-icon);background-size:contain;background-repeat:no-repeat;background-position:center}
+.theme-managed .desktop-icon.theme-custom-icon .app-icon{background:var(--custom-desktop-icon) center/contain no-repeat;clip-path:none;filter:none;border:0}.theme-managed .desktop-icon.theme-custom-icon .app-icon svg{visibility:hidden}
+/* In-place theme settings. */
+.theme-current{display:flex;gap:24px;align-items:center;margin:4px 0 24px}.theme-current>.theme-miniature{width:220px;height:140px;flex:none}.theme-current h2{margin:0 0 8px}.theme-current p{margin:4px 0 12px}
+.theme-actions{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.theme-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin:16px 0 25px}
+.theme-card{display:flex;flex-direction:column;align-items:stretch;gap:9px;white-space:normal;text-align:left;padding:7px;border:2px solid var(--border);border-radius:12px;background:var(--surface);min-width:0}
+.theme-card[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft)}.theme-card strong{padding:2px 4px;font-size:12px}.theme-card small{padding:0 4px 5px;font-size:11px}.theme-card .theme-miniature{width:100%;height:92px}
+.theme-miniature{position:relative;overflow:hidden;border-radius:8px;background:radial-gradient(ellipse at 64% 70%,#49b0ef 0%,#143697 42%,#182946 80%);border:1px solid #0002;min-height:90px}
+.theme-miniature .mini-window{position:absolute;left:24%;top:20%;width:59%;height:60%;border-radius:6px;background:#f5f6f9;box-shadow:0 5px 16px #0005;overflow:hidden}.mini-title{height:16px;background:#e9ebf3;border-bottom:1px solid #0001}.mini-lines{margin:9px;height:4px;width:60%;background:var(--mini-accent);box-shadow:0 9px #8884,0 18px #8884}
+.mini-dock{position:absolute;bottom:0;left:0;right:0;height:15px;display:flex;align-items:center;justify-content:center;gap:4px;background:#f1f5ffbc}.mini-dock i{height:9px;width:9px;background:var(--mini-accent);border-radius:2px}
+.theme-miniature[data-mini-profile=macos26]{background:radial-gradient(ellipse at 76% 17%,#b5e4ff,#9589fa 45%,#544bad)}.theme-miniature[data-mini-profile=macos26] .mini-top{position:absolute;top:0;left:0;right:0;height:9px;background:#ffffff60}.theme-miniature[data-mini-profile=macos26] .mini-dock{left:24%;right:24%;bottom:4px;border-radius:6px;height:19px;background:#ffffff60}.theme-miniature[data-mini-profile=macos26] .mini-title:before{content:'● ● ●';font-size:8px;color:#e46856;position:absolute;left:4px}
+.theme-miniature[data-mini-profile=ubuntu]{background:linear-gradient(135deg,#402341,#762660 52%,#e95420)}
+.theme-miniature[data-mini-profile=ubuntu] .mini-top{position:absolute;top:0;left:0;right:0;height:9px;background:#181818}
+.theme-miniature[data-mini-profile=ubuntu] .mini-dock{top:9px;left:0;right:auto;bottom:0;width:18px;height:auto;flex-direction:column;background:#27252ad9}
+@media(max-width:600px){.theme-presets{grid-template-columns:repeat(auto-fit,minmax(135px,1fr))}.theme-global-menus>button:not(:first-child){display:none}.theme-active-app{max-width:100px;overflow:hidden;text-overflow:ellipsis}.theme-top-tools{gap:0}}
+.theme-card>button:first-child{display:flex;flex-direction:column;align-items:stretch;gap:8px;width:100%;min-width:0;white-space:normal;padding:0;background:transparent;border:0;border-radius:6px}
+.theme-card:has(>button[aria-pressed=true]){border-color:var(--accent)}
+.theme-card>button:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.theme-miniature[data-mini-mode=dark] .mini-window{background:#25262b}.theme-miniature[data-mini-mode=dark] .mini-title{background:#373941}
+.theme-range{display:flex;align-items:center;gap:10px}.theme-range output{min-width:25px;text-align:right}
+@media(max-width:600px){.theme-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.theme-current{flex-direction:column;align-items:flex-start;gap:12px}.theme-current>.theme-miniature{width:100%;max-width:280px}.theme-actions>button{white-space:normal}.theme-setting{flex-wrap:wrap;gap:10px}.theme-setting>select{max-width:100%}}
+/* Accessibility/material settings override profile-specific glass rules. */
+.theme-managed.no-transparency :is(#taskbar,#theme-topbar,.flyout,.notification-stack,.calendar-surface),.theme-managed.theme-contrast :is(#taskbar,#theme-topbar,.flyout,.notification-stack,.calendar-surface){backdrop-filter:none!important;background:var(--surface2)!important}
+.theme-managed.theme-contrast .app-icon{background:var(--surface)!important;color:var(--text)!important;border:1px solid currentColor}
+.theme-managed.theme-contrast .window-controls>button{border:1px solid var(--text);color:var(--text)}
+.theme-managed.theme-contrast .window-controls svg{opacity:1!important}
+body.theme-managed[data-auto-hide=true]:is(:has(#panel-layer>:not([hidden])),:has(#context-menu:not([hidden]))) #taskbar{transform:none!important}
+body.theme-managed[data-profile=macos26][data-dock-side=false][data-auto-hide=true]:is(:has(#panel-layer>:not([hidden])),:has(#context-menu:not([hidden]))) #taskbar{transform:translateX(-50%)!important}

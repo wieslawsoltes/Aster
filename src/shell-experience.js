@@ -282,7 +282,7 @@
         if (!candidates.length) return;
         const host = surface('snapassist', 'Snap Assist', 'snap-assist'); if (!host) return;
         const opposite = zone === 'left' ? 'right' : 'left', vp = OS.viewport();
-        Object.assign(host.panel.style, { left: (opposite === 'left' ? 8 : vp.w / 2 + 4) + 'px', top: '8px', width: (vp.w / 2 - 12) + 'px', maxHeight: (vp.h - 16) + 'px' });
+        Object.assign(host.panel.style, { left: ((vp.x || 0) + (opposite === 'left' ? 8 : vp.w / 2 + 4)) + 'px', top: ((vp.y || 0) + 8) + 'px', width: (vp.w / 2 - 12) + 'px', maxHeight: (vp.h - 16) + 'px' });
         host.panel.append(title('Choose another window', icon('close', 'Dismiss Snap Assist', () => OS.closePanels(true))));
         const grid = OS.el('div', { class: 'snap-assist-grid' });
         for (const other of candidates) grid.append(OS.el('button', { class: 'snap-assist-choice', 'aria-label': 'Snap ' + other.title + ' ' + opposite, html: OS.appIcon(other.appId, 38) + '<span>' + OS.esc(other.title) + '</span>', onclick: () => {

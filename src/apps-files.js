@@ -143,6 +143,7 @@
                         await importFiles(f, targetDir()); } }, { text: 'Connect local folder', icon: 'folder', action: async () => navigate(await OS.fs.mount()) }, { text: 'Open in Terminal', icon: 'terminal', action: () => OS.launch('terminal', { cwd: targetDir() }) }, null, { text: 'Empty Recycle Bin', icon: 'trash', danger: true, action: async () => { if (await OS.confirm('Empty Recycle Bin?', 'All items in the virtual Recycle Bin will be permanently deleted.', 'Empty', true)) {
                         for (const f of await OS.fs.list('/.Trash'))
                             await OS.fs.remove(f.path, true);
+                        void OS.themes?.playSound('EmptyRecycleBin');
                     } } }, { text: 'Properties', icon: 'info', disabled: !selected.size, action: properties }]);
             cmd.append(newButton, OS.el('span', { class: 'divider' }), undoB, redoB, cutB, copyB, pasteB, renameB, downloadB, deleteB, OS.el('span', { class: 'divider' }), sortB, viewB, extractB, OS.el('span', { class: 'spacer' }), moreB);
             const back = button('back', 'Back', () => { if (historyIndex > 0) {

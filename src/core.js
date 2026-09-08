@@ -2,7 +2,7 @@
 'use strict';
 (() => {
     const OS = window.Aster = {
-        version: '1.8.0', apps: new Map(), windows: new Map(), mounts: new Map(),
+        version: '1.9.0', apps: new Map(), windows: new Map(), mounts: new Map(),
         events: new EventTarget(), clipboard: null, started: performance.now(),
         metrics: { fps: 0, frameMs: 0, drawCalls: 0, mode: 'Starting', frames: [] },
         settings: { theme: 'light', accent: '#176ae6', wallpaper: 'bloom', transparency: true, motion: true,
@@ -439,6 +439,7 @@
         document.documentElement.style.setProperty('--font-size', s.fontSize + 'px');
         $('#brightness').style.opacity = String((100 - s.brightness) / 100 * .8);
         $('#desktop-icons').hidden = !s.desktopIcons;
+        OS.themes?.applyLegacy();
         OS.renderer?.invalidate();
         OS.emit('settings', s);
     };
@@ -454,6 +455,7 @@
         OS.customApps = await OS.db.get('customApps') || [];
         OS.customApps.forEach(OS.registerCustom);
         await OS.initDesktopServices();
+        await OS.themes?.initialize();
         OS.applySettings();
     };
 })();

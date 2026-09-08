@@ -11,6 +11,7 @@ const COLORS=[0xc8c8c8,0,0xd77800,0xb99d63,0xf0f0f0,0xffffff,0x646464,0,0,0xffff
 const makeLong=(lo,hi)=>((lo&65535)|((hi&65535)<<16))>>>0;
 function installGUI(rt){
     const m=rt.mem,c=rt.cpu;
+    const colors=rt.systemColors=COLORS.slice(); rt.themeRevision=0;
     const u=(name,n,fn)=>rt.register('user32.dll',name,n,fn),g=(name,n,fn)=>rt.register('gdi32.dll',name,n,fn);
     const pair=(reg,name,n,fn)=>{reg(name+'A',n,(...args)=>fn(false,...args));reg(name+'W',n,(...args)=>fn(true,...args));};
     const fail=(error,result=0)=>{rt.lastError=error;return result;};
@@ -132,7 +133,7 @@ function installGUI(rt){
     u('InvalidateRect',3,invalidate);u('ValidateRect',2,(h,p)=>{const w=win(h);if(!w)return fail(1400);if(p)throw Error('Partial ValidateRect regions not implemented');w.paintRect=null;w.erase=false;rt.messages=rt.messages.filter(x=>x.hwnd!==h||x.message!==15);return 1;});
     u('RedrawWindow',4,async(h,p,region,flags)=>{if(region)throw Error('RedrawWindow HRGN is not implemented');if(flags&1)invalidate(h,p,!!(flags&4));if(flags&8)call('user32.dll','ValidateRect',h,p);if(flags&0x100)return call('user32.dll','UpdateWindow',h);return win(h)?1:0;});
     u('UpdateWindow',1,async h=>{const w=win(h);if(!w)return fail(1400);if(w.painting)return 1;if(!w.paintRect&&!rt.messages.some(x=>x.hwnd===h&&x.message===15))return 1;w.painting=true;rt.messages=rt.messages.filter(x=>x.hwnd!==h||x.message!==15);try{await rt.windowProc(h,15);return 1;}finally{w.painting=false;}});
-    u('BeginPaint',2,(h,p)=>{const w=rt.get(h,'window'),dc=rt.dc(h),r=w.paintRect||[0,0,w.width,w.height];m.zero(p,64);m.w32(p,dc);m.w32(p+4,w.erase?1:0);putRect(p+8,r);if(w.erase&&w.background){let brush=w.background<=31?{color:W.color(COLORS[w.background-1]||0)}:rt.handles.get(w.background);if(brush?.color)rt.draw(h,{op:'rect',x:r[0],y:r[1],w:r[2]-r[0],h:r[3]-r[1],color:brush.color});}w.paintRect=null;w.erase=false;rt.messages=rt.messages.filter(x=>x.hwnd!==h||x.message!==15);return dc;});
+    u('BeginPaint',2,(h,p)=>{const w=rt.get(h,'window'),dc=rt.dc(h),r=w.paintRect||[0,0,w.width,w.height];m.zero(p,64);m.w32(p,dc);m.w32(p+4,w.erase?1:0);putRect(p+8,r);if(w.erase&&w.background){let brush=w.background<=31?{color:W.color(colors[w.background-1]||0)}:rt.handles.get(w.background);if(brush?.color)rt.draw(h,{op:'rect',x:r[0],y:r[1],w:r[2]-r[0],h:r[3]-r[1],color:brush.color});}w.paintRect=null;w.erase=false;rt.messages=rt.messages.filter(x=>x.hwnd!==h||x.message!==15);return dc;});
     u('GetUpdateRect',3,(h,p,erase)=>{const w=win(h);if(!w)return 0;if(p)putRect(p,w.paintRect||[0,0,0,0]);return w.paintRect?1:0;});
     // Bounded, handle-backed menus. Non-string owner-drawn entries are rejected.
     u('CreateMenu',0,()=>createMenu());u('CreatePopupMenu',0,()=>createMenu([],true));u('DestroyMenu',1,h=>{const ok=destroyMenu(h);changedMenu();return ok;});
@@ -231,6 +232,7 @@ function installGUI(rt){
     // Events only mutate control state or enqueue; no reentrant CPU invocation here.
     const oldEvent=rt.event.bind(rt);
     rt.event=event=>{
+        if(event.type==='theme')return rt.setSystemColors(event.colors);
         if(event.type==='response')return oldEvent(event);
         const h=event.hwnd>>>0,w=win(h);if(!w)return;
         if(!enabled(h)&&event.type!=='message')return;
@@ -258,7 +260,35 @@ function installGUI(rt){
     u('OffsetRect',3,(p,x,y)=>{const r=rect(p);putRect(p,[r[0]+(x|0),r[1]+(y|0),r[2]+(x|0),r[3]+(y|0)]);return 1;});u('InflateRect',3,(p,x,y)=>{const r=rect(p);putRect(p,[r[0]-(x|0),r[1]-(y|0),r[2]+(x|0),r[3]+(y|0)]);return 1;});
     u('IntersectRect',3,(out,a,b)=>putRect(out,intersect(rect(a),rect(b))));u('UnionRect',3,(out,a,b)=>{a=rect(a);b=rect(b);if(a[2]<=a[0]||a[3]<=a[1])return putRect(out,b);if(b[2]<=b[0]||b[3]<=b[1])return putRect(out,a);return putRect(out,[Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[2],b[2]),Math.max(a[3],b[3])]);});
     u('GetSystemMetrics',1,id=>({0:1280,1:720,2:17,3:17,4:24,5:1,6:1,7:4,8:4,11:32,12:32,13:32,14:32,15:22,16:1280,17:672,19:3,20:17,21:17,28:112,29:27,30:4,31:4,32:4,33:4,49:16,50:16,76:0,77:0,78:1280,79:720,80:1})[id]||0);
-    u('GetSysColor',1,id=>COLORS[id]??0);const systemBrushes=new Map();u('GetSysColorBrush',1,id=>{if(id>=COLORS.length)return 0;if(!systemBrushes.has(id))systemBrushes.set(id,rt.handle({type:'brush',stock:true,color:W.color(COLORS[id])}));return systemBrushes.get(id);});
+    u('GetSysColor',1,id=>colors[id]??0);
+    const systemBrushes=new Map();
+    u('GetSysColorBrush',1,id=>{
+        if(!Number.isInteger(id)||id<0||id>=colors.length)return 0;
+        if(!systemBrushes.has(id))systemBrushes.set(id,rt.handle({type:'brush',stock:true,color:W.color(colors[id])}));
+        return systemBrushes.get(id);
+    });
+    // Validate and preflight the entire update. No guest callback is invoked from
+    // the browser transport; ordinary guest DispatchMessage runs the notifications.
+    rt.setSystemColors=(snapshot,notify=true)=>{
+        if(!Array.isArray(snapshot)||snapshot.length!==31||snapshot.some(n=>!Number.isInteger(n)||n<0||n>0xffffff))throw Error('Invalid system-color snapshot');
+        if(rt.stopped)return false;
+        const changed=snapshot.some((n,i)=>n!==colors[i]);
+        const targets=notify&&changed?windows().filter(([,w])=>!w.parent&&!w.destroying):[];
+        const pending=rt.messages.filter(m=>!m.themeNotification),time=(performance.now()-rt.started)>>>0;
+        for(const [hwnd] of targets){
+            for(const message of [0x15,0x31a])pending.push({hwnd,message,wParam:0,lParam:0,time,themeNotification:true});
+            if(!pending.some(m=>m.hwnd===hwnd&&m.message===15))pending.push({hwnd,message:15,wParam:0,lParam:0,time,themeNotification:true});
+        }
+        if(pending.length>1024)return false;
+        if(changed){
+            snapshot.forEach((n,i)=>colors[i]=n);
+            for(const [i,h] of systemBrushes){const brush=rt.handles.get(h);if(brush)brush.color=W.color(colors[i]);}
+            if(notify){rt.messages=pending;for(const [,w] of targets){w.paintRect=[0,0,w.width,w.height];w.erase=true;}}
+            rt.themeRevision++;
+        }
+        rt.emit('system-colors',{revision:rt.themeRevision,colors:colors.slice()});
+        rt.wake();return true;
+    };
     u('MonitorFromRect',2,(p,flags)=>{rect(p);return 0x70000001;});u('MonitorFromWindow',2,(h,flags)=>win(h)?0x70000001:0);u('MonitorFromPoint',3,(x,y,flags)=>0x70000001);
     pair(u,'GetMonitorInfo',2,(wide,h,p)=>{const n=m.u32(p);if(h!==0x70000001||n<(wide?40:40))return fail(87);m.check(p,n);putRect(p+4,[0,0,1280,720]);putRect(p+20,[0,0,1280,672]);m.w32(p+36,1);if(n>40)m.putString(p+40,'\\\\.\\DISPLAY1',wide,Math.min(32,(n-40)/(wide?2:1)));return 1;});
     // Icons/cursors are metadata handles; application drawing still uses bitmaps.

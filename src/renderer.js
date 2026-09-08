@@ -232,9 +232,10 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                     surface.width = width;
                     surface.height = height;
                 }
-                const color = dark ? [.115, .13, .16] : [.948, .962, .983];
+                const themeColor = OS.themes?.tokens?.app?.mica;
+                const color = themeColor ? themeColor.slice(1).match(/../g).map(x=>parseInt(x,16)/255) : dark ? [.115, .13, .16] : [.948, .962, .983];
                 const uniform = new Float32Array([width, height, 0, this.ratio, 0, 0, 0, 0, 0, 0, 0, 0]);
-                const rect = new Float32Array([40, 40, w.rect.w, w.rect.h, ...color, 1, w.id === OS.focused ? 1 : .55, w.maximized ? 0 : 8, 0, 0]);
+                const rect = new Float32Array([40, 40, w.rect.w, w.rect.h, ...color, 1, w.id === OS.focused ? 1 : .55, w.maximized ? 0 : (OS.themes?.metrics?.radius ?? 8), 0, 0]);
                 this.device.queue.writeBuffer(surface.uniform, 0, uniform);
                 this.device.queue.writeBuffer(surface.rect, 0, rect);
                 const p = encoder.beginRenderPass({ colorAttachments: [{ view: surface.context.getCurrentTexture().createView(), loadOp: 'clear', clearValue: { r: 0, g: 0, b: 0, a: 0 }, storeOp: 'store' }] });

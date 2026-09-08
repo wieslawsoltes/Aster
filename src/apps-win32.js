@@ -26,6 +26,7 @@ async function runtimeAssets(){
     workerSource||=Promise.all(['pe','runtime','compat','resources','registry','gui','bitmaps','worker'].map(n=>asset('src/win32/'+n+'.js'))).then(list=>list.map(b=>new TextDecoder().decode(b)).join('\n')).catch(e=>{workerSource=null;throw e;});
     return {wasm:await wasmModule,source:await workerSource};
 }
+OS.on('theme-change',()=>{const colors=OS.themes?.win32Colors();if(colors)for(const session of activeSessions.values())session.send({type:'theme',colors});});
 class Session {
     constructor(w,nodes){this.w=w;this.nodes=nodes;this.files=new Map();this.controls=new Map();this.stats={};this.persist=Promise.resolve();this.closed=false;this.halted=false;this.exitCode=null;this.sequence=Promise.resolve();this.started=performance.now();}
     send(event){this.worker?.postMessage(event);}
@@ -41,13 +42,14 @@ class Session {
             else this.sequence=this.sequence.then(()=>this.receive(data)).catch(error=>this.error(error));
         };
         this.registrySnapshot=await OS.db.get('win32-registry:'+this.key)||null;this.guiHost=new AsterWin32GUIHost(this);
-        const exe=bytes.slice().buffer;this.send({type:'start',wasm,exe,name,registry:this.registrySnapshot,files:[...this.files].map(([path,bytes])=>({path,bytes})),options:{cache:true,args:options.args||'',stdin:options.stdin||''}});
+        const exe=bytes.slice().buffer;this.send({type:'start',wasm,exe,name,theme:OS.themes?.win32Colors(),registry:this.registrySnapshot,files:[...this.files].map(([path,bytes])=>({path,bytes})),options:{cache:true,args:options.args||'',stdin:options.stdin||''}});
         this.nodes.stage.replaceChildren();this.nodes.log.textContent='';this.output='';this.nodes.phase.textContent='Loading '+name+'…';this.nodes.stop.disabled=false;this.nodes.run.disabled=true;this.nodes.sampleRun.disabled=true;
         this.renderFiles();
     }
     error(error){if(this.failed||this.closed||this.halted)return;console.error('Win32 runtime:',error);this.failed=true;this.nodes.phase.textContent='Stopped: '+error.message;this.nodes.log.textContent+='\n'+error.message;this.nodes.details.open=true;this.nodes.run.disabled=false;this.nodes.sampleRun.disabled=false;this.nodes.stop.disabled=true;this.worker?.terminate();this.worker=null;if(activeSessions.get(this.key)===this)activeSessions.delete(this.key);this.guiHost?.destroy();this.renderer?.destroy();}
     async receive(e){
         if((this.closed||this.failed||this.halted)&&!['files','registry','stopped','error'].includes(e.type))return;
+        if(e.type==='system-colors'){this.themeSnapshot={revision:e.revision,colors:e.colors};return;}
         if(this.guiHost?.handles(e.type)){await this.guiHost.receive(e);return;}
         if(e.type==='registry'){
             const snapshot=e.snapshot;if(!snapshot||snapshot.version!==1||!Array.isArray(snapshot.keys)||snapshot.keys.length>256)throw Error('Invalid registry response');let bytes=0,count=0;

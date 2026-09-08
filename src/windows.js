@@ -12,7 +12,7 @@
             OS.db.set('session', data).catch(e => console.warn('Session persistence:', e));
         }, 300);
     };
-    OS.viewport = () => ({ w: innerWidth, h: innerHeight - ($('#taskbar')?.getBoundingClientRect().height || 48) });
+    OS.viewport = () => OS.themes?.ready ? OS.themes.workArea() : ({ x: 0, y: 0, w: innerWidth, h: innerHeight - ($('#taskbar')?.getBoundingClientRect().height || 48) });
     OS.context = (event, items) => {
         event?.preventDefault();
         event?.stopPropagation();
@@ -30,7 +30,7 @@
                 continue;
             }
             const b = OS.el('button', { class: 'menu-item' + (item.danger ? ' danger' : ''), role: 'menuitem', disabled: item.disabled, html: (item.icon ? OS.icon(item.icon) : '<span style="width:16px"></span>') + `<span>${OS.esc(item.text)}</span>` + (item.key ? `<kbd>${OS.esc(item.key)}</kbd>` : '') });
-            b.onclick = OS.guard(async () => { menu.hidden = true; if (trigger?.isConnected) trigger.focus({preventScroll:true}); await item.action?.(); });
+            b.onclick = OS.guard(async () => { menu.hidden = true; if (trigger?.isConnected) trigger.focus({preventScroll:true}); OS.emit('window-action', {action: 'MenuCommand'}); await item.action?.(); });
             menu.append(b);
         }
         menu.hidden = false;
@@ -72,7 +72,7 @@
         actions.append(no, yes);
         dialog.append(content, actions);
         cover.append(dialog);
-        $('#dialog-layer').append(cover);
+        $('#dialog-layer').append(cover); OS.emit('window-action', {action: 'SystemQuestion'});
         cover.onkeydown = e => { if (e.key === 'Escape') {
             e.stopPropagation();
             finish(null);
@@ -173,7 +173,7 @@
                 this.sync();
             }
             this.ready = Promise.resolve().then(() => app.mount(this, options)).then(() => { if (options.minimized)
-                this.minimize(); OS.emit('window-ready', this); return this; }).catch(e => { console.error(e); this.body.replaceChildren(OS.el('div', { class: 'app-error' }, OS.el('h2', { text: 'This app could not open' }), OS.el('p', { text: e.message }), OS.el('button', { class: 'secondary', text: 'Close', onclick: () => this.close() }))); return this; });
+                this.minimize(); OS.emit('window-ready', this); OS.emit('window-action', {action: 'Open'}); return this; }).catch(e => { console.error(e); this.body.replaceChildren(OS.el('div', { class: 'app-error' }, OS.el('h2', { text: 'This app could not open' }), OS.el('p', { text: e.message }), OS.el('button', { class: 'secondary', text: 'Close', onclick: () => this.close() }))); return this; });
             OS.emit('windows');
             OS.saveSession();
         }
@@ -230,13 +230,13 @@
                 this.el.focus({ preventScroll: true });
             OS.emit('windows');
         }
-        minimize() { this.minimized = true; this.sync(); if (OS.focused === this.id) {
+        minimize() { OS.emit('window-action', {action: 'Minimize'}); this.minimized = true; this.sync(); if (OS.focused === this.id) {
             OS.focused = null;
             const next = Array.from(OS.windows.values()).filter(w => !w.minimized && w.desktop === OS.activeDesktop && w.id !== this.id).sort((a, b) => b.z - a.z)[0];
             next?.focus();
         } OS.emit('windows'); }
         restore() { this.minimized = false; this.focus(); }
-        toggleMaximize() { if (this.maximized) {
+        toggleMaximize() { OS.emit('window-action', {action: this.maximized ? 'RestoreDown' : 'Maximize'}); if (this.maximized) {
             this.rect = { ...this.restoreRect };
             this.maximized = false;
             this.constrain();
@@ -283,10 +283,11 @@
                 if (!moved && this.maximized) {
                     this.maximized = false;
                     const restore = this.restoreRect || { w: 850, h: 590 };
-                    const relative = (start.x - start.rect.x) / start.rect.w;
+                    const area = OS.viewport();
+                    const relative = (start.x - area.x - start.rect.x) / start.rect.w;
                     this.rect.w = Math.min(restore.w, innerWidth - 20);
                     this.rect.h = Math.min(restore.h, innerHeight - 80);
-                    start.rect = { ...this.rect, x: start.x - this.rect.w * relative, y: start.y - 18 };
+                    start.rect = { ...this.rect, x: start.x - area.x - this.rect.w * relative, y: start.y - area.y - 18 };
                     start.x = last.clientX;
                     start.y = last.clientY;
                 }
@@ -295,12 +296,12 @@
                 this.rect.x = Math.max(-this.rect.w + 120, Math.min(v.w - 120, start.rect.x + dx));
                 this.rect.y = Math.max(0, Math.min(v.h - 39, start.rect.y + dy));
                 this.sync();
-                zone = last.clientY < 9 ? 'max' : last.clientX < 12 ? 'left' : last.clientX > v.w - 12 ? 'right' : null;
+                zone = last.clientY < v.y + 9 ? 'max' : last.clientX < v.x + 12 ? 'left' : last.clientX > v.x + v.w - 12 ? 'right' : null;
                 const preview = $('#snap-preview');
                 if (zone) {
                     const r = zone === 'max' ? { x: 0, y: 0, w: v.w, h: v.h } : zone === 'left' ? { x: 8, y: 8, w: (v.w - 24) / 2, h: v.h - 16 } : { x: (v.w + 8) / 2, y: 8, w: (v.w - 24) / 2, h: v.h - 16 };
                     preview.hidden = false;
-                    Object.assign(preview.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+                    Object.assign(preview.style, { left: (r.x + v.x) + 'px', top: (r.y + v.y) + 'px', width: r.w + 'px', height: r.h + 'px' });
                 }
                 else
                     preview.hidden = true;
@@ -388,6 +389,7 @@
             if (!force && this.beforeClose && !(await this.beforeClose()))
                 return;
             this.closed = true;
+            OS.emit('window-action', {action: 'Close'});
             for (const cleanup of this.cleanups) {
                 try {
                     cleanup();

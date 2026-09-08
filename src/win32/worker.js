@@ -37,6 +37,7 @@ onmessage=async({data})=>{
             if(!Array.isArray(data.files)||data.files.length>512)throw Error('Invalid file snapshot');
             for(const file of data.files)process.addFile(file.path,file.bytes);
             process.importRegistry?.(data.registry);
+            if(data.theme!==undefined)process.setSystemColors?.(data.theme,false);
             process.load(new Uint8Array(data.exe),data.name);process.run().catch(crash);
         } else if(data.type==='snapshot'){savedFiles(true);savedRegistry(true);}
         else if(data.type==='stop'){releaseCredits();process?.exit(0);savedFiles(true);savedRegistry(true);postMessage({type:'stopped'});}

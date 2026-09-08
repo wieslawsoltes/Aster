@@ -136,7 +136,7 @@
         act('Recent items settings',()=>OS.openApp('settings',{section:'recentitems'}));
         const r=anchor.getBoundingClientRect();panel.style.left=Math.max(8,Math.min(innerWidth-348,r.left))+'px';panel.style.bottom='58px';
         panel.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();OS.closePanels(true);}else if(['ArrowDown','ArrowUp','Tab'].includes(e.key)){const items=[...panel.querySelectorAll('button:not(:disabled)')],at=items.indexOf(document.activeElement);e.preventDefault();items[(at+((e.key==='ArrowUp'||e.shiftKey)?items.length-1:1))%items.length]?.focus();}};
-        await render();if(live)panel.querySelector('button')?.focus();
+        await render();if(live){OS.placeThemePopup?.(anchor,panel);panel.querySelector('button')?.focus();}
     };
     OS.integrations.navigation.push(['defaultapps','file','Default apps','file types extensions open with associations','apps'],['startupapps','play','Startup','automatic startup apps minimized','apps'],['recentitems','clock','Recent items','jump lists recent documents privacy run history','privacy']);
     const originalRender=OS.integrations.renderSettings;
