@@ -10,3 +10,4 @@ tests/desktop-features/artifacts/
 tests/web-apps/artifacts/
 tests/results.json
 tests/*.png
+tests/integrated-shell/artifacts/

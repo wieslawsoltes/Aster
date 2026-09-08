@@ -12,11 +12,12 @@
             OS.db.set('session', data).catch(e => console.warn('Session persistence:', e));
         }, 300);
     };
-    OS.viewport = () => ({ w: innerWidth, h: innerHeight - 50 });
+    OS.viewport = () => ({ w: innerWidth, h: innerHeight - ($('#taskbar')?.getBoundingClientRect().height || 48) });
     OS.context = (event, items) => {
         event?.preventDefault();
         event?.stopPropagation();
-        OS.closePanels?.();
+        const trigger = event?.target?.closest('button,[tabindex]') || document.activeElement;
+        if (!event?.target?.closest('.start-menu,.integrated-task-view')) OS.closePanels?.();
         const menu = $('#context-menu');
         menu.replaceChildren();
         for (const item of items) {
@@ -29,18 +30,19 @@
                 continue;
             }
             const b = OS.el('button', { class: 'menu-item' + (item.danger ? ' danger' : ''), role: 'menuitem', disabled: item.disabled, html: (item.icon ? OS.icon(item.icon) : '<span style="width:16px"></span>') + `<span>${OS.esc(item.text)}</span>` + (item.key ? `<kbd>${OS.esc(item.key)}</kbd>` : '') });
-            b.onclick = OS.guard(async () => { menu.hidden = true; await item.action?.(); });
+            b.onclick = OS.guard(async () => { menu.hidden = true; if (trigger?.isConnected) trigger.focus({preventScroll:true}); await item.action?.(); });
             menu.append(b);
         }
         menu.hidden = false;
         const r = menu.getBoundingClientRect();
-        const x = event?.clientX ?? innerWidth / 2, y = event?.clientY ?? innerHeight / 2;
+        const anchorRect=trigger?.getBoundingClientRect?.();
+        const x = event?.clientX || anchorRect?.left || innerWidth / 2, y = event?.clientY || anchorRect?.bottom || innerHeight / 2;
         menu.style.left = Math.max(6, Math.min(x, innerWidth - r.width - 8)) + 'px';
         menu.style.top = Math.max(6, Math.min(y, innerHeight - r.height - 8)) + 'px';
         const first = menu.querySelector('button:not(:disabled)');
         first?.focus();
         menu.onkeydown = e => { const b = Array.from(menu.querySelectorAll('button:not(:disabled)')); const i = b.indexOf(document.activeElement); if (e.key === 'Escape') {
-            menu.hidden = true;
+            e.preventDefault(); e.stopPropagation(); menu.hidden = true; if(trigger?.isConnected)trigger.focus({preventScroll:true});
         } if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             e.preventDefault();
             b[(i + (e.key === 'ArrowDown' ? 1 : b.length - 1)) % b.length]?.focus();
@@ -261,6 +263,7 @@
             this.sync();
             this.focus();
             OS.closePanels?.();
+            if(!OS.suppressSnapAssist) OS.showSnapAssist?.(this,zone);
         }
         beginDrag(e) {
             if (e.button !== 0)
@@ -362,9 +365,9 @@
                 return;
             OS.$('.snap-layouts')?.remove();
             const r = this.maxButton.getBoundingClientRect(), p = OS.el('div', { class: 'snap-layouts flyout', role: 'group', 'aria-label': 'Snap layouts' });
-            const layouts = [['left', 'right'], ['third', 'two-thirds'], ['top-left', 'bottom-right']];
+            const layouts = [['left', 'right'], ['third', 'two-thirds'], ['top-left', 'top-right', 'bottom-left', 'bottom-right']];
             for (const zones of layouts) {
-                const layout = OS.el('div', { class: 'snap-layout' });
+                const layout = OS.el('div', { class: 'snap-layout'+(zones.length===4?' snap-four':zones[0]==='third'?' snap-thirds':'') });
                 for (const zone of zones) {
                     const b = OS.el('button', { class: 'snap-zone', title: zone, 'aria-label': 'Snap ' + zone });
                     b.onclick = () => { p.remove(); this.snap(zone); };
@@ -419,8 +422,10 @@
             const existing = Array.from(OS.windows.values()).find(w => w.appId === id);
             if (existing) {
                 existing.restore();
-                if (options.section)
-                    existing.navigate?.(options.section);
+                if (options.mode)
+                    existing.ready = Promise.resolve(existing.navigate?.(options.mode)).then(()=>existing);
+                else if (options.section)
+                    existing.ready = Promise.resolve(existing.navigate?.(options.section)).then(()=>existing);
                 else if (options.date)
                     existing.navigate?.(options.date);
                 return existing;

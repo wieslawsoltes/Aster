@@ -1,23 +1,35 @@
 # Aster Desktop
 
-**Your space. Your pace.** An independent, Windows 11–inspired browser desktop built with plain HTML, CSS, JavaScript, and WGSL. Twenty-eight built-in apps, a shared file system, a window manager, and an implemented WebGPU graphics path. No runtime framework, package manager, external font, CDN, account, or backend is required.
+**Your space. Your pace.** An independent, Windows 11–inspired browser desktop built with plain HTML, CSS, JavaScript, and WGSL. Built-in apps and integrated system surfaces, a shared file system, a window manager, and an implemented WebGPU graphics path. No runtime framework, package manager, external font, CDN, account, or backend is required.
 
 Aster is a browser desktop, **not a bootable operating system or a general Windows replacement**. The experimental **Win32 Lab** runs a limited subset of real **32-bit x86 PE executables entirely in the browser**, using an original WebAssembly CPU interpreter, a JavaScript Windows API facade and WebGPU GDI rendering. No Wine, Docker, companion, OS image, native executable launch or streamed desktop is involved. Most existing Windows software is not yet compatible. Included applications are the original reduced 7-Zip console and legacy TinyCC binaries, plus a source-built Windows version of WineMine with unchanged upstream gameplay. TinyCC can compile a Windows EXE that Aster then runs. WineMine exercises PE resources, bitmap drawing, menus, modal dialogs and a private registry. Its game code runs as x86, not as a JavaScript port. See [the tested scope and instructions](docs/browser-win32.md) and [third-party licenses/source](third-party/README.md). Imported HTML/JavaScript apps continue to use isolated browser frames.
 
-## Desktop essentials (1.5)
+## Integrated desktop shell (1.6)
 
-**Settings → Desktop essentials** opens ten substantial Windows-inspired workflows:
-real Explorer tabs/favorites/preview, ZIP tools, opt-in Clipboard History, Focus
-Sessions, a configurable live Widget Board, saved Window Groups and personalized
-desktops, transactional File History, safe opt-in Storage Sense, Accessibility
-Tools, and permission-based Screen Recorder. They work with the shared virtual
-files, actual task/calendar data, existing window manager and standalone build.
-The 67 categorized web apps and experimental Win32 runtime remain available.
+The 1.5 services now live in the shell, rather than a separate Essentials hub.
+**Widgets** and **Clipboard** are disposable flyouts; **Notification Center** has
+an inline calendar and Focus controls. **Task View** manages desktops, saved groups
+and arrangements, with Snap Assist when a window fills half the desktop.
 
-See [the research, priorities, usage and exact browser limits](docs/desktop-essentials.md)
-and [the independent workflow tests](tests/desktop-features/README.md). File History
-is same-browser recovery, not an external backup. Clipboard capture and automatic
-cleanup start disabled. Recording always requires an explicit browser chooser.
+**Settings → System** contains Storage, Clipboard, Focus, Notifications and
+Multitasking. Recovery and Accessibility share that same Settings window.
+**Clock** contains Focus sessions. **Snips** switches between Screenshot and Record
+without launching a separate recorder. **Explorer** browses ZIP contents in its
+tabs, extracts in place, and exposes Previous versions in File Properties.
+The Start menu has a persistent pinned grid and searchable system destinations;
+the 67 categorized web apps remain unchanged.
+
+Original Fluent-inspired material layers, title bars, taskbar sizing, spacing,
+context menus, breadcrumbs and light/dark/mobile layouts unify these surfaces.
+This is browser-rendered styling, not native Windows Mica or host OS control.
+Legacy utility API endpoints remain for compatibility, but are hidden from Start
+and App Center; old session windows migrate to the natural parent apps.
+
+Read [the integrated-shell guide](docs/integrated-shell.md) and
+[the browser verification design](tests/integrated-shell/README.md).
+The [underlying 1.5 data services and limits](docs/desktop-essentials.md) remain:
+clipboard collection and automatic cleanup are opt-in; version history is local
+overwrite recovery, not an external backup; capture needs a browser chooser.
 
 
 ## Start

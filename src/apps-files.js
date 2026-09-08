@@ -20,10 +20,11 @@
             const validTab = t => t && typeof t.path === 'string' && t.path.length < 1024;
             let fileTabs = (Array.isArray(w.state.explorerTabs) ? w.state.explorerTabs : []).filter(validTab).slice(0,12);
             if (!fileTabs.length) fileTabs = [{path, history:[path], historyIndex:0, query:'', view, sort:'name', asc:true}];
+            let archivePrefix='',archiveActive=false,archiveCache=null;
             let activeTab = Math.min(fileTabs.length-1, Math.max(0, Number(w.state.activeFileTab)||0)), detailToken=0, previewURL='';
             const tabs = OS.el('div', { class: 'explorer-tabs', role:'tablist', 'aria-label':'Folder tabs' });
-            function stashTab() { fileTabs[activeTab] = {path,history:history.slice(-50),historyIndex:Math.min(historyIndex,49),query,view,sort,asc}; w.state.explorerTabs=fileTabs.map(t=>({...t})); w.state.activeFileTab=activeTab; }
-            function loadTab() { const t=fileTabs[activeTab];path=t.path;history=(Array.isArray(t.history)?t.history:[path]).filter(p=>typeof p==='string').slice(-50);if(!history.length)history=[path];historyIndex=Math.min(history.length-1,Math.max(0,Number(t.historyIndex)||0));query=typeof t.query==='string'?t.query.slice(0,200):'';view=t.view==='grid'?'grid':'list';sort=['name','modified','type','size'].includes(t.sort)?t.sort:'name';asc=t.asc!==false;selected.clear();anchor=null; }
+            function stashTab() { fileTabs[activeTab] = {path,history:history.slice(-50),historyIndex:Math.min(historyIndex,49),query,view,sort,asc,archivePrefix}; w.state.explorerTabs=fileTabs.map(t=>({...t})); w.state.activeFileTab=activeTab; }
+            function loadTab() { const t=fileTabs[activeTab];path=t.path;archivePrefix=typeof t.archivePrefix==='string'?t.archivePrefix:'';history=(Array.isArray(t.history)?t.history:[path]).filter(p=>typeof p==='string').slice(-50);if(!history.length)history=[path];historyIndex=Math.min(history.length-1,Math.max(0,Number(t.historyIndex)||0));query=typeof t.query==='string'?t.query.slice(0,200):'';view=t.view==='grid'?'grid':'list';sort=['name','modified','type','size'].includes(t.sort)?t.sort:'name';asc=t.asc!==false;selected.clear();anchor=null; }
             loadTab();
             function openTab(dest=path) { if(fileTabs.length>=12) {OS.notify('Tab limit reached','Close a folder tab first (limit 12).');return;}stashTab();fileTabs.push({path:dest});activeTab=fileTabs.length-1;loadTab();search.value=query;OS.guard(render)(); }
             function closeTab(index) { if(fileTabs.length===1) return w.close();stashTab();fileTabs.splice(index,1);if(index<activeTab)activeTab--;else if(index===activeTab)activeTab=Math.min(index,fileTabs.length-1);loadTab();search.value=query;OS.guard(render)(); }
@@ -33,7 +34,7 @@
             const cmd = OS.el('div', { class: 'toolbar explorer-commandbar' }), nav = OS.el('div', { class: 'explorer-nav' }), side = OS.el('aside', { class: 'explorer-sidebar', 'aria-label': 'Folder navigation' }), main = OS.el('div', { class: 'explorer-main', tabindex: '0', 'aria-label': 'Files' }), details = OS.el('aside', { class: 'explorer-details', 'aria-label': 'Details pane' }), layout = OS.el('div', { class: 'explorer-layout' }, side, main, details), status = OS.el('footer', { class: 'statusbar' });
             w.body.classList.add('transparent');
             w.body.append(tabs, cmd, nav, layout, status);
-            const targetDir = () => path === 'home' ? '/Documents' : path;
+            const targetDir = () => path === 'home' ? '/Documents' : archiveActive ? OS.fs.parent(path) : path;
             const selectedRows = () => rows.filter(e => selected.has(e.path));
             const newItem = async (kind) => { const dir = targetDir(); if (dir === '/.Trash')
                 throw Error('Create files outside the Recycle Bin.'); const name = await OS.prompt(kind === 'directory' ? 'New folder' : 'New text document', kind === 'directory' ? 'New folder' : 'Untitled.txt'); if (name === null)
@@ -90,18 +91,20 @@
             };
             const download = async () => { for (const e of selectedRows()) {
                 if (e.kind === 'directory') {
-                    OS.notify('Export folders with Backup', 'Use Settings → Storage → Export backup to export your virtual folders.');
+                    OS.notify('Compress this folder first', 'Use Compress to ZIP file in the context menu, then download the ZIP.');
                     continue;
                 }
                 OS.download(await OS.fs.blob(await OS.fs.read(e.path)), displayName(e));
             } };
-            const properties = async () => { const e = selectedRows()[0]; if (!e)
-                return; await OS.dialog({ title: displayName(e), message: `${fileType(e)}\n\nLocation: ${OS.fs.parent(e.path)}\nSize: ${e.kind === 'directory' ? 'Folder' : OS.formatBytes(e.size || 0)}\nModified: ${e.modified ? new Date(e.modified).toLocaleString() : 'Not available'}\nStorage: ${e.native ? 'Your connected local folder' : 'This browser — ' + OS.db.mode}`, confirm: 'Done', cancel: 'Close' }); };
+            const properties = async () => { const e=selectedRows()[0];if(e)await OS.showFileProperties(archiveActive?path:e.path); };
+            async function extractCurrent() { if(!archiveActive)return;if(!await OS.confirm('Extract compressed folder?','Extract all entries beside this ZIP. The original archive is kept.','Extract all'))return;const dest=await OS.archives.extract(path,OS.fs.parent(path));if(!w.closed)navigate(dest); }
             const openSelection = () => { const e = selectedRows()[0]; if (e) {
+                if(archiveActive){if(e.kind==='directory'){archivePrefix=e.zipName.replace(/\/$/,'')+'/';selected.clear();render();}else OS.notify('Extract this file first','Choose Extract all to work with files from this compressed folder.');return;}
                 if (path === '/.Trash')
                     return OS.notify('Restore this item first', 'Right-click and choose Restore.');
                 if (e.kind === 'directory')
                     navigate(e.path);
+                else if(/\.zip$/i.test(e.path)&&!e.native) navigate(e.path);
                 else
                     OS.guard(OS.openPath)(e.path);
             } };
@@ -111,12 +114,13 @@
                     selected = new Set([entry.path]);
                     markSelection();
                 }
+                if(archiveActive){OS.context(e,[{text:'Open',icon:'folder',disabled:!selectedRows().length,action:openSelection},{text:'Extract all…',icon:'folder',action:extractCurrent},{text:'Archive properties',icon:'info',action:()=>OS.showFileProperties(path)}]);return;}
                 const inTrash = path === '/.Trash', sel = selectedRows();
                 OS.context(e, [
                     ...(!inTrash && sel.length===1 && sel[0].kind==='directory'?[{text:'Open in new tab',icon:'plus',action:()=>openTab(sel[0].path)}]:[]),
-                    ...(!inTrash && sel.length?[{text:'Create ZIP',icon:'folder',action:createZip}]:[]),
-                    ...(!inTrash && sel.length===1 && /\.zip$/i.test(sel[0].path)?[{text:'Extract ZIP here',icon:'folder',action:async()=>{await OS.archives.extract(sel[0].path,targetDir());await render();}}]:[]),
-                    ...(!inTrash && sel.length===1 && sel[0].kind==='file' && !sel[0].native?[{text:'Previous versions',icon:'undo',action:()=>OS.launch('history',{path:sel[0].path})}]:[]),
+                    ...(!inTrash && sel.length?[{text:'Compress to ZIP file',icon:'folder',action:createZip}]:[]),
+                    ...(!inTrash && sel.length===1 && /\.zip$/i.test(sel[0].path)?[{text:'Extract all…',icon:'folder',action:()=>OS.openCompressedFolder(sel[0].path,targetDir(),navigate)}]:[]),
+                    ...(!inTrash && sel.length===1 && sel[0].kind==='file' && !sel[0].native?[{text:'Previous versions',icon:'undo',action:()=>OS.showFileProperties(sel[0].path,'versions')}]:[]),
                     ...(sel.length ? [{ text: inTrash ? 'Restore' : 'Open', icon: inTrash ? 'undo' : 'folder', action: async () => { if (inTrash) {
                                 for (const f of sel)
                                     await OS.fs.restore(f.path);
@@ -131,13 +135,14 @@
             const cutB = button('cut', 'Cut', () => copy(true)), copyB = button('copy', 'Copy', () => copy(false)), pasteB = button('paste', 'Paste', paste), renameB = button('rename', 'Rename', rename), deleteB = button('trash', 'Delete', remove), downloadB = button('download', 'Download selected files', download);
             const sortB = OS.el('button', { html: OS.icon('list', 17) + '<span class="cmd-text">Sort</span>' + OS.icon('down', 11), onclick: e => OS.context(e, [...['name', 'modified', 'type', 'size'].map(s => ({ text: (sort === s ? '✓ ' : '') + s[0].toUpperCase() + s.slice(1), action: () => { sort = s; render(); } })), null, { text: asc ? 'Descending order' : 'Ascending order', action: () => { asc = !asc; render(); } }]) });
             const viewB = OS.el('button', { html: OS.icon('grid', 17) + '<span class="cmd-text">View</span>' + OS.icon('down', 11), onclick: e => OS.context(e, [{ text: 'Details', icon: 'list', action: () => { view = 'list'; w.state.view = view; render(); } }, { text: 'Large icons', icon: 'grid', action: () => { view = 'grid'; w.state.view = view; render(); } }, { text: 'Toggle details pane', icon: 'taskview', action: () => { details.hidden = !details.hidden; } }]) });
+            const extractB=OS.el('button',{class:'extract-command',text:'Extract all',hidden:true,onclick:OS.guard(()=>archiveActive?extractCurrent():OS.openCompressedFolder([...selected][0],targetDir(),navigate))});
             const moreB = button('more', 'More actions', e => { }, 'icon-button');
-            moreB.onclick = e => OS.context(e, [{text:'Create ZIP',icon:'folder',disabled:!selected.size||path==='/.Trash',action:createZip},{text:'New folder tab',icon:'plus',action:()=>openTab(path)},{ text: 'Import files', icon: 'upload', action: async () => { const f = await OS.readFile('', true); if (f.length)
+            moreB.onclick = e => OS.context(e, [{text:'Compress to ZIP file',icon:'folder',disabled:archiveActive||!selected.size||path==='/.Trash',action:createZip},{text:'New folder tab',icon:'plus',action:()=>openTab(path)},{ text: 'Import files', icon: 'upload', disabled:archiveActive, action: async () => { const f = await OS.readFile('', true); if (f.length)
                         await OS.fs.import(f, targetDir()); } }, { text: 'Connect local folder', icon: 'folder', action: async () => navigate(await OS.fs.mount()) }, { text: 'Open in Terminal', icon: 'terminal', action: () => OS.launch('terminal', { cwd: targetDir() }) }, null, { text: 'Empty Recycle Bin', icon: 'trash', danger: true, action: async () => { if (await OS.confirm('Empty Recycle Bin?', 'All items in the virtual Recycle Bin will be permanently deleted.', 'Empty', true)) {
                         for (const f of await OS.fs.list('/.Trash'))
                             await OS.fs.remove(f.path, true);
                     } } }, { text: 'Properties', icon: 'info', disabled: !selected.size, action: properties }]);
-            cmd.append(newButton, OS.el('span', { class: 'divider' }), cutB, copyB, pasteB, renameB, downloadB, deleteB, OS.el('span', { class: 'divider' }), sortB, viewB, OS.el('span', { class: 'spacer' }), moreB);
+            cmd.append(newButton, OS.el('span', { class: 'divider' }), cutB, copyB, pasteB, renameB, downloadB, deleteB, OS.el('span', { class: 'divider' }), sortB, viewB, extractB, OS.el('span', { class: 'spacer' }), moreB);
             const back = button('back', 'Back', () => { if (historyIndex > 0) {
                 historyIndex--;
                 path = history[historyIndex];
@@ -152,7 +157,7 @@
                 selected.clear();
                 render();
             } }, 'icon-button'), up = button('up', 'Up', () => { if (path !== 'home')
-                navigate(OS.fs.parent(path)); }, 'icon-button'), refresh = button('refresh', 'Refresh', () => render(), 'icon-button'), crumbs = OS.el('div', { class: 'breadcrumbs' }), search = OS.el('input', { class: 'folder-search', placeholder: 'Search Home', 'aria-label': 'Search this folder' });
+                {if(archiveActive&&archivePrefix){archivePrefix=archivePrefix.replace(/[^/]+\/$/,'');selected.clear();render();}else navigate(OS.fs.parent(path));} }, 'icon-button'), refresh = button('refresh', 'Refresh', () => render(), 'icon-button'), crumbs = OS.el('div', { class: 'breadcrumbs' }), search = OS.el('input', { class: 'folder-search', placeholder: 'Search Home', 'aria-label': 'Search this folder' });
             search.value=query;search.title='Search by name, kind:image, ext:txt, or size:>1mb';
             search.oninput = () => { query = search.value; stashTab(); OS.saveSession(); renderMain(); };
             crumbs.ondblclick = OS.guard(async () => { const p = await OS.prompt('Go to folder', path === 'home' ? '/' : path); if (p !== null) {
@@ -166,7 +171,7 @@
                 }
             } });
             nav.append(back, forward, up, refresh, crumbs, search);
-            function updateCommandState() { cutB.disabled = copyB.disabled = renameB.disabled = deleteB.disabled = downloadB.disabled = !selected.size; renameB.disabled = selected.size !== 1; pasteB.disabled = !OS.clipboard; }
+            function updateCommandState() { extractB.hidden=!(archiveActive || selected.size===1 && /\.zip$/i.test([...selected][0]) && path!=='/.Trash');newButton.disabled=archiveActive;cutB.disabled = copyB.disabled = renameB.disabled = deleteB.disabled = downloadB.disabled = archiveActive||!selected.size; renameB.disabled = archiveActive||selected.size !== 1; pasteB.disabled = archiveActive||!OS.clipboard; }
             function markSelection() { for (const item of OS.$$('[data-path]', main)) {
                 item.classList.toggle('selected', selected.has(item.dataset.path));
                 item.setAttribute('aria-selected', String(selected.has(item.dataset.path)));
@@ -182,10 +187,10 @@
             }
             else
                 selected = new Set([entry.path]); anchor = entry.path; markSelection(); main.focus({ preventScroll: true }); }
-            function wireRow(el, entry) { el.dataset.path = entry.path; el.setAttribute('aria-selected', String(selected.has(entry.path))); el.onclick = e => { e.stopPropagation(); select(e, entry); }; el.ondblclick = () => { selected = new Set([entry.path]); openSelection(); }; el.oncontextmenu = e => context(e, entry); el.draggable = path !== '/.Trash'; el.ondragstart = e => { if (!selected.has(entry.path)) {
+            function wireRow(el, entry) { el.dataset.path = entry.path; el.setAttribute('aria-selected', String(selected.has(entry.path))); el.onclick = e => { e.stopPropagation(); select(e, entry); }; el.ondblclick = () => { selected = new Set([entry.path]); openSelection(); }; el.oncontextmenu = e => context(e, entry); el.draggable = !archiveActive&&path !== '/.Trash'; el.ondragstart = e => { if (!selected.has(entry.path)) {
                 selected = new Set([entry.path]);
                 markSelection();
-            } e.dataTransfer.setData('application/x-aster-paths', JSON.stringify([...selected])); e.dataTransfer.effectAllowed = 'copyMove'; }; if (entry.kind === 'directory') {
+            } e.dataTransfer.setData('application/x-aster-paths', JSON.stringify([...selected])); e.dataTransfer.effectAllowed = 'copyMove'; }; if (!archiveActive && entry.kind === 'directory') {
                 el.ondragover = e => { e.preventDefault(); e.stopPropagation(); el.classList.add('selected'); };
                 el.ondragleave = () => markSelection();
                 el.ondrop = OS.guard(async (e) => { e.preventDefault(); e.stopPropagation(); await drop(e, entry.path); });
@@ -199,6 +204,7 @@
                     return;
                 }
                 details.innerHTML = `<div class="detail-preview">${OS.fileIcon(e, 64)}</div><h3 style="word-break:break-word">${esc(displayName(e))}</h3><span class="muted" style="font-size:11px">${esc(fileType(e))}</span><dl class="detail-info"><dt>Location</dt><dd>${esc(OS.fs.parent(e.originalPath || e.path))}</dd><dt>Modified</dt><dd>${e.modified ? esc(new Date(e.modified).toLocaleString()) : '—'}</dd><dt>Size</dt><dd>${e.kind === 'directory' ? 'Folder' : OS.formatBytes(e.size)}</dd><dt>Stored in</dt><dd>${e.native ? 'Your connected local folder' : 'This browser'}</dd></dl>`;
+                if(archiveActive){details.append(OS.el('p',{class:'integration-note',text:'Inside a compressed folder. Extract all to edit or open its files.'}));return;}
                 if (e.kind === 'file' && e.mime?.startsWith('image/') && (e.size || 0) < 20e6) {
                     try {
                         const url = URL.createObjectURL(await OS.fs.blob(await OS.fs.read(e.path)));
@@ -215,7 +221,7 @@
                     try {const text=await OS.fs.text(await OS.fs.read(e.path));if(currentDetail!==detailToken||w.closed)return;details.append(OS.el('pre',{class:'explorer-text-preview',text:text.slice(0,8000)}));}catch{}
                 }
                 if(currentDetail!==detailToken||w.closed)return;
-                if(!e.native && e.kind==='file' && !e.path.startsWith('/.')) details.append(OS.el('button',{class:'secondary',text:'Previous versions',onclick:()=>OS.launch('history',{path:e.path})}));
+                if(!e.native && e.kind==='file' && !e.path.startsWith('/.')) details.append(OS.el('button',{class:'secondary',text:'Previous versions',onclick:()=>OS.showFileProperties(e.path,'versions')}));
                 details.append(OS.el('button',{class:'secondary',text:OS.fileFavorites.includes(e.path)?'Unpin favorite':'Pin to favorites',onclick:OS.guard(async()=>{OS.fileFavorites=OS.fileFavorites.includes(e.path)?OS.fileFavorites.filter(p=>p!==e.path):[e.path,...OS.fileFavorites].slice(0,30);await OS.db.set('file-favorites',OS.fileFavorites);OS.emit('favorites-change');})}));
             }
             function table(entries) { const table = OS.el('table', { class: 'file-table', role: 'grid', 'aria-label': 'Files' }), head = OS.el('thead'), tr = OS.el('tr'); for (const [name, key] of [['Name', 'name'], ['Date modified', 'modified'], ['Type', 'type'], ['Size', 'size']]) {
@@ -234,8 +240,36 @@
                 wireRow(row, e);
                 body.append(row);
             } table.append(head, body); return table; }
+            async function renderCompressed(myToken) {
+                if (!/\.zip$/i.test(path) || path.startsWith('/Local/')) return false;
+                const file=await OS.fs.stat(path);if(file?.kind!=='file')return false;
+                if(file.size>AsterZIP.LIMIT+1024*1024)throw Error('ZIP is too large.');
+                if(!archiveCache||archiveCache.path!==path||archiveCache.modified!==file.modified){
+                    const bytes=await(await OS.fs.blob(await OS.fs.read(path))).arrayBuffer();
+                    const parsed=AsterZIP.inspect(bytes);if(myToken!==token||w.closed)return true;
+                    archiveCache={path,modified:file.modified,parsed};
+                }
+                if(myToken!==token||w.closed)return true;archiveActive=true;
+                const all=archiveCache.parsed.entries;
+                if(archivePrefix&&!all.some(e=>e.name.startsWith(archivePrefix)))archivePrefix='';
+                const listing=new Map();
+                for(const entry of all){
+                    if(!entry.name.startsWith(archivePrefix))continue;
+                    const remainder=entry.name.slice(archivePrefix.length);if(!remainder)continue;
+                    const name=remainder.split('/')[0],directory=remainder.includes('/')||entry.directory;
+                    if(listing.has(name)&&listing.get(name).kind==='directory')continue;
+                    listing.set(name,{path:path+'/'+archivePrefix+name,zipName:archivePrefix+name,kind:directory?'directory':'file',mime:'application/octet-stream',size:entry.length,modified:file.modified});
+                }
+                rows=[...listing.values()].filter(e=>OS.fileQueryMatches(e,query)).sort((a,b)=>{const order=(a.kind===b.kind?0:a.kind==='directory'?-1:1)||(sort==='size'?a.size-b.size:displayName(a).localeCompare(displayName(b)));return asc?order:-order;});
+                main.replaceChildren(OS.el('div',{class:'compressed-folder-banner'},OS.el('span',{html:OS.icon('folder',22)}),OS.el('div',{class:'grow'},OS.el('strong',{text:'Compressed folder'}),OS.el('small',{text:'Read-only archive contents. Extract to open or edit files.'}))));
+                if(rows.length)main.append(table(rows));else main.append(OS.el('div',{class:'empty',text:query?'No matching entries':'This compressed folder is empty.'}));
+                crumbs.querySelectorAll('[data-zip-crumb]').forEach(e=>e.remove());
+                if(archivePrefix){let prefix='';for(const part of archivePrefix.split('/').filter(Boolean)){prefix+=part+'/';const dest=prefix;crumbs.append(OS.el('span',{'data-zip-crumb':'',html:OS.icon('forward',11)}),OS.el('button',{'data-zip-crumb':'',text:part,onclick:()=>{archivePrefix=dest;selected.clear();render();}}));}}
+                markSelection();status.textContent=rows.length+' entries · Compressed folder · '+OS.formatBytes(archiveCache.parsed.total)+' expanded';stashTab();return true;
+            }
             async function renderMain() {
-                const myToken = ++token;
+                const myToken = ++token;archiveActive=false;
+                if(await renderCompressed(myToken))return;archiveCache=null;archivePrefix='';
                 let entries;
                 if (path === 'home') {
                     const defaults = ['/Documents/Welcome to Aster.md', '/Documents/Ideas.txt', '/Projects/Hello Aster.html', '/Pictures/Blue hour.svg'];
@@ -329,8 +363,8 @@
                 OS.saveSession();
             }
             function navItem(name, dest, icon, pin = false) { return OS.el('button', { class: 'nav-item' + (path === dest ? ' active' : ''), html: OS.icon(icon, 17) + `<span>${esc(name)}</span>` + (pin ? OS.icon('pin', 11, 'nav-pin') : ''), onclick: () => navigate(dest) }); }
-            function navigate(dest) { path = dest; history = history.slice(0, historyIndex + 1); history.push(dest); historyIndex++; selected.clear(); query = ''; search.value = ''; OS.guard(render)(); }
-            async function drop(e, dir = targetDir()) { const nativeFiles = Array.from(e.dataTransfer.files); if (nativeFiles.length) {
+            function navigate(dest) { archivePrefix='';path = dest; history = history.slice(0, historyIndex + 1); history.push(dest); historyIndex++; selected.clear(); query = ''; search.value = ''; OS.guard(render)(); }
+            async function drop(e, dir = targetDir()) { if(archiveActive)throw Error('Extract the compressed folder before adding files.');const nativeFiles = Array.from(e.dataTransfer.files); if (nativeFiles.length) {
                 await OS.fs.import(nativeFiles, dir);
                 OS.notify('Files imported', `${nativeFiles.length} file${nativeFiles.length === 1 ? '' : 's'} added to ${OS.fs.name(dir)}.`);
             }
@@ -356,6 +390,7 @@
             main.addEventListener('drop', OS.guard(e => { e.preventDefault(); return drop(e); }));
             w.onKey = e => {
                 if((e.ctrlKey||e.metaKey)&&['t','w','Tab'].includes(e.key)){e.preventDefault();e.stopPropagation();if(e.key==='t')openTab(path);else if(e.key==='w')closeTab(activeTab);else switchTab((activeTab+(e.shiftKey?fileTabs.length-1:1))%fileTabs.length);return;}
+                if(archiveActive && (['Delete','F2'].includes(e.key)||(e.ctrlKey||e.metaKey)&&['c','x','v'].includes(e.key.toLowerCase()))){e.preventDefault();return;}
                 if (/INPUT|TEXTAREA/.test(e.target.tagName))
                 return; if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'x', 'v'].includes(e.key.toLowerCase())) {
                 e.preventDefault();
@@ -383,6 +418,9 @@
                 e.preventDefault();
                 OS.guard(rename)();
             }
+            else if (e.altKey && e.key === 'Enter') {
+                e.preventDefault(); OS.guard(()=>properties([...selected][0]||path))();
+            }
             else if (e.key === 'Enter') {
                 e.preventDefault();
                 openSelection();
@@ -403,7 +441,7 @@
             w.on('fs-change', () => { clearTimeout(w.refreshTimer); w.refreshTimer = setTimeout(() => OS.guard(render)(), 80); });
             w.on('settings', () => renderDetails());
             w.on('favorites-change',()=>OS.guard(render)());
-            w.addCleanup(() => { detailToken++;if(previewURL)URL.revokeObjectURL(previewURL);urls.forEach(URL.revokeObjectURL); clearTimeout(w.refreshTimer); });
+            w.addCleanup(() => { archiveCache=null;detailToken++;if(previewURL)URL.revokeObjectURL(previewURL);urls.forEach(URL.revokeObjectURL); clearTimeout(w.refreshTimer); });
             w.navigate = navigate;
             w.refresh = render;
             await render();

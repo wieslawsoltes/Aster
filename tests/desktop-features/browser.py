@@ -151,14 +151,17 @@ def main(args):
                 return result
             check('Accessibility filters, pointer reading guide and safe text reader',accessibility)
             def theme_and_hub():
-                clean();launch('settings',{'section':'essentials'})
-                assert page.locator('.settings-main').get_by_role('button',name='Open',exact=True).count()==10
+                clean();launch('settings',{'section':'system'})
+                page.locator('.settings-breadcrumb h1').filter(has_text='System').wait_for()
+                for name in ['Storage','Clipboard','Focus','Multitasking','Recovery']:
+                    assert page.locator('.settings-main').get_by_role('button',name=name,exact=False).count()>=1
+                assert not page.locator('.settings-main').get_by_role('button',name='Open',exact=True).count()
                 js("await OS.setSetting('theme','dark');await OS.setSetting('highContrast',true);")
                 launch('widgets');page.screenshot(path=str(out/'widgets-dark.png'))
                 js("await OS.setSetting('theme','light');await OS.setSetting('highContrast',false);")
-                clean();page.keyboard.press('Control+Alt+f');page.wait_for_selector('[data-app=focus]')
-                return 'Ten settings launchers, dark/high-contrast styling and browser-safe Focus shortcut'
-            check('Settings hub, themes and keyboard entry points expose all workflows',theme_and_hub)
+                clean();page.keyboard.press('Control+Alt+f');page.wait_for_selector('[data-app=clock] .focus-countdown');js("assert(OS.windows.size===1);")
+                return 'Natural System destinations, dark/high-contrast styling and Focus shortcut in a single Clock window'
+            check('Integrated Settings, themes and Clock shortcut expose existing services',theme_and_hub)
             def recorder():
                 clean();launch('recorder')
                 js("""window.captureFixture=document.createElement('canvas');captureFixture.width=160;captureFixture.height=96;const c=captureFixture.getContext('2d');let i=0;window.fixtureTimer=setInterval(()=>{c.fillStyle=i++%2?'#00aa88':'#2266dd';c.fillRect(0,0,160,96);},50);const getDisplayMedia=async()=>{window.fixtureStream=captureFixture.captureStream(15);return fixtureStream;};if(!navigator.mediaDevices)Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getDisplayMedia}});else Object.defineProperty(navigator.mediaDevices,'getDisplayMedia',{configurable:true,value:getDisplayMedia});""")

@@ -13,14 +13,7 @@ REPORT=ROOT/'tests'/'results.json'
 
 async def load(page, inject=False, port=8766, url=None):
     if inject:
-        html=(ROOT/'index.html').read_text()
-        html=re.sub(r'<script\b[^>]*src="[^"]+"[^>]*>\s*</script>','',html)
-        html=re.sub(r'<link\b[^>]*>','',html)
-        await page.set_content(html)
-        await page.add_style_tag(content=(ROOT/'src/styles.css').read_text())
-        await page.evaluate('window.ASTER_STANDALONE=true')
-        for name in ['core','desktop-models','archives','desktop-services','renderer','windows','apps-files','apps-creative','apps-tools','apps-system','apps-desktop','apps-accessibility','apps-recorder','win32/gdi','win32/gui-host','apps-win32','web-app-catalog','apps-web','shell']:
-            await page.add_script_tag(content=(ROOT/f'src/{name}.js').read_text())
+        await page.set_content((ROOT/'Aster.html').read_text(),timeout=45000)
     else:
         await page.goto(url or f'http://localhost:{port}',wait_until='networkidle')
     await page.wait_for_function('window.Aster?.booted',timeout=30000)
@@ -172,15 +165,18 @@ async def main(args):
         async def browserlocal():
             await launch('browser',{'path':'/Projects/Hello Aster.html'})
             iframe=await page.locator('[data-app="browser"] iframe').first.element_handle();frame=await iframe.content_frame()
-            await frame.wait_for_selector('#count');await frame.locator('#count').click()
-            assert '1' in await frame.locator('#count').inner_text()
+            await frame.wait_for_selector('#count')
+            await frame.wait_for_function('typeof document.querySelector("#count")?.onclick==="function"')
+            await frame.locator('#count').click()
+            await frame.wait_for_function('document.querySelector("#count")?.textContent==="You clicked 1 times"')
+            assert await frame.locator('#count').inner_text()=='You clicked 1 times'
             return 'Local HTML button executed'
         await check('Orbit Browser runs local HTML application',browserlocal)
         async def media():
             await launch('media')
             await page.wait_for_function('testWindow.mediaElement?.()?.duration>0')
             await page.evaluate('testWindow.mediaElement().play()')
-            await page.wait_for_timeout(200)
+            await page.wait_for_function('testWindow.mediaElement().currentTime>0')
             return await js("assert(testWindow.mediaElement().currentTime>0);await OS.setSetting('volume',40);assert(Math.abs(testWindow.mediaElement().volume-.4)<.001);return 'WAV duration '+testWindow.mediaElement().duration+' seconds; playback clock advances';")
         await check('Media Player actual audio decode and playback',media)
         async def taskcalendar():
@@ -194,10 +190,10 @@ async def main(args):
         await check('Mines game logic and completion',mines)
         async def settings():
             await launch('settings')
-            for section in ['personalization','apps','storage','accessibility','about','system']:
-                await page.evaluate('testWindow.navigate("'+section+'")');await page.wait_for_timeout(60)
+            for section in ['home','system','display','sound','notifications','focus','storage','multitasking','clipboard','recovery','personalization','apps','accessibility','privacy','about','time']:
+                await page.evaluate('testWindow.navigate("'+section+'")');await page.locator('[data-app="settings"] .settings-breadcrumb h1').wait_for(state='visible')
                 assert not await page.locator('[data-app="settings"] .app-error').count()
-            return await js("await OS.setSetting('theme','dark');assert(document.body.dataset.theme==='dark');await OS.setSetting('theme','light');assert(document.body.dataset.theme==='light');const sel=testWindow.body.querySelector('select[aria-label=clock24]');assert(sel);sel.value='false';sel.dispatchEvent(new Event('change'));await new Promise(r=>setTimeout(r,40));assert(OS.settings.clock24===false);return 'All 6 settings views and boolean clock preference';")
+            return await js("await OS.setSetting('theme','dark');assert(document.body.dataset.theme==='dark');await OS.setSetting('theme','light');assert(document.body.dataset.theme==='light');const sel=testWindow.body.querySelector('select[aria-label=clock24]');assert(sel);sel.value='false';sel.dispatchEvent(new Event('change'));await new Promise(r=>setTimeout(r,40));assert(OS.settings.clock24===false);return 'All 16 integrated Settings pages and boolean clock preference';")
         await check('Settings views, themes and 12-hour preference',settings)
         async def backup():
             # Capture application export payload rather than OS save picker, then restore it.

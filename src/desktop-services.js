@@ -139,7 +139,7 @@
         persist(){OS.featureChange('workspaces');return OS.featureSave('window-groups',this.groups);},
         async restore(id){const group=this.groups.find(g=>g.id===id);if(!group)throw Error('Window group not found.');const used=new Set(),vp=OS.viewport(),restored=[];
             const desktop=OS.desktops.some(d=>d.id===group.desktop)?group.desktop:OS.activeDesktop;OS.switchDesktop(desktop);
-            for(const entry of group.entries){if(!OS.apps.has(entry.app)||entry.app==='workspaces')continue;
+            for(const previous of group.entries){const entry=OS.migrateShellSession?OS.migrateShellSession(previous):previous;if(!entry||!OS.apps.has(entry.app)||entry.app==='workspaces')continue;
                 let w=[...OS.windows.values()].find(w=>!used.has(w.id)&&w.appId===entry.app&&(w.state.path||'')===(entry.state.path||''));
                 w ||= OS.launch(entry.app,{...entry.state,desktop});if(!w)continue;await w.ready;if(w.closed)continue;
                 used.add(w.id);w.desktop=desktop;w.maximized=false;w.minimized=false;w.rect={x:entry.rect.x*vp.w,y:entry.rect.y*vp.h,w:entry.rect.w*vp.w,h:entry.rect.h*vp.h};w.constrain();w.sync();restored.push(w);}

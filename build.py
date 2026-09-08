@@ -7,8 +7,10 @@ ROOT=Path(__file__).resolve().parent
 
 def build(destination:Path)->None:
     html=(ROOT/'index.html').read_text(encoding='utf-8')
-    css=(ROOT/'src/styles.css').read_text(encoding='utf-8')
-    html=re.sub(r'<link\s+rel="stylesheet"[^>]*>',lambda _: '<style>\n'+css+'\n</style>',html)
+    def style(match):
+        path=ROOT/match.group(1)
+        return '<style>\n'+path.read_text(encoding='utf-8')+'\n</style>'
+    html=re.sub(r'<link\s+rel="stylesheet"\s+href="([^"]+)"[^>]*>',style,html)
     html=re.sub(r'<link\s+rel="manifest"[^>]*>','',html)
     icon=base64.b64encode((ROOT/'assets/icon.svg').read_bytes()).decode('ascii')
     html=html.replace('href="assets/icon.svg"','href="data:image/svg+xml;base64,'+icon+'"')

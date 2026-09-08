@@ -1,0 +1,224 @@
+/* Aster 1.6: original Fluent-inspired shell layers, not native WinUI materials. */
+:root{--bar-height:48px;--radius:8px;--font:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif}
+body.shell-integrated{--mica:#f0f4f9;--glass:rgba(244,247,252,.94);--taskbar:rgba(239,244,251,.91);--text:#1b1b1d;--muted:#61646c;--surface2:#f9f9f9;--surface3:#f0f0f0;--border:#00000012;--shadow:0 18px 46px #00000028,0 2px 6px #00000018}
+body.shell-integrated[data-theme=dark]{--mica:#20242b;--glass:rgba(38,40,45,.95);--taskbar:rgba(31,34,39,.94);--text:#f5f5f5;--muted:#b5b6bb;--surface:#2c2c2c;--surface2:#262626;--surface3:#333;--border:#ffffff12;--shadow:0 18px 50px #0008,0 2px 7px #0005}
+.shell-integrated .window{outline-color:#00000020;border-color:#ffffff99;box-shadow:var(--shadow)}
+.shell-integrated[data-theme=dark] .window{border-color:#ffffff18;outline-color:#0008}
+.shell-integrated .titlebar{height:34px;min-height:34px;background:var(--mica)}
+.shell-integrated .window.inactive .titlebar{background:var(--surface2)}
+.shell-integrated .window-title{font-size:12px;gap:9px}
+.shell-integrated .window-controls>button{width:46px}
+.shell-integrated .window-controls svg{width:12px;height:12px;stroke-width:1.1}
+.shell-integrated .window.inactive{box-shadow:0 5px 18px #0002}
+.shell-integrated .window.maximized{border-radius:0}
+.shell-integrated .gpu-active .window,.gpu-active.shell-integrated .window{box-shadow:none}
+.shell-integrated #taskbar{border-top:1px solid #fff6;backdrop-filter:blur(32px) saturate(1.35)}
+.shell-integrated .task-button{height:40px;min-width:40px;padding:7px;transition:background .14s ease}
+.shell-integrated .task-center{gap:4px}
+.shell-integrated .task-search{height:32px;width:174px;border-radius:18px;justify-content:flex-start;padding:4px 13px;box-shadow:0 1px 0 #00000013;background:color-mix(in srgb,var(--surface) 75%,transparent)}
+.shell-integrated .task-search span{font-size:12px}
+.shell-integrated .task-button.active{background:color-mix(in srgb,var(--surface) 65%,transparent);box-shadow:0 1px 0 #00000008}
+.shell-integrated .task-button.active:after{width:16px;height:3px;bottom:2px}
+.shell-integrated .tray-status{padding:9px 8px;gap:7px;border-radius:4px}
+.shell-integrated .tray-clock{font-size:11px;line-height:16px;min-width:84px}
+.shell-integrated .task-left{left:8px;padding:5px 8px}
+.shell-integrated .task-preview{border-radius:8px;padding:8px;gap:8px}
+.shell-integrated .preview-card{border-radius:5px;padding:7px}
+.shell-integrated .preview-image{border:1px solid var(--border);background:linear-gradient(145deg,var(--surface2),var(--mica));border-radius:4px}
+.shell-integrated .flyout{background:var(--glass);border:1px solid color-mix(in srgb,var(--border) 60%,#ffffff50);box-shadow:var(--shadow);backdrop-filter:blur(30px) saturate(1.25);border-radius:8px}
+.shell-integrated .start-menu{width:644px;height:688px;bottom:60px;max-height:calc(100dvh - 76px)}
+.shell-integrated .start-search{padding:30px 32px 16px}
+.shell-integrated .start-search .search-field{height:34px;min-height:34px;border-radius:18px;border-bottom:1px solid #0004;background:var(--surface)}
+.shell-integrated .start-search input{font-size:12px}
+.shell-integrated .start-main{padding:8px 32px 22px}
+.shell-integrated .section-heading{font-size:13px;margin:10px 0 14px;min-height:25px}
+.shell-integrated .section-heading>button{padding:3px 10px;border:1px solid var(--border);background:var(--surface);box-shadow:0 1px 0 #00000012}
+.shell-integrated .pinned-grid{gap:4px;grid-template-columns:repeat(6,minmax(0,1fr))}
+.shell-integrated .pinned-app{height:80px;min-width:0;font-size:11px;padding:8px 2px;border-radius:4px;gap:7px}
+.shell-integrated .pinned-app .app-icon{filter:drop-shadow(0 2px 2px #0002)}
+.shell-integrated .pinned-app span:last-child{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.shell-integrated .web-start-entry{padding:9px 12px;margin:15px 0 10px;background:color-mix(in srgb,var(--surface) 50%,transparent);border-radius:5px;gap:10px}
+.shell-integrated .web-start-entry small{font-size:10px}
+.shell-integrated .web-start-entry strong{font-size:12px}
+.shell-integrated .recommended-item{padding:9px 8px;border-radius:4px}
+.shell-integrated .recommended-item strong{font-size:11px}
+.shell-integrated .start-footer{padding:13px 35px;background:#00000004;border-top:1px solid var(--border)}
+.shell-integrated .web-category-item{border-radius:5px;min-height:68px}
+.shell-integrated .search-result{border-radius:4px;min-height:52px}
+.shell-integrated .system-result small{color:var(--accent)}
+.shell-integrated .context-menu{padding:5px;border-radius:7px}
+.shell-integrated .menu-item{min-height:32px;font-size:12px;border-radius:4px;padding:6px 10px}
+.shell-integrated .menu-item:hover{background:color-mix(in srgb,var(--accent) 8%,var(--hover))}
+.shell-integrated .dialog{border-radius:8px;max-height:calc(100dvh - 40px);display:flex;flex-direction:column}
+.shell-integrated .dialog-content{min-height:0;overflow:auto}
+.shell-integrated .dialog-actions{background:var(--surface3);border-top:1px solid var(--border);padding:18px 24px}
+.integration-note{color:var(--muted);font-size:12px;line-height:1.6;margin:8px 0 14px;white-space:normal}
+.shell-surface{display:flex;flex-direction:column;max-height:calc(100dvh - 70px);overflow:hidden;pointer-events:auto}
+.surface-heading{display:flex;align-items:center;gap:8px;padding:17px 20px 12px;flex:none}
+.surface-heading h2{font-size:16px;font-weight:600;letter-spacing:0;margin:0}
+.surface-scroll{overflow:auto;min-height:0;flex:1;overscroll-behavior:contain}
+.surface-footer{display:flex;gap:7px;align-items:center;justify-content:space-between;flex:none;padding:12px 16px;border-top:1px solid var(--border);background:var(--surface3)}
+.surface-footer button{font-size:11px}
+.flyout-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:24px 12px}
+.flyout-empty h3{margin:6px 0 0}
+.clipboard-flyout{width:360px;right:22px;bottom:61px;height:485px}
+.clipboard-flyout>input{margin:0 16px 10px;flex:none;height:34px}
+.clipboard-items{flex:1;min-height:0;overflow:auto;padding:0 12px 12px;overscroll-behavior:contain}
+.clipboard-item{border:1px solid var(--border);border-radius:5px;background:var(--surface);margin-bottom:8px;overflow:hidden}
+.clipboard-paste{white-space:pre-wrap;text-align:left;justify-content:flex-start;width:100%;max-height:125px;overflow:hidden;overflow-wrap:anywhere;padding:13px;font-size:12px;line-height:1.5;border-radius:0}
+.clipboard-item-actions{display:flex;align-items:center;padding:2px 7px 4px 13px;color:var(--muted);font-size:10px}
+.clipboard-item-actions .icon-button{height:28px;min-width:28px}
+.widgets-flyout{left:12px;bottom:61px;width:min(760px,calc(100vw - 24px));height:calc(100dvh - 84px)}
+.widgets-flyout .widgets-greeting{padding:8px 26px}
+.widgets-greeting h1{font-size:28px;font-weight:600;margin:0 0 5px}
+.widgets-flyout .surface-scroll{display:flex;flex-direction:column}
+.widgets-flyout .embedded-view{flex:1;display:flex;flex-direction:column;min-height:0}
+.widgets-flyout .suite-app{background:transparent;padding:0 22px 24px;overflow:visible;height:auto}
+.widgets-flyout .widget-board{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.widgets-flyout .widget-tile{background:var(--surface);box-shadow:0 2px 5px #00000005;border-radius:8px;padding:18px;min-height:168px}
+.widgets-flyout .widget-card-header h2{font-size:13px}
+.widgets-flyout .widget-time{font-size:42px;font-weight:300}
+.quick-integrated{width:368px;right:12px;bottom:61px;padding:20px 22px 0;gap:16px}
+.quick-integrated .quick-grid{gap:16px 15px}
+.quick-integrated .quick-tile{min-width:0;padding:0;display:flex;flex-direction:column;gap:7px;white-space:normal;background:none;border:0;box-shadow:none}
+.quick-integrated .quick-tile>span{display:flex;align-items:center;justify-content:center;width:100%;height:48px;border:1px solid var(--border);border-radius:4px;background:var(--surface);box-shadow:0 1px 0 #00000012;color:var(--text)}
+.quick-integrated .quick-tile label{font-size:11px;line-height:1.25;pointer-events:none;color:var(--text)}
+.quick-integrated .quick-tile.on>span{background:var(--accent);color:#fff;border-color:var(--accent)}
+.quick-integrated .quick-tile:hover>span{filter:brightness(.96)}
+.quick-integrated .quick-sliders{padding:0;display:flex;flex-direction:column;gap:19px}
+.quick-integrated .quick-sliders input{flex:1;min-width:0;accent-color:var(--accent)}
+.quick-integrated .quick-sliders output{min-width:35px;font-size:10px}
+.quick-integrated .quick-bottom{margin:0 -22px;padding:10px 16px;background:var(--surface3);border-top:1px solid var(--border);font-size:11px;min-height:49px}
+.quick-integrated .quick-details{border:1px solid var(--border);background:var(--surface2);border-radius:5px;padding:10px;max-height:260px;overflow:auto}
+.quick-details .surface-heading{padding:3px 0 10px}
+.quick-access-row{display:flex;align-items:center;gap:10px;padding:10px 0}
+.notifications-integrated{width:370px;right:12px;bottom:61px;height:calc(100dvh - 82px);max-height:800px;background:transparent!important;box-shadow:none!important;border:0!important;gap:10px;overflow:visible;backdrop-filter:none!important}
+.notification-stack,.calendar-surface{background:var(--glass);backdrop-filter:blur(30px) saturate(1.3);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);overflow:hidden}
+.notification-stack{display:flex;flex-direction:column;flex:1;min-height:135px;max-height:330px}
+.notifications-integrated .notification-list{max-height:none;flex:1;min-height:0;overflow:auto;padding:0 10px 10px}
+.notifications-integrated .surface-heading{padding:12px 15px 7px}
+.notifications-integrated .surface-heading h2{font-size:13px}
+.notifications-integrated .surface-heading button{font-size:11px}
+.notifications-empty{min-height:72px;display:grid;place-items:center;font-size:12px;color:var(--muted)}
+.notifications-integrated .notification-item{background:var(--surface);border:1px solid var(--border);border-radius:5px;margin:5px 0;padding:9px 12px;overflow-wrap:anywhere}
+.notification-item .notification-source{font-size:11px;color:var(--muted)}
+.notification-item h4{font-size:12px;margin:4px 0}
+.notification-item p{font-size:12px;line-height:1.5}
+.notification-item time{font-size:10px;color:var(--muted)}
+.calendar-surface{flex:none}
+.calendar-date-heading{font-size:13px;font-weight:500;justify-content:start;padding:16px 21px;width:100%;border-bottom:1px solid var(--border);border-radius:0}
+.calendar-surface-body{padding:12px 16px 8px}
+.calendar-month-heading{margin:0 0 10px;font-size:12px}
+.calendar-grid{gap:2px}
+.calendar-surface .calendar-grid button{height:34px;width:34px;border-radius:50%;font-size:12px;justify-self:center}
+.calendar-surface .calendar-grid button.selected{box-shadow:inset 0 0 0 1px var(--accent)}
+.calendar-surface .calendar-grid button.today{background:var(--accent);color:#fff}
+.calendar-surface .calendar-grid button.today.selected{outline:1px solid var(--accent);outline-offset:2px}
+.calendar-inline-agenda{padding:8px 18px 2px;border-top:1px solid var(--border);max-height:135px;overflow:auto;font-size:11px}
+.calendar-inline-agenda .secondary{font-size:10px;padding:4px 7px}
+.calendar-inline-agenda .integration-note{font-size:11px;margin:6px 0 9px}
+.agenda-event{display:block;text-align:left;width:100%;white-space:normal;font-size:11px;border-left:2px solid var(--accent);padding:7px}
+.calendar-focus{display:flex;align-items:center;gap:7px;padding:14px 15px;background:var(--surface3);border-top:1px solid var(--border)}
+.focus-duration{flex:1;min-width:65px;text-align:center;font-size:12px;font-variant-numeric:tabular-nums}
+.calendar-focus .primary{padding:6px 11px;font-size:12px}
+.calendar-focus .icon-button{height:29px;min-width:27px;padding:5px}
+.integrated-task-view{inset:0 0 48px;width:auto;max-height:none;overflow:auto;border:0!important;border-radius:0!important;background:color-mix(in srgb,var(--mica) 72%,transparent)!important;padding:38px 6vw 24px;color:var(--text);gap:22px;backdrop-filter:blur(38px) saturate(.8)!important;box-shadow:none!important}
+.taskview-toolbar{display:flex;align-items:center;gap:10px;flex:none}
+.taskview-toolbar h1{font-size:24px;font-weight:500;margin:0}
+.taskview-toolbar .secondary{font-size:12px}
+.integrated-task-view .task-view-grid{display:flex;align-items:flex-start;justify-content:center;gap:22px;flex:1;flex-wrap:wrap;min-height:180px;margin:4px 0}
+.integrated-task-view .task-view-window{width:260px;height:192px;padding:9px;gap:8px;border:1px solid var(--border);background:var(--surface);box-shadow:0 6px 18px #00000013;border-radius:7px;flex-shrink:0}
+.task-view-window>header{width:100%;font-size:12px;gap:6px}
+.task-view-window>header .grow{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.taskview-activate{display:flex;flex:1;flex-direction:column;align-items:stretch;justify-content:stretch;width:100%;min-height:0;padding:0;gap:6px}
+.taskview-app-preview{flex:1;border:1px solid var(--border);border-radius:4px;background:linear-gradient(135deg,var(--mica),var(--surface3));display:grid;place-items:center}
+.taskview-activate small{font-size:10px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.taskview-empty{margin:auto;color:var(--muted);font-size:15px}
+.taskview-arrange{display:flex;align-items:center;flex:none;gap:8px;padding:13px 15px;border:1px solid var(--border);border-radius:6px;background:var(--mica);font-size:12px}
+.taskview-groups{display:flex;flex-direction:column;gap:8px;flex:none}
+.saved-group{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:9px 12px;font-size:12px}
+.saved-group .secondary{font-size:11px}
+.integrated-task-view .desktop-switcher{display:flex;flex-wrap:nowrap;justify-content:flex-start;gap:16px;padding:22px 0 4px;overflow-x:auto;flex:none;border-top:1px solid var(--border)}
+.taskview-desktop{position:relative;flex:none}
+.integrated-task-view .desktop-card{width:204px;padding:6px;gap:11px;border-radius:4px;font-size:12px;align-items:flex-start}
+.integrated-task-view .desktop-card-preview{width:192px;height:109px;border:2px solid transparent;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:3px;padding:14px;background:linear-gradient(125deg,#073477,#126de5 55%,#82d9fa)}
+.integrated-task-view .desktop-card.active .desktop-card-preview{border-color:var(--accent);outline:2px solid var(--surface);box-shadow:0 0 0 3px var(--accent)}
+.desktop-card-preview[data-wallpaper=midnight]{background:linear-gradient(125deg,#1d163c,#6e58c1)!important}
+.desktop-card-preview[data-wallpaper=dusk]{background:linear-gradient(125deg,#4c2858,#b85f94,#e9afa5)!important}
+.desktop-card-preview[data-wallpaper=sage]{background:linear-gradient(125deg,#154644,#669e8e)!important}
+.desktop-mini-window{display:grid;place-items:center;width:36px;height:50px;border:1px solid #fff7;border-radius:3px;background:#e3edfcce;box-shadow:0 2px 4px #0003}
+.desktop-inline-controls{position:absolute;right:8px;bottom:2px;display:flex;gap:0}
+.desktop-inline-controls .icon-button{height:25px;min-width:25px;padding:5px}
+.new-desktop .desktop-card-preview{background:color-mix(in srgb,var(--surface3) 80%,transparent)!important;color:var(--muted)}
+.snap-assist{padding:0 18px 18px;height:auto;min-height:240px;max-width:none}
+.snap-assist .surface-heading{padding:16px 0}
+.snap-assist .surface-heading h2{font-size:14px}
+.snap-assist-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px}
+.snap-assist-choice{min-height:135px;flex-direction:column;background:var(--surface);border:1px solid var(--border);white-space:normal;text-align:center;font-size:12px}
+.snap-four{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.snap-thirds>button:first-child{flex:1}.snap-thirds>button:last-child{flex:2}
+.shell-integrated .settings-layout{background:var(--mica)}
+.shell-integrated .settings-sidebar{width:240px;background:transparent;padding:20px 12px;border:0}
+.shell-integrated .settings-sidebar .nav-item{height:39px;position:relative;border-radius:4px;font-size:13px;margin:3px 0;padding:9px 14px}
+.shell-integrated .settings-sidebar .nav-item.active{background:var(--hover);color:var(--text)}
+.shell-integrated .settings-sidebar .nav-item.active:before{position:absolute;content:"";left:0;height:17px;top:11px;width:3px;background:var(--accent);border-radius:2px}
+.shell-integrated .settings-main{background:var(--surface2);margin:6px 5px 0 0;border:1px solid var(--border);border-radius:8px 0 0 0;padding:27px 32px 36px}
+.settings-breadcrumb{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.settings-breadcrumb h1{font-size:27px;letter-spacing:-.6px;font-weight:600;margin:0}
+.settings-breadcrumb>button{font-size:26px;font-weight:600;color:var(--muted);padding:0}
+.settings-page-content{min-width:0}
+.shell-integrated .setting-row{border-radius:4px;padding:18px 20px;margin:4px 0;gap:18px;background:var(--surface);min-height:72px}
+.setting-row .setting-label strong{font-size:13px;font-weight:500}
+.setting-row .setting-label small{font-size:11px;line-height:1.5}
+.settings-link{width:100%;text-align:left;white-space:normal}
+.shell-integrated .settings-link:hover{background:color-mix(in srgb,var(--surface) 80%,var(--hover))}
+.settings-embedded>.embedded-view>.suite-app{height:auto;padding:0;overflow:visible;background:none}
+.settings-embedded .suite-heading{display:none}
+.settings-embedded .suite-card{border-radius:5px;background:var(--surface)}
+.settings-embedded .suite-card h2{font-size:15px}
+.embedded-view{display:flex;flex-direction:column;min-height:0}
+.integrated-modebar{display:flex;align-items:center;justify-content:center;gap:5px;flex:none;height:48px;background:var(--mica);border-bottom:1px solid var(--border)}
+.mode-button{border-radius:4px;font-size:12px;padding:7px 13px}
+.mode-button.selected{background:var(--surface);box-shadow:0 1px 2px #00000012;position:relative}
+.mode-button.selected:after{content:"";position:absolute;bottom:0;left:30%;right:30%;height:2px;background:var(--accent);border-radius:2px}
+.integrated-mode-content{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.integrated-mode-content>.embedded-view{flex:1;overflow:hidden}
+.integrated-mode-content .suite-app{flex:1;height:auto;padding:22px}
+.integrated-mode-content .clock-app{flex:1;overflow:auto}
+.file-properties{width:100%;min-width:0}
+.properties-tabs{display:flex;gap:3px;border-bottom:1px solid var(--border);margin-bottom:15px}
+.properties-tabs button{padding:8px 12px;border-radius:4px 4px 0 0;font-size:12px}
+.properties-tabs button.selected{background:var(--surface);box-shadow:inset 0 -2px var(--accent)}
+.properties-content{max-height:430px;overflow:auto;overscroll-behavior:contain}
+.properties-name{display:flex;align-items:center;gap:15px;padding:8px 0 18px;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-wrap:anywhere}
+.version-row{border:1px solid var(--border);border-radius:4px;background:var(--surface);padding:12px;margin:8px 0;font-size:12px}
+.version-row>small{display:block;margin:4px 0 10px}
+.version-row .suite-actions{gap:4px;flex-wrap:wrap}
+.version-row .suite-actions button{font-size:11px;padding:5px 8px}
+.compressed-folder-list{max-height:380px;overflow:auto}
+.shell-integrated .explorer-tabs{background:var(--mica);height:37px;min-height:37px;padding:0 10px;gap:3px}
+.shell-integrated .explorer-tab-slot{position:relative;min-width:140px;max-width:210px;border-radius:6px 6px 0 0}
+.shell-integrated .explorer-tab-slot:has(.active){background:var(--surface)}
+.shell-integrated .explorer-tab{font-size:12px;padding:9px 27px 9px 13px;height:35px;border-radius:6px 6px 0 0}
+.shell-integrated .explorer-tab-slot>.icon-button{position:absolute;right:3px;top:5px;min-width:23px;height:23px;padding:4px}
+.shell-integrated .explorer-commandbar{background:var(--surface2);height:50px;gap:6px;padding:8px 14px}
+.shell-integrated .explorer-commandbar>button{font-size:12px}
+.shell-integrated .explorer-nav{background:var(--surface);padding:10px 13px;gap:7px}
+.shell-integrated .explorer-sidebar{background:var(--surface2);border-right:1px solid var(--border)}
+.shell-integrated .explorer-main{background:var(--surface);padding:18px 23px}
+.shell-integrated .explorer-details{background:var(--surface2)}
+.shell-integrated .folder-card{border-radius:4px}
+.shell-integrated .file-row.selected{background:var(--accent-soft)}
+.shell-integrated .extract-command{color:var(--accent);background:var(--accent-soft)}
+.night-light:after{content:"";position:fixed;inset:0;pointer-events:none;z-index:99980;background:#f89b1614;mix-blend-mode:multiply}
+.no-transparency .notification-stack,.no-transparency .calendar-surface{background:var(--surface2);backdrop-filter:none}
+.high-contrast.shell-integrated{--border:currentColor;--muted:#313131;--glass:#fff;--mica:#fff;--taskbar:#fff}
+.high-contrast.shell-integrated[data-theme=dark]{--muted:#eee;--glass:#141414;--mica:#141414;--taskbar:#141414}
+.high-contrast .notification-stack,.high-contrast .calendar-surface{backdrop-filter:none}
+@media(max-height:750px){.calendar-surface .calendar-grid button{height:27px;width:29px}.notifications-integrated{height:calc(100dvh - 76px)}.calendar-inline-agenda{max-height:80px}.calendar-focus{padding:9px 12px}.calendar-date-heading{padding:10px 18px}.calendar-surface-body{padding-top:6px}.notification-stack{min-height:95px}.notifications-empty{min-height:35px}.shell-integrated .start-menu{height:calc(100dvh - 74px)}}
+@media(max-width:1000px){.shell-integrated .task-search{width:110px}.shell-integrated .settings-sidebar{width:196px}.shell-integrated .settings-main{padding:22px}.taskview-arrange{flex-wrap:wrap}.taskview-arrange>.grow{flex-basis:100%}}
+@media(max-width:760px){.shell-integrated .task-search{display:none}.shell-integrated .task-right .tray-status{display:flex;padding:7px 4px;gap:4px}.shell-integrated .tray-status svg:last-child{display:none}.shell-integrated .task-center{margin-right:125px;margin-left:0;gap:1px}.shell-integrated .task-button{min-width:32px;padding:5px}.shell-integrated .task-right{right:4px;gap:0}.shell-integrated .tray-clock{min-width:70px;font-size:10px}.shell-integrated .settings-sidebar{width:160px}.shell-integrated .settings-main{padding:19px 16px}.integrated-task-view{padding:20px;gap:17px}.taskview-toolbar h1{font-size:20px}.taskview-toolbar button{font-size:11px;padding:6px}.widgets-flyout{width:calc(100vw - 24px)}.shell-integrated .start-main{padding:8px 24px 20px}.shell-integrated .task-left{display:none}}
+@media(max-width:500px){.shell-integrated .settings-sidebar{width:52px;padding:12px 4px}.shell-integrated .settings-sidebar .nav-item{font-size:0;padding:10px;gap:0}.shell-integrated .settings-sidebar .settings-search,.shell-integrated .settings-user{display:none}.settings-breadcrumb h1,.settings-breadcrumb>button{font-size:21px}.shell-integrated .setting-row{padding:13px;gap:9px;flex-wrap:wrap}.shell-integrated .setting-row .setting-label{min-width:130px}.shell-integrated .start-menu{max-width:calc(100vw - 14px);bottom:55px}.shell-integrated .start-search{padding:18px 19px 12px}.shell-integrated .start-main{padding:6px 16px 16px}.shell-integrated .pinned-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.shell-integrated .pinned-app{height:72px}.clipboard-flyout,.quick-integrated{right:7px;bottom:56px;width:calc(100vw - 14px);max-width:368px}.widgets-flyout{left:7px;bottom:56px;width:calc(100vw - 14px);height:calc(100dvh - 68px)}.widgets-flyout .widget-board{grid-template-columns:1fr}.widgets-flyout .suite-app{padding:0 14px 20px}.widgets-greeting h1{font-size:24px}.notifications-integrated{right:7px;bottom:56px;width:calc(100vw - 14px);max-width:370px}.integrated-task-view{padding:17px 10px}.integrated-task-view .task-view-grid{gap:10px;justify-content:flex-start}.integrated-task-view .task-view-window{width:calc(50% - 5px);height:155px;min-width:0;padding:6px}.task-view-window>header input{width:14px;height:14px}.task-view-window>header .grow{font-size:10px}.task-view-window .icon-button{height:25px;min-width:25px;padding:4px}.taskview-toolbar{flex-wrap:wrap;gap:5px}.taskview-toolbar h1{min-width:80px}.saved-group{flex-wrap:wrap}.saved-group>.grow{flex-basis:100%}.integrated-modebar{height:42px}.mode-button{font-size:11px}.shell-integrated .window-controls>button{width:36px}.shell-integrated .explorer-main{padding:12px}.shell-integrated .explorer-commandbar{padding:6px;gap:1px}.shell-integrated .explorer-nav{padding:7px;gap:2px}}
+@media(prefers-reduced-motion:reduce){.shell-integrated *, .shell-integrated *:before, .shell-integrated *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+.compressed-folder-banner{display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:10px;border-radius:5px;background:color-mix(in srgb,var(--accent) 8%,var(--surface));border:1px solid var(--border)}
+.compressed-folder-banner small{display:block;color:var(--muted);margin-top:4px;font-size:11px}

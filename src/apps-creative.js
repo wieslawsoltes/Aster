@@ -551,18 +551,21 @@
     });
     OS.register('snips', { title: 'Snips', description: 'Capture, save, and annotate a screen you choose.', category: 'Creative', width: 690, height: 540, minWidth: 350,
         mount: async (w) => {
-            let blob = null, path = null, url = null;
+            let blob = null, path = null, url = null, captureStream = null;
             const toolbar = OS.el('div', { class: 'toolbar' }), body = OS.el('div', { class: 'snips-app' });
             w.body.append(toolbar, body);
             body.innerHTML = OS.appIcon('snips', 65) + '<h1 style="margin-bottom:0">Keep a little moment.</h1><p>Capture a screen, window, or tab that you choose. Your browser asks for permission every time. Aster stops sharing as soon as the still image is captured.</p>';
             const capture = async () => { if (!navigator.mediaDevices?.getDisplayMedia)
                 throw Error('Screen capture is not supported here. Open Aster on localhost or HTTPS in a compatible desktop browser.'); let stream; try {
                 stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+                if(w.closed){stream.getTracks().forEach(t=>t.stop());return;}
+                captureStream=stream;
                 const video = document.createElement('video');
                 video.muted = true;
                 video.srcObject = stream;
                 await video.play();
                 await new Promise(resolve => setTimeout(resolve, 180));
+                if(w.closed)return;
                 if (!video.videoWidth)
                     throw Error('The selected screen did not produce an image.');
                 const canvas = document.createElement('canvas');
@@ -571,10 +574,13 @@
                 canvas.height = Math.round(video.videoHeight * scale);
                 canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
                 blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                if(w.closed)return;
                 if (!blob)
                     throw Error('Capture failed.');
                 path = await OS.fs.unique('/Pictures/Snip ' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.png');
+                if(w.closed)return;
                 await OS.fs.write(path, blob, 'image/png');
+                if(w.closed)return;
                 if (url)
                     URL.revokeObjectURL(url);
                 url = URL.createObjectURL(blob);
@@ -583,12 +589,12 @@
                 OS.notify('Screen capture saved', OS.fs.name(path));
             }
             finally {
-                stream?.getTracks().forEach(t => t.stop());
+                stream?.getTracks().forEach(t => t.stop());captureStream=null;
             } };
             const captureB = OS.el('button', { class: 'primary', html: OS.icon('plus', 16) + 'New capture', onclick: OS.guard(capture) }), downloadB = OS.el('button', { html: OS.icon('download', 17) + 'Download', disabled: true, onclick: () => { if (blob)
                     OS.download(blob, OS.fs.name(path)); } });
-            toolbar.append(captureB, OS.el('button',{html:OS.icon('video',16)+'Record video',onclick:()=>OS.launch('recorder')}), downloadB, OS.el('span', { class: 'spacer' }), OS.el('span', { class: 'pill', html: OS.icon('shield', 12) + 'Permission required' }));
-            w.addCleanup(() => { if (url)
+            toolbar.append(captureB, downloadB, OS.el('span', { class: 'spacer' }), OS.el('span', { class: 'pill', html: OS.icon('shield', 12) + 'Permission required' }));
+            w.addCleanup(() => { captureStream?.getTracks().forEach(t=>t.stop()); if (url)
                 URL.revokeObjectURL(url); });
         }
     });

@@ -3,8 +3,17 @@
     const OS = Aster, $ = OS.$, esc = OS.esc;
     let panel = null, previewTimer = 0, desktopToken = 0, clockInterval = 0, taskViewRender = null;
     const iconButton = (icon, label, fn) => OS.el('button', { class: 'icon-button', title: label, 'aria-label': label, html: OS.icon(icon, 18), onclick: OS.guard(fn) });
-    OS.closePanels = () => { $('#panel-layer').replaceChildren(); panel = null; taskViewRender = null; clearTimeout(previewTimer); OS.$$('.task-button.panel-active').forEach(b => b.classList.remove('panel-active')); };
-    const mountPanel = (type, el) => { OS.closePanels(); panel = type; $('#panel-layer').append(el); return el; };
+    OS.closePanels = (restoreFocus = false) => {
+        const anchor = OS.panelReturnFocus;
+        const cleanup = OS.panelCleanup; OS.panelCleanup = null; OS.panelReturnFocus = null;
+        cleanup?.();
+        $('#panel-layer').replaceChildren(); panel = null; OS.shellPanelType = null; taskViewRender = null;
+        clearTimeout(previewTimer);
+        OS.$$('.task-button.panel-active').forEach(b => b.classList.remove('panel-active'));
+        if (restoreFocus && anchor?.isConnected) anchor.focus({preventScroll:true});
+    };
+    const mountPanel = (type, el) => { OS.closePanels(); panel = type; OS.shellPanelType = type; $('#panel-layer').append(el); return el; };
+    OS.mountShellPanel = (type, el, cleanup, anchor) => { mountPanel(type, el); OS.panelCleanup = cleanup; OS.panelReturnFocus = anchor; return el; };
     document.addEventListener('pointerdown', e => { if (!e.target.closest('#panel-layer,#taskbar,#context-menu,#dialog-layer'))
         OS.closePanels(); });
     document.addEventListener('contextmenu', e => { if (!e.target.closest('input,textarea,audio,video,iframe'))
@@ -31,7 +40,7 @@
         const start = OS.el('section', { class: 'panel start-menu flyout', role: 'dialog', 'aria-label': 'Start menu' }), searchWrap = OS.el('div', { class: 'start-search' }), searchField = OS.el('div', { class: 'search-field', html: OS.icon('search', 17) }), input = OS.el('input', { placeholder: 'Search for apps, files, and settings', 'aria-label': 'Search apps and files', autocomplete: 'off' }), main = OS.el('div', { class: 'start-main' }), footer = OS.el('div', { class: 'start-footer' });
         searchField.append(input);
         searchWrap.append(searchField);
-        const profile = OS.el('button', { html: `<span class="user-avatar">${esc(OS.settings.username[0] || 'A')}</span><span style="font-size:12px">${esc(OS.settings.username)}</span>`, onclick: () => OS.launch('settings', { section: 'system' }) });
+        const profile = OS.el('button', { html: `<span class="user-avatar">${esc(OS.settings.username[0] || 'A')}</span><span style="font-size:12px">${esc(OS.settings.username)}</span>`, onclick: () => OS.openApp('settings', { section: 'system' }) });
         footer.append(profile, OS.el('button', { class: 'icon-button', title: 'Power', 'aria-label': 'Power', html: OS.icon('power', 19), onclick: powerMenu }));
         start.append(searchWrap, main, footer);
         mountPanel('start', start);
@@ -56,30 +65,50 @@
                 else { webMode = false; home(); $('button.web-start-entry', main)?.focus(); }
             }
         }, true);
-        const appButton = (id, cls = 'pinned-app') => { const a = OS.apps.get(id); return OS.el('button', { class: cls, title: a.description || a.title, html: OS.appIcon(id, 34) + `<span>${esc(a.title.replace('Welcome to Aster', 'Welcome').replace('File Explorer', 'File Explorer'))}</span>`, onclick: () => OS.launch(id), oncontextmenu: e => OS.context(e, [{ text: 'Open', icon: 'play', action: () => OS.launch(id) }, { text: 'New window', icon: 'plus', disabled: !!a.singleton, action: () => OS.launch(id) }, { text: OS.pins.includes(id) ? 'Unpin from taskbar' : 'Pin to taskbar', icon: 'pin', action: () => OS.togglePin(id) }, { text: 'Add desktop shortcut', icon: 'desktop', action: () => OS.addDesktopShortcut(id) }, ...(a.custom ? [null, { text: 'Remove app', icon: 'trash', danger: true, action: () => OS.uninstallApp(id) }] : [])]) }); };
+        const appContext = (e,id) => {
+            const app=OS.apps.get(id), pinned=(OS.startPins||[]).includes(id);
+            OS.context(e,[{text:'Open',icon:'play',action:()=>OS.openApp(id)},
+                {text:'New window',icon:'plus',disabled:!!app.singleton,action:()=>OS.openApp(id)},
+                {text:pinned?'Unpin from Start':'Pin to Start',icon:'pin',action:async()=>{await OS.toggleStartPin(id);if(start.isConnected)home();}},
+                {text:OS.pins.includes(id)?'Unpin from taskbar':'Pin to taskbar',icon:'pin',action:()=>OS.togglePin(id)},
+                {text:'Add desktop shortcut',icon:'desktop',action:()=>OS.addDesktopShortcut(id)},
+                ...(app.custom?[null,{text:'Remove app',icon:'trash',danger:true,action:()=>OS.uninstallApp(id)}]:[])]);
+        };
+        const appButton = (id,cls='pinned-app') => {
+            const app=OS.apps.get(id),b=OS.el('button',{class:cls,title:app.description||app.title,'data-start-app':id,
+                html:OS.appIcon(id,34)+'<span>'+esc(app.title.replace('Welcome to Aster','Welcome'))+'</span>',
+                onclick:()=>OS.openApp(id),oncontextmenu:e=>appContext(e,id),draggable:true});
+            b.ondragstart=e=>{e.dataTransfer.setData('application/x-aster-start-pin',id);e.dataTransfer.effectAllowed='move';};
+            b.ondragover=e=>{if([...e.dataTransfer.types].includes('application/x-aster-start-pin')){e.preventDefault();e.dataTransfer.dropEffect='move';}};
+            b.ondrop=OS.guard(async e=>{e.preventDefault();await OS.moveStartPin(e.dataTransfer.getData('application/x-aster-start-pin'),id);if(start.isConnected)home();});
+            return b;
+        };
         async function home() {
             ++searchVersion;
             if (webMode && OS.renderWebAppStart) { showWeb(webCategory, false); return; }
             main.replaceChildren();
-            if (OS.renderWebAppStart) main.append(webEntry());
+
             const head = OS.el('div', { class: 'section-heading' }, OS.el('span', { text: all ? 'All apps' : 'Pinned' }));
             head.append(OS.el('button', { html: (all ? 'Back' : 'All apps') + OS.icon(all ? 'back' : 'forward', 11), onclick: () => { all = !all; home(); } }));
             main.append(head);
             if (all) {
                 const list = OS.el('div', { class: 'search-results' });
+                if (OS.renderWebAppStart) main.append(webEntry());
                 for (const app of visibleApps().filter(a => !a.webApp).sort((a, b) => a.title.localeCompare(b.title))) {
-                    const b = OS.el('button', { class: 'search-result', html: OS.appIcon(app.id, 31) + `<div class="grow"><span>${esc(app.title)}</span><small>${esc(app.category || 'Your apps')}</small></div>` + OS.icon('forward', 13), onclick: () => OS.launch(app.id) });
+                    const b = OS.el('button', { class: 'search-result', html: OS.appIcon(app.id, 31) + `<div class="grow"><span>${esc(app.title)}</span><small>${esc(app.category || 'Your apps')}</small></div>` + OS.icon('forward', 13), onclick: () => OS.openApp(app.id),oncontextmenu:e=>appContext(e,app.id) });
                     list.append(b);
                 }
                 main.append(list);
                 return;
             }
             const grid = OS.el('div', { class: 'pinned-grid' });
-            const ids = ['browser', 'files', 'settings', 'notepad', 'photos', 'store', 'paint', 'calculator', 'terminal', 'calendar', 'tasks', 'media', 'code', 'clock', 'mines', 'snips', 'taskmanager', 'welcome'];
+            const ids = OS.startPins || ['browser', 'files', 'settings', 'notepad', 'photos', 'store', 'paint', 'calculator', 'terminal', 'calendar', 'tasks', 'media', 'code', 'clock', 'mines', 'snips', 'taskmanager', 'welcome'];
             for (const id of ids)
                 if (OS.apps.has(id))
                     grid.append(appButton(id));
-            main.append(grid, OS.el('div', { class: 'section-heading', html: '<span>Recommended</span><span class="muted" style="font-weight:400;font-size:10px">Your recent files</span>' }));
+            main.append(grid);
+            if (OS.renderWebAppStart) main.append(webEntry());
+            main.append(OS.el('div', { class: 'section-heading', html: '<span>Recommended</span><span class="muted" style="font-weight:400;font-size:10px">Your recent files</span>' }));
             const recent = OS.el('div', { class: 'recommended-grid' });
             main.append(recent);
             const paths = [...new Set([...OS.recent, '/Documents/Welcome to Aster.md', '/Documents/Ideas.txt', '/Projects/Hello Aster.html', '/Music/First light.wav'])].slice(0, 4);
@@ -107,13 +136,16 @@
             main.append(OS.el('div', { class: 'section-heading', text: 'Best matches' }));
             const list = OS.el('div', { class: 'search-results' });
             for (const app of apps)
-                list.append(OS.el('button', { class: 'search-result', html: OS.appIcon(app.id, 35) + `<div><strong style="font-size:12px;font-weight:500">${esc(app.title)}</strong><small>App · ${esc(app.category || 'Your apps')}</small></div>`, onclick: () => OS.launch(app.id) }));
+                list.append(OS.el('button', { class: 'search-result', html: OS.appIcon(app.id, 35) + `<div><strong style="font-size:12px;font-weight:500">${esc(app.title)}</strong><small>App · ${esc(app.category || 'Your apps')}</small></div>`, onclick: () => OS.openApp(app.id),oncontextmenu:e=>appContext(e,app.id) }));
+            for (const [id, feature] of Object.entries(OS.integratedFeatures || {}))
+                if ((feature.title + ' ' + feature.keys).toLowerCase().includes(q))
+                    list.append(OS.el('button', {class:'search-result system-result', html:OS.appIcon(id,30)+'<div><strong>'+esc(feature.title)+'</strong><small>'+esc(feature.group)+' · System feature</small></div>',onclick:()=>OS.openApp(id)}));
             for (const file of files)
                 list.append(OS.el('button', { class: 'search-result', html: OS.fileIcon(file, 30) + `<div><strong style="font-size:12px;font-weight:500">${esc(OS.fs.name(file.path))}</strong><small>${esc(OS.fs.parent(file.path))}</small></div>`, onclick: OS.guard(() => OS.openPath(file.path)) }));
-            const settingsMap = [['theme', 'Personalization', 'personalization'], ['wallpaper', 'Desktop background', 'personalization'], ['backup', 'Export or restore backup', 'storage'], ['storage', 'Storage settings', 'storage'], ['sound', 'Sound and volume', 'system'], ['text', 'Accessibility settings', 'accessibility']];
+            const settingsMap = [['theme', 'Personalization', 'personalization'], ['wallpaper', 'Desktop background', 'personalization'], ['backup', 'Export or restore backup', 'recovery'], ['storage', 'Storage settings', 'storage'], ['sound', 'Sound and volume', 'sound'], ['text', 'Accessibility settings', 'accessibility']];
             for (const [term, label, section] of settingsMap)
                 if (term.includes(q) || q.includes(term))
-                    list.append(OS.el('button', { class: 'search-result', html: OS.appIcon('settings', 30) + `<div><span>${label}</span><small>Setting</small></div>`, onclick: () => OS.launch('settings', { section }) }));
+                    list.append(OS.el('button', { class: 'search-result', html: OS.appIcon('settings', 30) + `<div><span>${label}</span><small>Setting</small></div>`, onclick: () => OS.openApp('settings', { section }) }));
             if (!list.childElementCount)
                 list.append(OS.el('div', { class: 'empty', html: OS.icon('search', 40) + '<strong>No matches yet.</strong><span>Search an app, a web project, a category, or one of your virtual files.</span>' }));
             main.append(list);
@@ -159,10 +191,10 @@
         const windows = Array.from(OS.windows.values()).filter(w => w.appId === id), active = windows.some(w => w.id === OS.focused && !w.minimized && w.desktop === OS.activeDesktop);
         const b = OS.el('button', { class: 'task-button' + (windows.length ? ' running' : '') + (active ? ' active' : '') + (extra ? ' task-pinned-extra' : ''), 'data-app': id, title: app.title, 'aria-label': app.title, html: OS.appIcon(id, 28) });
         b.onclick = e => { if (e.ctrlKey || e.shiftKey) {
-            OS.launch(id);
+            OS.openApp(id);
             return;
         } clearTimeout(previewTimer); const current = windows.find(w => w.id === OS.focused); if (!windows.length)
-            OS.launch(id);
+            OS.openApp(id);
         else if (windows.length > 1) {
             if (panel === 'preview') {
                 OS.closePanels();
@@ -180,14 +212,14 @@
         } };
         b.onauxclick = e => { if (e.button === 1) {
             e.preventDefault();
-            OS.launch(id);
+            OS.openApp(id);
         } };
         b.onmouseenter = () => { if (windows.length)
             previewTimer = setTimeout(() => showPreview(id, b), 600); };
         b.onmouseleave = () => { clearTimeout(previewTimer); if (panel === 'preview')
             previewTimer = setTimeout(() => { if (panel === 'preview')
                 OS.closePanels(); }, 250); };
-        b.oncontextmenu = e => OS.context(e, [{ text: app.title, icon: app.icon || 'play', action: () => OS.launch(id) }, { text: OS.pins.includes(id) ? 'Unpin from taskbar' : 'Pin to taskbar', icon: 'pin', action: () => OS.togglePin(id) }, ...(windows.length ? [null, ...windows.slice(0, 5).map(w => ({ text: w.title, icon: 'restore', action: () => w.restore() })), { text: windows.length > 1 ? 'Close all windows' : 'Close window', icon: 'close', action: async () => { for (const w of windows)
+        b.oncontextmenu = e => OS.context(e, [{ text: app.title, icon: app.icon || 'play', action: () => OS.openApp(id) }, { text: OS.pins.includes(id) ? 'Unpin from taskbar' : 'Pin to taskbar', icon: 'pin', action: () => OS.togglePin(id) }, ...(windows.length ? [null, ...windows.slice(0, 5).map(w => ({ text: w.title, icon: 'restore', action: () => w.restore() })), { text: windows.length > 1 ? 'Close all windows' : 'Close window', icon: 'close', action: async () => { for (const w of windows)
                         await w.close(); } }] : [])]);
         return b;
     }
@@ -200,7 +232,7 @@
         const now = new Date(), left = OS.el('button', { class: 'task-left', title: 'Your day', 'aria-label': 'Open your day widgets', html: OS.icon('sun', 25) + `<div style="text-align:left"><strong>${esc(now.toLocaleDateString(undefined, { weekday: 'long' }))}</strong><small>${esc(now.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))} · Your day</small></div>`, onclick: () => OS.showWidgets() });
         const center = OS.el('div', { class: 'task-center' }), start = OS.el('button', { class: 'task-button', id: 'start-button', title: 'Start (Ctrl + Space)', 'aria-label': 'Start', html: '<div class="aster-symbol" style="width:27px;height:27px"></div>', onclick: () => OS.toggleStart() }), search = OS.el('button', { class: 'task-search', title: 'Search', 'aria-label': 'Search apps and files', html: OS.icon('search', 18) + '<span>Search</span>', onclick: () => OS.toggleStart(true) }), taskview = OS.el('button', { class: 'task-button', title: 'Task View', 'aria-label': 'Task View', html: OS.icon('taskview', 23), onclick: () => OS.showTaskView() });
         center.append(start, search, taskview);
-        const apps = [...new Set([...OS.pins.filter(id => OS.apps.has(id)), ...Array.from(OS.windows.values()).map(w => w.appId)])];
+        const apps = [...new Set([...OS.pins.filter(id => OS.apps.has(id) && !OS.apps.get(id).systemFeature), ...Array.from(OS.windows.values()).map(w => w.appId)])];
         const max = innerWidth > 1200 ? 11 : innerWidth > 900 ? 8 : innerWidth > 700 ? 6 : 5;
         for (const id of apps.slice(0, max)) {
             const b = taskAppButton(id, !OS.pins.includes(id));
@@ -208,7 +240,7 @@
                 center.append(b);
         }
         if (apps.length > max)
-            center.append(OS.el('button', { class: 'task-button', html: OS.icon('more', 20), title: 'More running apps', 'aria-label': 'More apps', onclick: e => OS.context(e, apps.slice(max).map(id => ({ text: OS.apps.get(id)?.title || id, icon: 'play', action: () => { const w = Array.from(OS.windows.values()).find(w => w.appId === id); w ? w.restore() : OS.launch(id); } }))) }));
+            center.append(OS.el('button', { class: 'task-button', html: OS.icon('more', 20), title: 'More running apps', 'aria-label': 'More apps', onclick: e => OS.context(e, apps.slice(max).map(id => ({ text: OS.apps.get(id)?.title || id, icon: 'play', action: () => { const w = Array.from(OS.windows.values()).find(w => w.appId === id); w ? w.restore() : OS.openApp(id); } }))) }));
         const right = OS.el('div', { class: 'task-right' }), quick = OS.el('button', { class: 'tray-status', id: 'quick-settings-button', title: 'Quick settings', 'aria-label': 'Quick settings', html: OS.icon(navigator.onLine ? 'wifi' : 'disconnect', 16) + OS.icon('speaker', 16) + OS.icon(OS.battery ? 'battery' : 'shield', 16), onclick: () => OS.toggleQuick() }), clock = OS.el('button', { class: 'tray-clock', id: 'tray-clock', title: 'Notification Center and calendar', 'aria-label': 'Notifications and calendar', onclick: () => OS.showNotifications() }), bell = OS.el('button', { class: 'icon-button', title: OS.settings.dnd ? 'Do not disturb' : 'Notifications', 'aria-label': 'Notifications', html: OS.icon(OS.quiet?.active() ? 'moon' : 'bell', 17), onclick: () => OS.showNotifications() });
         const unread = OS.notifications.filter(n => !n.read).length;
         if (unread) {
@@ -218,6 +250,17 @@
         const showDesktop = OS.el('button', { class: 'show-desktop', title: 'Show desktop', 'aria-label': 'Show desktop', onclick: OS.showDesktop });
         right.append(quick, clock, bell, showDesktop);
         bar.append(left, center, right);
+        start.oncontextmenu = e => OS.context(e, [
+            {text:'System',icon:'desktop',action:()=>OS.openApp('settings',{section:'system'})},
+            {text:'Task Manager',icon:'list',action:()=>OS.openApp('taskmanager')},
+            {text:'Settings',icon:'settings',action:()=>OS.openApp('settings')},
+            {text:'File Explorer',icon:'folder',action:()=>OS.openApp('files')},
+            {text:'Terminal',icon:'terminal',action:()=>OS.openApp('terminal')},null,
+            {text:'Desktop',icon:'desktop',action:OS.showDesktop},
+            {text:'Lock',icon:'lock',action:OS.lock}]);
+        bar.oncontextmenu = e => { if(e.target===bar || e.target===center) OS.context(e,[
+            {text:'Task Manager',icon:'list',action:()=>OS.openApp('taskmanager')},
+            {text:'Taskbar settings',icon:'settings',action:()=>OS.openApp('settings',{section:'personalization'})}]); };
         updateClock();
     }
     function updateClock() { const el = $('#tray-clock'); if (el) {
@@ -250,7 +293,7 @@
             sliders.append(row);
         }
         const battery = OS.battery ? `${Math.round(OS.battery.level * 100)}%${OS.battery.charging ? ' · Charging' : ''}` : OS.metrics.mode + ' · ' + (navigator.onLine ? 'Online signal' : 'Offline');
-        bottom.append(OS.el('span', { class: 'row', html: OS.icon(OS.battery ? 'battery' : 'gpu', 16) + esc(battery) }), iconButton('settings', 'Open Settings', () => OS.launch('settings')));
+        bottom.append(OS.el('span', { class: 'row', html: OS.icon(OS.battery ? 'battery' : 'gpu', 16) + esc(battery) }), iconButton('settings', 'Open Settings', () => OS.openApp('settings')));
         p.append(grid, sliders, bottom);
         mountPanel('quick', p);
     };
@@ -260,7 +303,7 @@
             return;
         }
         const p = OS.el('section', { class: 'panel notification-panel flyout', role: 'dialog', 'aria-label': 'Notifications and calendar' }), head = OS.el('div', { class: 'notification-header' }), list = OS.el('div', { class: 'notification-list' }), calendar = OS.el('div', { class: 'mini-calendar' });
-        head.append(iconButton('clock', 'Focus sessions', () => OS.launch('focus')), OS.el('strong', { text: 'Notifications', style: 'font-size:13px' }), OS.el('button', { class: 'secondary', text: 'Clear all', style: 'font-size:10px;padding:4px 8px', onclick: async () => { OS.notifications = []; await OS.db.set('notifications', []); OS.showNotifications(true); renderTaskbar(); } }));
+        head.append(iconButton('clock', 'Focus sessions', () => OS.openApp('focus')), OS.el('strong', { text: 'Notifications', style: 'font-size:13px' }), OS.el('button', { class: 'secondary', text: 'Clear all', style: 'font-size:10px;padding:4px 8px', onclick: async () => { OS.notifications = []; await OS.db.set('notifications', []); OS.showNotifications(true); renderTaskbar(); } }));
         if (!OS.notifications.length)
             list.append(OS.el('div', { class: 'empty', style: 'height:110px;min-height:110px;font-size:12px', html: OS.icon('bell', 26) + '<span>You’re all caught up.</span>' }));
         for (const n of OS.notifications.slice(0, 8)) {
@@ -275,14 +318,14 @@
         function renderCalendar() { calendar.replaceChildren(); const heading = OS.el('div', { class: 'row', style: 'margin-bottom:10px' }); heading.append(OS.el('strong', { text: month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }), style: 'font-size:13px;flex:1' }), iconButton('back', 'Previous month', () => { month = new Date(month.getFullYear(), month.getMonth() - 1, 1); renderCalendar(); }), iconButton('forward', 'Next month', () => { month = new Date(month.getFullYear(), month.getMonth() + 1, 1); renderCalendar(); })); const grid = OS.el('div', { class: 'calendar-grid' }); for (const d of ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
             grid.append(OS.el('span', { class: 'weekday', text: d })); const today = OS.isoDate(new Date()); for (const date of OS.calendarDays(month)) {
             const iso = OS.isoDate(date);
-            grid.append(OS.el('button', { class: (iso === today ? 'today ' : '') + (date.getMonth() !== month.getMonth() ? 'outside' : ''), text: date.getDate(), 'aria-label': date.toDateString(), onclick: () => OS.launch('calendar', { date: iso }) }));
-        } calendar.append(heading, grid, OS.el('button', { class: 'secondary', text: 'Open Calendar', style: 'margin-top:14px;width:100%;font-size:11px', onclick: () => OS.launch('calendar') })); }
+            grid.append(OS.el('button', { class: (iso === today ? 'today ' : '') + (date.getMonth() !== month.getMonth() ? 'outside' : ''), text: date.getDate(), 'aria-label': date.toDateString(), onclick: () => OS.openApp('calendar', { date: iso }) }));
+        } calendar.append(heading, grid, OS.el('button', { class: 'secondary', text: 'Open Calendar', style: 'margin-top:14px;width:100%;font-size:11px', onclick: () => OS.openApp('calendar') })); }
         renderCalendar();
         p.append(head, list, calendar);
         mountPanel('notifications', p);
         renderTaskbar();
     };
-    OS.showWidgets = () => OS.launch('widgets');
+    OS.showWidgets = () => OS.openApp('widgets');
     OS.showTaskView = () => {
         if (panel === 'taskview') {
             OS.closePanels();
@@ -294,7 +337,7 @@
             if (!p.isConnected)
                 return;
             p.replaceChildren();
-            const header = OS.el('div', { class: 'row' }, OS.el('h2', { text: OS.desktops.find(d => d.id === OS.activeDesktop)?.name || 'Your desktop', style: 'flex:1;margin:0' }), OS.el('span', { style: 'font-size:11px;color:#cfdaeb', text: 'Drag a window onto another desktop to move it.' }), iconButton('taskview', 'Saved window groups', () => OS.launch('workspaces')), iconButton('close', 'Close Task View', OS.closePanels));
+            const header = OS.el('div', { class: 'row' }, OS.el('h2', { text: OS.desktops.find(d => d.id === OS.activeDesktop)?.name || 'Your desktop', style: 'flex:1;margin:0' }), OS.el('span', { style: 'font-size:11px;color:#cfdaeb', text: 'Drag a window onto another desktop to move it.' }), iconButton('taskview', 'Saved window groups', () => OS.openApp('workspaces')), iconButton('close', 'Close Task View', OS.closePanels));
             p.append(header);
             const grid = OS.el('div', { class: 'task-view-grid' }), windows = Array.from(OS.windows.values()).filter(w => w.desktop === OS.activeDesktop).sort((a, b) => b.z - a.z);
             for (const w of windows) {
@@ -365,11 +408,11 @@
             const open = () => { if (entry.file)
                 OS.guard(OS.openPath)(entry.file.path);
             else if (entry.app === 'trash')
-                OS.launch('files', { path: '/.Trash' });
+                OS.openApp('files', { path: '/.Trash' });
             else if (entry.app === 'files')
-                OS.launch('files', { path: '/' });
+                OS.openApp('files', { path: '/' });
             else
-                OS.launch(entry.app); };
+                OS.openApp(entry.app); };
             b.onclick = e => { if (!e.ctrlKey && !e.metaKey)
                 clear(); b.classList.toggle('selected', !e.ctrlKey || !b.classList.contains('selected')); };
             b.ondblclick = open;
@@ -386,7 +429,7 @@
                 e.preventDefault();
                 renderDesktop();
             } };
-            b.oncontextmenu = e => { clear(); b.classList.add('selected'); OS.context(e, [{ text: 'Open', icon: 'play', action: open }, { text: 'Rename', icon: 'rename', key: 'F2', action: () => renameEntry(entry) }, { text: entry.file ? 'Delete' : 'Remove shortcut', icon: 'trash', key: 'Del', action: () => removeEntry(entry) }, ...(entry.file ? [null, { text: 'Open in Notepad', icon: 'file', disabled: entry.file.kind === 'directory', action: () => OS.launch('notepad', { path: entry.file.path }) }] : [])]); };
+            b.oncontextmenu = e => { clear(); b.classList.add('selected'); OS.context(e, [{ text: 'Open', icon: 'play', action: open }, { text: 'Rename', icon: 'rename', key: 'F2', action: () => renameEntry(entry) }, { text: entry.file ? 'Delete' : 'Remove shortcut', icon: 'trash', key: 'Del', action: () => removeEntry(entry) }, ...(entry.file ? [null, { text: 'Open in Notepad', icon: 'file', disabled: entry.file.kind === 'directory', action: () => OS.openApp('notepad', { path: entry.file.path }) }] : [])]); };
             if (entry.shortcut)
                 b.ondragstart = e => e.dataTransfer.setData('application/x-aster-shortcut', entry.app);
             b.ondragover = e => { if (e.dataTransfer.types.includes('application/x-aster-shortcut'))
@@ -433,7 +476,7 @@
         return; OS.context(e, [{ text: 'New folder', icon: 'folder', action: () => newDesktopFile('directory') }, { text: 'New text document', icon: 'file', action: () => newDesktopFile('file') }, { text: 'Paste', icon: 'paste', disabled: !OS.clipboard, action: async () => { if (!OS.clipboard)
                 return; const clip = OS.clipboard; for (const src of clip.paths)
                 await OS.fs.copy(src, await OS.fs.unique(OS.fs.join('/Desktop', OS.fs.name(src))), clip.cut); if (clip.cut)
-                OS.clipboard = null; } }, null, { text: 'Refresh', icon: 'refresh', action: renderDesktop }, { text: 'Open Terminal here', icon: 'terminal', action: () => OS.launch('terminal', { cwd: '/Desktop' }) }, null, { text: 'Display settings', icon: 'desktop', action: () => OS.launch('settings', { section: 'system' }) }, { text: 'Personalize', icon: 'paint', action: () => OS.launch('settings', { section: 'personalization' }) }]); };
+                OS.clipboard = null; } }, null, { text: 'Refresh', icon: 'refresh', action: renderDesktop }, { text: 'Open Terminal here', icon: 'terminal', action: () => OS.openApp('terminal', { cwd: '/Desktop' }) }, null, { text: 'Display settings', icon: 'desktop', action: () => OS.openApp('settings', { section: 'system' }) }, { text: 'Personalize', icon: 'paint', action: () => OS.openApp('settings', { section: 'personalization' }) }]); };
     desktop.addEventListener('dragover', e => e.preventDefault());
     desktop.addEventListener('drop', OS.guard(async (e) => { e.preventDefault(); if (e.dataTransfer.files.length)
         await OS.fs.import(Array.from(e.dataTransfer.files), '/Desktop');
@@ -480,7 +523,7 @@
         OS.timer.remaining = 0;
         OS.timer.notified = true;
         OS.tone();
-        OS.notify('Time’s up', 'Your Aster timer has finished.', 'info', { label: 'Open Clock', fn: () => OS.launch('clock') });
+        OS.notify('Time’s up', 'Your Aster timer has finished.', 'info', { label: 'Open Clock', fn: () => OS.openApp('clock') });
     } }
     let checkedMinute = '', reminded = new Set();
     async function calendarTick() { const now = new Date(), key = OS.isoDate(now) + ' ' + now.getHours() + ':' + now.getMinutes(); if (key === checkedMinute)
@@ -491,7 +534,7 @@
         if (now >= due && now - due < 60000) {
             reminded.add(event.id);
             OS.tone();
-            OS.notify(event.title, event.time + ' · ' + (event.notes || 'Calendar reminder'), 'info', { label: 'Open Calendar', fn: () => OS.launch('calendar', { date: event.date }) });
+            OS.notify(event.title, event.time + ' · ' + (event.notes || 'Calendar reminder'), 'info', { label: 'Open Calendar', fn: () => OS.openApp('calendar', { date: event.date }) });
         }
     } }
     OS.on('windows', () => { renderTaskbar(); taskViewRender?.(); });
@@ -514,7 +557,7 @@
     matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (OS.settings.theme === 'auto')
         OS.applySettings(); });
     document.addEventListener('keydown', e => {
-        if(e.ctrlKey && e.altKey && ['v','f','w','u','r'].includes(e.key.toLowerCase()) && !OS.$('#dialog-layer').children.length && !OS.$('.lock-screen')){e.preventDefault();const id={v:'clipboard',f:'focus',w:'workspaces',u:'accessibility',r:'recorder'}[e.key.toLowerCase()];OS.launch(id);}
+        if(e.ctrlKey && e.altKey && ['v','f','w','u','r'].includes(e.key.toLowerCase()) && !OS.$('#dialog-layer').children.length && !OS.$('.lock-screen')){e.preventDefault();const id={v:'clipboard',f:'focus',w:'workspaces',u:'accessibility',r:'recorder'}[e.key.toLowerCase()];OS.openApp(id);}
         if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'l') {
         e.preventDefault();
         OS.lock();
@@ -522,6 +565,7 @@
     OS.ready = (async () => {
         await OS.init();
         OS.pins = await OS.db.get('taskbarPins') || ['files', 'browser', 'notepad', 'terminal', 'store'];
+        OS.pins = [...new Set(OS.pins.map(id=>OS.migrateShellSession({app:id})?.app).filter(id=>id&&OS.apps.has(id)))];
         OS.desktopShortcuts = await OS.db.get('desktopShortcuts') || [{ app: 'files', title: 'This PC' }, { app: 'trash', title: 'Recycle Bin' }, { app: 'browser', title: 'Orbit Browser' }, { app: 'welcome', title: 'Welcome to Aster' }];
         OS.renderer = new OS.Renderer();
         await OS.renderer.init();
@@ -529,7 +573,8 @@
         await renderDesktop();
         let session = OS.settings.restore ? await OS.db.get('session') : null;
         if (Array.isArray(session) && session.length) {
-            for (const saved of session.slice(0, 18)) {
+            for (const previous of session.slice(0, 18)) {
+                const saved = OS.migrateShellSession(previous); if (!saved) continue;
                 if (!OS.apps.has(saved.app))
                     continue;
                 const desk = OS.desktops.some(d => d.id === saved.desktop) ? saved.desktop : OS.desktops[0].id;
@@ -538,7 +583,7 @@
             OS.switchDesktop(OS.desktops[0].id);
         }
         else
-            OS.launch('files');
+            OS.openApp('files');
         clockInterval = setInterval(() => { updateClock(); timerTick(); }, 1000);
         setInterval(() => calendarTick().catch(console.warn), 5000);
         navigator.getBattery?.().then(b => { OS.battery = b; renderTaskbar(); b.addEventListener('levelchange', renderTaskbar); b.addEventListener('chargingchange', renderTaskbar); }).catch(() => { });
@@ -552,7 +597,7 @@
             OS.notify('Temporary session only', 'Persistent browser storage is unavailable. Export your work before closing this page. '+(OS.db.problem||''), 'warning');
         if (!await OS.db.get('welcomed')) {
             await OS.db.set('welcomed', true);
-            setTimeout(() => OS.notify('Welcome to your new workspace', 'Open Start to explore built-in tools and ' + (OS.webCatalog?.apps.length || 0) + ' categorized web apps. ' + (OS.db.mode === 'IndexedDB' ? 'Your virtual files are saved in this browser.' : 'Export your work before closing this temporary session.'), 'info', { label: 'Meet Aster', fn: () => OS.launch('welcome') }), 800);
+            setTimeout(() => OS.notify('Welcome to your new workspace', 'Open Start to explore built-in tools and ' + (OS.webCatalog?.apps.length || 0) + ' categorized web apps. ' + (OS.db.mode === 'IndexedDB' ? 'Your virtual files are saved in this browser.' : 'Export your work before closing this temporary session.'), 'info', { label: 'Meet Aster', fn: () => OS.openApp('welcome') }), 800);
         }
         return OS;
     })().catch(error => { console.error('Aster startup:', error); const boot = $('#boot'); if (boot) {

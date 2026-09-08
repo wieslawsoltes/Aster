@@ -2,7 +2,7 @@
 'use strict';
 (() => {
     const OS = window.Aster = {
-        version: '1.5.0', apps: new Map(), windows: new Map(), mounts: new Map(),
+        version: '1.6.0', apps: new Map(), windows: new Map(), mounts: new Map(),
         events: new EventTarget(), clipboard: null, started: performance.now(),
         metrics: { fps: 0, frameMs: 0, drawCalls: 0, mode: 'Starting', frames: [] },
         settings: { theme: 'light', accent: '#176ae6', wallpaper: 'bloom', transparency: true, motion: true,
@@ -28,6 +28,8 @@
                 e.innerHTML = v;
             else if (k.startsWith('on') && typeof v === 'function')
                 e.addEventListener(k.slice(2), v);
+            else if (['draggable', 'contenteditable', 'spellcheck'].includes(k) && typeof v === 'boolean')
+                e.setAttribute(k, String(v)); // Enumerated HTML attributes are not empty boolean attributes.
             else if (v !== false && v != null)
                 e.setAttribute(k, v === true ? '' : v);
         }

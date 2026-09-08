@@ -94,12 +94,12 @@
     };
     OS.register('settings', { title: 'Settings', description: 'Make this workspace feel like you.', category: 'System', width: 995, height: 710, minWidth: 460, singleton: true,
         mount: async (w, options) => {
-            let section = options.section || w.state.section || 'system';
+            let section = OS.integrations.normalize(options.section || w.state.section || 'home');
             const layout = OS.el('div', { class: 'settings-layout' }), side = OS.el('aside', { class: 'settings-sidebar' }), main = OS.el('div', { class: 'settings-main' });
             w.body.classList.add('transparent');
             layout.append(side, main);
             w.body.append(layout);
-            const navigation = [['essentials','spark','Desktop essentials','tabs archives clipboard focus widgets window groups history storage accessibility recorder'], ['system', 'desktop', 'System', 'display sound brightness volume startup renderer network'], ['personalization', 'paint', 'Personalization', 'theme wallpaper dark light accent taskbar transparency animation'], ['apps', 'store', 'Apps', 'installed import html applications default local folder'], ['storage', 'folder', 'Storage', 'backup restore files disk recycle bin reset'], ['accessibility', 'eye', 'Accessibility', 'text size motion contrast keyboard'], ['about', 'info', 'About Aster', 'version browser capabilities privacy security help']];
+            const navigation = OS.integrations.navigation;
             const user = OS.el('div', { class: 'settings-user', html: `<div class="user-avatar">${esc(OS.settings.username[0] || 'A')}</div><div><strong>${esc(OS.settings.username)}</strong><small>Local account</small></div>` }), search = OS.el('input', { class: 'settings-search', placeholder: 'Find a setting', 'aria-label': 'Find a setting' }), nav = OS.el('div');
             side.append(user, search, nav);
             const row = (icon, title, description, control) => { const r = OS.el('div', { class: 'setting-row' }, OS.el('span', { html: OS.icon(icon, 23) }), OS.el('div', { class: 'setting-label' }, OS.el('strong', { text: title }), OS.el('small', { text: description }))); if (control)
@@ -110,35 +110,21 @@
             const range = (key, min, max) => { const group = OS.el('div', { class: 'row' }), input = OS.el('input', { type: 'range', min, max, value: OS.settings[key], 'aria-label': key }), label = OS.el('span', { text: OS.settings[key] + '%', style: 'font-size:10px;min-width:33px;text-align:right' }); input.oninput = () => { OS.settings[key] = Number(input.value); label.textContent = input.value + '%'; OS.applySettings(); }; input.onchange = () => OS.db.set('settings', OS.settings); group.append(input, label); return group; };
             const heading = t => main.append(OS.el('h3', { class: 'settings-section-title', text: t }));
             async function render() {
+                w.integrationView?.dispose(); w.integrationView = null;
                 w.state.section = section;
                 OS.saveSession();
                 nav.replaceChildren();
-                for (const [id, icon, title] of navigation)
-                    nav.append(OS.el('button', { class: 'nav-item' + (section === id ? ' active' : ''), html: OS.icon(icon, 19) + title, onclick: () => navigate(id) }));
-                main.replaceChildren(OS.el('h1', { text: navigation.find(n => n[0] === section)?.[2] || 'Settings' }));
-                if (section === 'essentials') {
-                    main.append(OS.el('p',{class:'muted',text:'Ten Windows-inspired workflows, implemented for this browser desktop.'}));
-                    for(const id of ['files','archives','clipboard','focus','widgets','workspaces','history','storage','accessibility','recorder']){
-                        const app=OS.apps.get(id);main.append(row(app.icon||'folder',app.title,app.description,OS.el('button',{class:'secondary',text:'Open',onclick:()=>OS.launch(id)})));
-                    }
-                }
-                else if (section === 'system') {
-                    main.append(row('spark','New desktop essentials','Explore ten new file, productivity, recovery and accessibility workflows.',OS.el('button',{class:'primary',text:'Explore',onclick:()=>navigate('essentials')})));
-                    main.append(OS.el('div', { class: 'settings-hero', html: `<div class="device-preview"><div class="aster-symbol"></div></div><div><strong style="font-size:17px;font-weight:550">Your Aster workspace</strong><div class="muted" style="font-size:11px;margin:5px 0">A browser desktop. A world of possibilities.</div><span class="pill">${OS.icon('shield', 12)} Local session</span></div>` }));
-                    main.append(row('desktop', 'Display brightness', 'Dims Aster only. Your real display brightness is unchanged.', range('brightness', 15, 100)), row('speaker', 'App volume', 'Controls Aster media playback and notification tones.', range('volume', 0, 100)), row('speaker', 'Mute Aster audio', 'Does not change your device’s volume.', toggle('muted')));
-                    heading('Your session');
-                    main.append(row('user', 'Display name', 'Shown in Start, Settings, and your desktop.', OS.el('button', { class: 'secondary', text: 'Change', onclick: OS.guard(async () => { const name = await OS.prompt('Your display name', OS.settings.username); if (name?.trim()) {
-                            await OS.setSetting('username', name.trim().slice(0, 40));
-                            $('.user-avatar', user).textContent = OS.settings.username[0];
-                            $('strong', user).textContent = OS.settings.username;
-                        } }) })), row('restore', 'Restore windows on startup', 'Reopen your app windows and saved editor drafts.', toggle('restore')), row('clock', 'Time format', 'Uses your browser’s local time zone.', select('clock24', [[true, '24-hour'], [false, '12-hour']])));
-                    // Boolean selects require explicit conversion instead of string truthiness.
-                    const clockSelect = OS.$('select[aria-label="clock24"]', main);
-                    clockSelect.onchange = () => OS.setSetting('clock24', clockSelect.value === 'true');
-                    heading('Runtime');
-                    main.append(row('gpu', 'Graphics engine', OS.metrics.mode === 'WebGPU' ? 'WebGPU wallpaper and per-window GPU surfaces. HTML handles interactive content.' : 'Canvas wallpaper and native CSS window surfaces. ' + (OS.renderer?.fallbackReason || ''), OS.el('button', { class: 'secondary', text: 'Performance', onclick: () => OS.launch('taskmanager', { section: 'performance' }) })), row(navigator.onLine ? 'wifi' : 'disconnect', 'Network status', navigator.onLine ? 'The browser reports a network connection. Internet reachability is not independently verified.' : 'The browser reports that it is offline.', OS.el('span', { class: 'pill', text: navigator.onLine ? 'Online signal' : 'Offline' })));
-                }
-                else if (section === 'personalization') {
+                for (const [id, icon, title] of navigation.filter(n=>!n[4]))
+                    nav.append(OS.el('button', { 'aria-label':title, class: 'nav-item' + (section === id || navigation.find(n=>n[0]===section)?.[4]===id ? ' active' : ''), html: OS.icon(icon, 19) + title, onclick: () => navigate(id) }));
+                const entry = navigation.find(n=>n[0]===section), parent = entry?.[4];
+                const headingBar = OS.el('div',{class:'settings-breadcrumb'});
+                if(parent) headingBar.append(OS.el('button',{text:navigation.find(n=>n[0]===parent)[2],onclick:()=>navigate(parent)}),OS.el('span',{html:OS.icon('forward',17)}));
+                headingBar.append(OS.el('h1',{text:entry?.[2]||'Settings'}));
+                main.replaceChildren(headingBar);
+                const pageBody = OS.el('div',{class:'settings-page-content'}); main.append(pageBody);
+                if(await OS.integrations.renderSettings(w,section,pageBody,navigate)) return;
+                if(!pageBody.isConnected)return;
+                if (section === 'personalization') {
                     heading('Choose your background');
                     const wallpapers = OS.el('div', { class: 'wallpaper-grid' });
                     for (const [id, name, colors] of [['bloom', 'Blue bloom', ['#092c6c', '#3f97e9']], ['midnight', 'Midnight', ['#121733', '#7267c0']], ['dusk', 'Afterglow', ['#512254', '#e39eaa']], ['sage', 'Soft sage', ['#153f3c', '#7bb8a7']]]) {
@@ -171,41 +157,9 @@
                             main.append(row('code', app.title, app.path, OS.el('button', { class: 'secondary', text: 'Launch', onclick: () => OS.launch(app.id) })));
                     }
                 }
-                else if (section === 'storage') {
-                    main.append(row('folder','Storage Sense & File History','Review virtual storage and recover previous versions.',OS.el('button',{class:'primary',text:'Storage Manager',onclick:()=>OS.launch('storage')})));
-                    const all = await OS.db.all(), bytes = all.reduce((n, f) => n + (f.size || 0), 0);
-                    let estimate = {};
-                    try {
-                        estimate = await navigator.storage?.estimate?.() || {};
-                    }
-                    catch { }
-                    const persisted = await navigator.storage?.persisted?.().catch(() => false);
-                    main.append(OS.el('div', { class: 'card', html: `<div class="row">${OS.icon('folder', 34)}<div><h2 style="margin:0">${OS.formatBytes(bytes)}</h2><small>${all.filter(f => f.kind === 'file').length} virtual files · ${all.filter(f => f.kind === 'directory').length} folders</small></div></div><div class="storage-bar"><span style="width:${estimate.quota ? Math.max(1, Math.min(100, bytes / estimate.quota * 100)) : 5}%"></span></div><p class="muted" style="font-size:10px;margin:11px 0 0">${estimate.quota ? 'Browser-reported site quota: ' + OS.formatBytes(estimate.quota) + '. Usage includes files; cache and other site data may add to it.' : 'The browser has not exposed a storage quota.'}</p>` }));
-                    heading('Keep your work safe');
-                    main.append(row('download', 'Export backup', 'Downloads virtual files, tasks, calendar events, and your app launchers.', OS.el('button', { class: 'primary', text: 'Export', onclick: OS.guard(OS.exportBackup) })), row('upload', 'Restore backup', 'Merge a previous Aster backup. Matching virtual files are replaced.', OS.el('button', { class: 'secondary', text: 'Import', onclick: OS.guard(OS.importBackup) })), row('shield', 'Persistent storage', persisted ? 'This browser has granted persistent storage. You can still delete it in browser settings.' : 'Ask the browser to protect site data from automatic eviction.', OS.el('button', { class: 'secondary', text: persisted ? 'Granted' : 'Request', disabled: !!persisted, onclick: OS.guard(async () => { if (!navigator.storage?.persist)
-                            throw Error('Persistent storage requests are not available here.'); const granted = await navigator.storage.persist(); OS.notify(granted ? 'Storage protected' : 'Not granted', granted ? 'The browser granted persistent storage. Backups are still recommended.' : 'Your browser did not grant persistent storage. Export backups regularly.'); render(); }) })));
-                    heading('Manage storage');
-                    main.append(row('trash', 'Empty Recycle Bin', 'Permanently delete virtual items already in the Recycle Bin.', OS.el('button', { class: 'secondary danger', text: 'Empty', onclick: OS.guard(async () => { const files = await OS.fs.list('/.Trash'); if (!files.length) {
-                            OS.notify('Already empty', 'There are no items in the Recycle Bin.');
-                            return;
-                        } if (await OS.confirm('Empty Recycle Bin?', `${files.length} items will be permanently removed.`, 'Empty', true)) {
-                            for (const f of files)
-                                await OS.fs.remove(f.path, true);
-                            render();
-                        } }) })), row('refresh', 'Reset Aster', 'Erase this browser’s Aster data. Real local folders are not affected.', OS.el('button', { class: 'secondary danger', text: 'Reset', onclick: OS.guard(async () => { const text = await OS.dialog({ title: 'Erase all Aster data?', message: 'This permanently removes virtual files, drafts, tasks, events, and app launchers in this browser. Export a backup first. Connected real folders are never deleted.\n\nType ERASE to continue.', value: '', confirm: 'Erase Aster', danger: true }); if (text !== 'ERASE')
-                            return; for (const win of Array.from(OS.windows.values()))
-                            await win.close(true); OS.cancelSessionSave(); OS.db.db?.close(); const r = indexedDB.deleteDatabase('aster-desktop'); r.onsuccess = () => location.reload(); r.onerror = () => OS.notify('Reset failed', r.error?.message || 'Storage could not be removed.', 'warning'); r.onblocked = () => OS.notify('Close other Aster tabs', 'Another open tab is keeping the database in use.', 'warning'); }) })));
-                    main.append(OS.el('p', { class: 'muted', text: 'Browser-local storage is not a cloud backup. Changing browser profiles, clearing site data, private browsing, or browser eviction can remove virtual files. Export your work regularly.', style: 'font-size:11px;line-height:1.8;margin:22px 0' }));
-                }
-                else if (section === 'accessibility') {
-                    main.append(row('eye','Reading and visual tools','Color filters, large pointer, reading guide and local-voice reading.',OS.el('button',{class:'primary',text:'Accessibility Tools',onclick:()=>OS.launch('accessibility')})));
-                    main.append(row('file', 'Text size', 'Adjust the base interface text size.', select('fontSize', [[12, 'Small · 12 px'], [13, 'Default · 13 px'], [14, 'Medium · 14 px'], [15, 'Large · 15 px']])), row('eye', 'High-contrast interface', 'Stronger borders and opaque surfaces.', toggle('highContrast')), row('spark', 'Animations', 'Disable for a quieter, more static desktop.', toggle('motion')), row('eye', 'Transparent surfaces', 'Turn off for stronger separation between surfaces.', toggle('transparency')), row('bell', 'Do not disturb', 'Keep notifications in Notification Center without pop-up toasts.', toggle('dnd')));
-                    heading('Keyboard shortcuts');
-                    main.append(OS.el('div', { class: 'card', html: `<table class="shortcut-table">${[['Start and search', 'Ctrl + Space'], ['Task view', 'Ctrl + Alt + Tab'], ['New terminal', 'Ctrl + Alt + T'], ['New note', 'Ctrl + Alt + N'], ['Show desktop', 'Ctrl + Alt + D'], ['Snap left / right', 'Ctrl + Alt + ← / →'], ['Maximize', 'Ctrl + Alt + ↑'], ['Save in editors', 'Ctrl + S'], ['Close active app', 'Alt + F4'], ['Dismiss menus', 'Escape']].map(([a, b]) => `<tr><td>${a}</td><td><kbd>${b}</kbd></td></tr>`).join('')}</table><p class="muted" style="font-size:10px;margin:15px 0 0">Some shortcuts may be intercepted by your real OS or browser. Every action is also available with the mouse.</p>` }));
-                }
                 else {
                     const info = OS.renderer?.info || {};
-                    main.append(OS.el('div', { class: 'about-mark', html: '<div class="aster-symbol"></div><div><h1>Aster</h1><small>YOUR SPACE. YOUR PACE.</small></div>' }), OS.el('p', { class: 'muted', text: 'An independent, Windows 11-inspired browser desktop.', style: 'margin-bottom:24px;font-size:13px' }));
+                    main.append(OS.el('div', { class: 'about-mark', html: '<div class="aster-symbol"></div><div><h2>Aster</h2><small>YOUR SPACE. YOUR PACE.</small></div>' }), OS.el('p', { class: 'muted', text: 'An independent, Windows 11-inspired browser desktop.', style: 'margin-bottom:24px;font-size:13px' }));
                     const facts = [['Version', OS.version], ['Renderer', OS.metrics.mode], ['GPU adapter', info.description || [info.vendor, info.architecture].filter(Boolean).join(' · ') || 'Not exposed by this browser'], ['Storage', OS.db.mode], ['Secure context', window.isSecureContext ? 'Yes' : 'No'], ['Local folder picker', window.showDirectoryPicker ? 'Available' : 'Not available — use file import'], ['Screen capture', navigator.mediaDevices?.getDisplayMedia ? 'Available with permission' : 'Not available'], ['Time zone', Intl.DateTimeFormat().resolvedOptions().timeZone], ['Browser platform', navigator.platform || 'Not exposed']];
                     main.append(OS.el('div', { class: 'card', html: `<table class="shortcut-table">${facts.map(([a, b]) => `<tr><td>${esc(a)}</td><td style="text-align:left;word-break:break-word">${esc(b)}</td></tr>`).join('')}</table>` }));
                     heading('A desktop, not a kernel');
@@ -214,15 +168,16 @@
                     main.append(OS.el('p', { class: 'muted', text: 'No sign-in, analytics, external fonts, or CDN dependencies are built in. Your files stay in this browser unless you explicitly download, export, connect a folder, browse a website, or run app code that accesses a network.', style: 'font-size:11px;line-height:1.8' }));
                 }
             }
-            function navigate(id) { section = navigation.some(n => n[0] === id) ? id : 'system'; search.value = ''; OS.guard(render)(); }
-            search.oninput = () => { const q = search.value.trim().toLowerCase(); if (!q) {
+            function navigate(id) { id=OS.integrations.normalize(id); section = navigation.some(n => n[0] === id) ? id : 'system'; search.value = ''; return OS.guard(render)(); }
+            search.oninput = () => { w.integrationView?.dispose();w.integrationView=null;const q = search.value.trim().toLowerCase(); if (!q) {
                 render();
                 return;
             } main.replaceChildren(OS.el('h1', { text: 'Search settings' })); const matches = navigation.filter(n => (n[2] + ' ' + n[3]).toLowerCase().includes(q)); for (const [id, icon, title, keywords] of matches) {
-                main.append(OS.el('button', { class: 'setting-row', style: 'width:100%;text-align:left;white-space:normal', html: OS.icon(icon, 23) + `<div class="setting-label"><strong>${esc(title)}</strong><small>${esc(keywords)}</small></div>` + OS.icon('forward', 15), onclick: () => navigate(id) }));
+                main.append(OS.el('button', { class: 'setting-row', 'aria-label':title, style: 'width:100%;text-align:left;white-space:normal', html: OS.icon(icon, 23) + `<div class="setting-label"><strong>${esc(title)}</strong><small>${esc(keywords)}</small></div>` + OS.icon('forward', 15), onclick: () => navigate(id) }));
             } if (!matches.length)
                 main.append(OS.el('div', { class: 'empty', text: 'No matching settings. Try “theme”, “backup”, or “text”.' })); };
             w.navigate = navigate;
+            w.addCleanup(()=>w.integrationView?.dispose());
             await render();
         }
     });
