@@ -1,0 +1,1505 @@
+{
+  "owner": "wieslawsoltes",
+  "timezone": "Europe/Warsaw",
+  "startInclusive": "2026-09-06T00:00:00+02:00",
+  "endExclusive": "2026-09-09T00:00:00+02:00",
+  "auditedAt": "2026-09-08T06:59:01.286171+00:00",
+  "repositories": [
+    {
+      "name": "AetherDiscovery",
+      "createdAt": "2026-09-06T21:20:05Z",
+      "createdLocal": "2026-09-06T23:20:05+02:00",
+      "repository": "https://github.com/wieslawsoltes/AetherDiscovery",
+      "readmeSHA": "dda6dfcf71ee624b357d9b27c8ec204f81d4eca3",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AetherDiscovery/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AetherDiscovery/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 200315,
+          "sha256": "86ebe73099803742f666a741ba648b163db97b41fb80c49e1676747a54b000b7",
+          "title": "Aether Discovery — Engineering, in flow."
+        }
+      ]
+    },
+    {
+      "name": "AetherField",
+      "createdAt": "2026-09-06T21:16:39Z",
+      "createdLocal": "2026-09-06T23:16:39+02:00",
+      "repository": "https://github.com/wieslawsoltes/AetherField",
+      "readmeSHA": "0a7ddf0ca584f24234724bf1c2dfc8526816c553",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AetherField/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AetherField/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 7453,
+          "sha256": "20d88b98ffab293ed711430a8f07cff8bbf01378ea292b1c325a885ec478f8d8",
+          "title": "AetherField — Multiphysics Workbench"
+        }
+      ]
+    },
+    {
+      "name": "AetherMotion",
+      "createdAt": "2026-09-07T10:43:06Z",
+      "createdLocal": "2026-09-07T12:43:06+02:00",
+      "repository": "https://github.com/wieslawsoltes/AetherMotion",
+      "readmeSHA": "c7fd7c5ba8bafb23b2a67233df4bb7b25f86893f",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AetherMotion/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AetherMotion/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 10821,
+          "sha256": "3a7ffdcb0d939f90383eb74b2018ace8f7f79cb346196d14f4e7bb758eebb088",
+          "title": "Aether Motion — Motion, without limits."
+        }
+      ]
+    },
+    {
+      "name": "AetherOptics",
+      "createdAt": "2026-09-06T20:55:49Z",
+      "createdLocal": "2026-09-06T22:55:49+02:00",
+      "repository": "https://github.com/wieslawsoltes/AetherOptics",
+      "readmeSHA": "e6663d7e78f304c92172e50ca8a11b152ddb1e4a",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AetherOptics/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AetherOptics/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 253465,
+          "sha256": "8c43cf900ce4a8f9158f6177bd5be83fbab3ff7b5a2df5b897cfbeecda0ca8cc",
+          "title": "Aether Optics · Optical Design Studio"
+        }
+      ]
+    },
+    {
+      "name": "AlloyStudio",
+      "createdAt": "2026-09-07T10:16:05Z",
+      "createdLocal": "2026-09-07T12:16:05+02:00",
+      "repository": "https://github.com/wieslawsoltes/AlloyStudio",
+      "readmeSHA": "73fe79052aea12c044448c09b5db42594349d255",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AlloyStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AlloyStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 204983,
+          "sha256": "2abb098e6445f9973833195c68b83c49473b453c8345cddd8f4ecacf5a80e394",
+          "title": "Alloy Studio — Orbital bearing mount"
+        }
+      ]
+    },
+    {
+      "name": "Aster",
+      "createdAt": "2026-09-07T19:20:30Z",
+      "createdLocal": "2026-09-07T21:20:30+02:00",
+      "repository": "https://github.com/wieslawsoltes/Aster",
+      "readmeSHA": "e86e01f89c8fba45a674f2070d940c78aec080e9",
+      "included": false,
+      "reason": "Host desktop itself; do not create a recursive Aster window.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Aster/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Aster/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 1818,
+          "sha256": "14d5c933d5f17fb5c9bb47451f076e8bea9a8a72478c9e735a6b7954eb1b54ee",
+          "title": "Aster Desktop"
+        }
+      ]
+    },
+    {
+      "name": "AsterCAS",
+      "createdAt": "2026-09-06T11:51:18Z",
+      "createdLocal": "2026-09-06T13:51:18+02:00",
+      "repository": "https://github.com/wieslawsoltes/AsterCAS",
+      "readmeSHA": "6fe12387f2b2c226e402ba3d7696c31a0726f3ff",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AsterCAS/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AsterCAS/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 196057,
+          "sha256": "51cafc2b634724b8fb1b282f7c9148ef87e7469e58256afbe4b9cf2e98a97aa0",
+          "title": "Aster CAS · Symbolic mathematics, beautifully connected"
+        }
+      ]
+    },
+    {
+      "name": "Asteria",
+      "createdAt": "2026-09-06T19:38:24Z",
+      "createdLocal": "2026-09-06T21:38:24+02:00",
+      "repository": "https://github.com/wieslawsoltes/Asteria",
+      "readmeSHA": "f7fbcb8069ccdc2d35880b3e57e57bf871a4d35e",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Asteria/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Asteria/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 232163,
+          "sha256": "2d604ae530ee68d4065a49eb14b67c4f15ff9deb885334dbd9580a9efcce77bf",
+          "title": "Asteria — Binary Analysis Workbench"
+        }
+      ]
+    },
+    {
+      "name": "AureliaProcess",
+      "createdAt": "2026-09-07T20:23:20Z",
+      "createdLocal": "2026-09-07T22:23:20+02:00",
+      "repository": "https://github.com/wieslawsoltes/AureliaProcess",
+      "readmeSHA": "94807938dfb92fe83c7225be52801786f9e2c7f9",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AureliaProcess/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AureliaProcess/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 6735,
+          "sha256": "989db8f6b6b7915a9e1ad49e06b6e890111e256747d64ebe2f4e1b65f39ef4e4",
+          "title": "Aurelia Process · Process simulation workspace"
+        }
+      ]
+    },
+    {
+      "name": "AureliaSlides",
+      "createdAt": "2026-09-07T10:45:03Z",
+      "createdLocal": "2026-09-07T12:45:03+02:00",
+      "repository": "https://github.com/wieslawsoltes/AureliaSlides",
+      "readmeSHA": "1c3525b0b0f34b1250ca95690a0554282bc2c149",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AureliaSlides/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AureliaSlides/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 197394,
+          "sha256": "8db603b677c719dcbab965c3f1575b26ee2d825f1d457b9458685d87129936bb",
+          "title": "Aurelia Slides — Ideas in motion"
+        }
+      ]
+    },
+    {
+      "name": "AureonCAD",
+      "createdAt": "2026-09-06T21:17:26Z",
+      "createdLocal": "2026-09-06T23:17:26+02:00",
+      "repository": "https://github.com/wieslawsoltes/AureonCAD",
+      "readmeSHA": "1bbef98a6df1e01522647c39c3934e2bb64ba356",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AureonCAD/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AureonCAD/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 13180,
+          "sha256": "b22e7b90a69963b53d7a0da819ba6c859d2c3c54a0c5a597e0a738b7470a513f",
+          "title": "Aureon CAD — Precision, by design."
+        }
+      ]
+    },
+    {
+      "name": "AureonTerminal",
+      "createdAt": "2026-09-06T21:43:02Z",
+      "createdLocal": "2026-09-06T23:43:02+02:00",
+      "repository": "https://github.com/wieslawsoltes/AureonTerminal",
+      "readmeSHA": "0666d389004aac485802a1ab7c2fd2abbb69868f",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AureonTerminal/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AureonTerminal/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 955019,
+          "sha256": "81e5237389845cae5dd88076801ed8e8bb3f1f0438e9ac0b09a52bcb4b74a874",
+          "title": "Aureon Terminal — Market workspace"
+        }
+      ]
+    },
+    {
+      "name": "AxiomCAD",
+      "createdAt": "2026-09-06T10:17:18Z",
+      "createdLocal": "2026-09-06T12:17:18+02:00",
+      "repository": "https://github.com/wieslawsoltes/AxiomCAD",
+      "readmeSHA": "ac7d26af831ee90bac377e03ad71227e45a6ae20",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AxiomCAD/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AxiomCAD/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 248726,
+          "sha256": "455d516b00ef8dfd8cf03a3f1b437fbfa4fb46d70e3fec969d91c1fe45602c58",
+          "title": "Axiom CAD · Mechanical design, reimagined"
+        }
+      ]
+    },
+    {
+      "name": "AxiomCAM",
+      "createdAt": "2026-09-06T20:55:16Z",
+      "createdLocal": "2026-09-06T22:55:16+02:00",
+      "repository": "https://github.com/wieslawsoltes/AxiomCAM",
+      "readmeSHA": "81adf50385f119b7cbb62c9546f546ad451ba55b",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AxiomCAM/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AxiomCAM/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 7112,
+          "sha256": "4bc4a69d10df6ff2d65396571076b96d6f06b5a06e19363ea596ce0036d9e448",
+          "title": "AxiomCAM · Precision in every path"
+        }
+      ]
+    },
+    {
+      "name": "AxiomPID",
+      "createdAt": "2026-09-06T20:04:17Z",
+      "createdLocal": "2026-09-06T22:04:17+02:00",
+      "repository": "https://github.com/wieslawsoltes/AxiomPID",
+      "readmeSHA": "322f28d877744a470d1ab5cdf5d0c2f2c42880fc",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AxiomPID/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AxiomPID/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 207567,
+          "sha256": "7286ffffdfb46d000e2c03bd08e38bb2bbf7e9c51cea1e01564a16e8b43c65a4",
+          "title": "Axiom P&ID — Process Engineering"
+        }
+      ]
+    },
+    {
+      "name": "AxiomPlant",
+      "createdAt": "2026-09-06T10:21:33Z",
+      "createdLocal": "2026-09-06T12:21:33+02:00",
+      "repository": "https://github.com/wieslawsoltes/AxiomPlant",
+      "readmeSHA": "e15d95ec878e1f8708e4036c2f68a77465cb77e8",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AxiomPlant/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AxiomPlant/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 11434,
+          "sha256": "3aa80ea36a29dfad05eda0f332f8ccedb5eba3b97578a87a251a6a82e1ab0fad",
+          "title": "Axiom Plant — Piping Engineering"
+        }
+      ]
+    },
+    {
+      "name": "AxiomStudio",
+      "createdAt": "2026-09-06T11:01:44Z",
+      "createdLocal": "2026-09-06T13:01:44+02:00",
+      "repository": "https://github.com/wieslawsoltes/AxiomStudio",
+      "readmeSHA": "93a9b128918ae6e862187d86f350d38703ca904f",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AxiomStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AxiomStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 191368,
+          "sha256": "0afd75e93887cbf3d05291d9372d5c6dd432b801356779958b506ac0b7f25a99",
+          "title": "Axiom Studio · Compute. Model. Understand."
+        }
+      ]
+    },
+    {
+      "name": "AxiomWorksheet",
+      "createdAt": "2026-09-06T11:55:57Z",
+      "createdLocal": "2026-09-06T13:55:57+02:00",
+      "repository": "https://github.com/wieslawsoltes/AxiomWorksheet",
+      "readmeSHA": "a70fd000a1a660a14b8d43896da87b950dc3ee59",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AxiomWorksheet/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AxiomWorksheet/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 230256,
+          "sha256": "a35994b859c598628a25089cec5fa220c7f3504953af9237d4a8156b24e09062",
+          "title": "Axiom Worksheet — Cantilever beam"
+        }
+      ]
+    },
+    {
+      "name": "CelestaStudio",
+      "createdAt": "2026-09-06T19:54:48Z",
+      "createdLocal": "2026-09-06T21:54:48+02:00",
+      "repository": "https://github.com/wieslawsoltes/CelestaStudio",
+      "readmeSHA": "c71af61c21f2a8dc57ae9964d0ed87e3c71982dc",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/CelestaStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/CelestaStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 261222,
+          "sha256": "de90aae2a74892995cdd790d66d11fc6a165d39ad699633d5f845b59b4a7a7b3",
+          "title": "Celesta — Animation, with a little wonder."
+        }
+      ]
+    },
+    {
+      "name": "ConvergeStudio",
+      "createdAt": "2026-09-06T21:10:14Z",
+      "createdLocal": "2026-09-06T23:10:14+02:00",
+      "repository": "https://github.com/wieslawsoltes/ConvergeStudio",
+      "readmeSHA": "f2321cb083be5348ad40acca976756bb676f2ecc",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/ConvergeStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/ConvergeStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 10466,
+          "sha256": "191fe83d13a98ed0ff8e78f1a9e3d29490bd1e3185cab5704219e8ce66a1bfb0",
+          "title": "Converge Studio · Model Coordination"
+        }
+      ]
+    },
+    {
+      "name": "Draftline",
+      "createdAt": "2026-09-06T07:31:17Z",
+      "createdLocal": "2026-09-06T09:31:17+02:00",
+      "repository": "https://github.com/wieslawsoltes/Draftline",
+      "readmeSHA": "3091d271ffeff728b0adf14a3400bcd3bdb38c37",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Draftline/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Draftline/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 9852,
+          "sha256": "f72378807034ba54fc64c2c3c834fde1b64fad54ac9296612c8c3044cf4f2d1f",
+          "title": "Draftline — Precision, without limits."
+        }
+      ]
+    },
+    {
+      "name": "FluxLab",
+      "createdAt": "2026-09-06T10:19:39Z",
+      "createdLocal": "2026-09-06T12:19:39+02:00",
+      "repository": "https://github.com/wieslawsoltes/FluxLab",
+      "readmeSHA": "ed2fb5796f2d33ff7abd8d395cc4a4fd1c0c9ef2",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/FluxLab/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/FluxLab/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 9908,
+          "sha256": "990f491590c5c3afa10f578ef835861e07c22ed6525f29b3455cc0e510e23ef4",
+          "title": "FluxLab — Fluid dynamics workbench"
+        }
+      ]
+    },
+    {
+      "name": "Fluxweave",
+      "createdAt": "2026-09-06T20:57:45Z",
+      "createdLocal": "2026-09-06T22:57:45+02:00",
+      "repository": "https://github.com/wieslawsoltes/Fluxweave",
+      "readmeSHA": "ecb5af987622cc9a80c286fe18f03dc9cbcfc2db",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Fluxweave/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Fluxweave/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 13595,
+          "sha256": "625a9f451848ff5def9d9b7ed7af451043fdda6011a05a38ec8465b83cdb3932",
+          "title": "Fluxweave · Visual programming"
+        }
+      ]
+    },
+    {
+      "name": "FluxWorksStudio",
+      "createdAt": "2026-09-06T20:54:15Z",
+      "createdLocal": "2026-09-06T22:54:15+02:00",
+      "repository": "https://github.com/wieslawsoltes/FluxWorksStudio",
+      "readmeSHA": "42c88b16158df35b809920d830328a63c845671e",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/FluxWorksStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/FluxWorksStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 9728,
+          "sha256": "51bacceb97b44a9ea39a67d0ba83b14ff7c7127f30849c756fd65118e0f35ddf",
+          "title": "FluxWorks Studio · Simulation workbench"
+        }
+      ]
+    },
+    {
+      "name": "FolioForge",
+      "createdAt": "2026-09-07T10:44:24Z",
+      "createdLocal": "2026-09-07T12:44:24+02:00",
+      "repository": "https://github.com/wieslawsoltes/FolioForge",
+      "readmeSHA": "c900a23c0b6aa655f9a48ada25440a6885939f34",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/FolioForge/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/FolioForge/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 8590,
+          "sha256": "46c45a881effd0db7899fb55b2cdba3802ca4ff1e8cb7f7f08cd68b20b3bbd63",
+          "title": "FolioForge — Editorial Studio"
+        }
+      ]
+    },
+    {
+      "name": "FolioPro",
+      "createdAt": "2026-09-06T19:54:25Z",
+      "createdLocal": "2026-09-06T21:54:25+02:00",
+      "repository": "https://github.com/wieslawsoltes/FolioPro",
+      "readmeSHA": "41e1f49b4adf052edfe2eea3facf23e4bfd63fa9",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/FolioPro/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/FolioPro/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 281292,
+          "sha256": "b97a999c900eaf7cb29ffa583606a5ff278f091a06861491352c965a563266bf",
+          "title": "Folio Pro — Your documents, thoughtfully done."
+        }
+      ]
+    },
+    {
+      "name": "ForgeStudio",
+      "createdAt": "2026-09-06T19:47:31Z",
+      "createdLocal": "2026-09-06T21:47:31+02:00",
+      "repository": "https://github.com/wieslawsoltes/ForgeStudio",
+      "readmeSHA": "fb840f07325ce68d08d50903a3137b6cb399d5ee",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/ForgeStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/ForgeStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 15994,
+          "sha256": "ffd74801f96dee5eddc0f145bdfe9d25bd6a39318c07c8c62521705a7954b19f",
+          "title": "Forge Studio — Nebula"
+        }
+      ]
+    },
+    {
+      "name": "Forma",
+      "createdAt": "2026-09-06T10:15:42Z",
+      "createdLocal": "2026-09-06T12:15:42+02:00",
+      "repository": "https://github.com/wieslawsoltes/Forma",
+      "readmeSHA": "b65f94c5b7422e02eb603fe8ba41fb2d873e9281",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Forma/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Forma/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 256790,
+          "sha256": "032a78a37d1614054d1f57b0bd836e5582fa0d238261ad86bb81abc729239199",
+          "title": "Forma — A little more possible."
+        }
+      ]
+    },
+    {
+      "name": "Frameforge",
+      "createdAt": "2026-09-07T10:19:57Z",
+      "createdLocal": "2026-09-07T12:19:57+02:00",
+      "repository": "https://github.com/wieslawsoltes/Frameforge",
+      "readmeSHA": "1e151be8a2c0517f29a05d444694675d724ebc79",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Frameforge/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Frameforge/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 13735,
+          "sha256": "e7defcc5f52d3b33710f9489889b21048e8e7231f8f2aa1f4414a1d0ad96a787",
+          "title": "Frameforge — Beyond"
+        }
+      ]
+    },
+    {
+      "name": "Gridline",
+      "createdAt": "2026-09-07T13:49:10Z",
+      "createdLocal": "2026-09-07T15:49:10+02:00",
+      "repository": "https://github.com/wieslawsoltes/Gridline",
+      "readmeSHA": "ed019c742e2bed5deeecc5a965daae5a11d6bec0",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Gridline/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Gridline/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 233169,
+          "sha256": "31aa5e1ed31ba6e428ffd86c7ed4c734b71b3589d89a8f5d909b68e037c2d6de",
+          "title": "Gridline — A clearer way to work"
+        }
+      ]
+    },
+    {
+      "name": "KestrelCAD",
+      "createdAt": "2026-09-07T07:39:19Z",
+      "createdLocal": "2026-09-07T09:39:19+02:00",
+      "repository": "https://github.com/wieslawsoltes/KestrelCAD",
+      "readmeSHA": "6c7d85de08495129ef0d64f5e690e05646fd27bc",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/KestrelCAD/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/KestrelCAD/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 11184,
+          "sha256": "d0cf30fdaecfabc14564dc402bcecdc1d526a91dc90df11fc4d14f3eb8df3e0a",
+          "title": "Kestrel CAD"
+        }
+      ]
+    },
+    {
+      "name": "KineforgeStudio",
+      "createdAt": "2026-09-06T21:11:24Z",
+      "createdLocal": "2026-09-06T23:11:24+02:00",
+      "repository": "https://github.com/wieslawsoltes/KineforgeStudio",
+      "readmeSHA": "cf755ccdfbbce7466acab18c760fe336acbca257",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/KineforgeStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/KineforgeStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 8256,
+          "sha256": "5dd508af4b0d441625693ce63995d881a2767ec08c0403c3359f20c878a7e31d",
+          "title": "Kineforge Studio · Robotic Cell Engineering"
+        }
+      ]
+    },
+    {
+      "name": "KinetraStudio",
+      "createdAt": "2026-09-07T10:17:24Z",
+      "createdLocal": "2026-09-07T12:17:24+02:00",
+      "repository": "https://github.com/wieslawsoltes/KinetraStudio",
+      "readmeSHA": "16f846fbf1c5eaa1d6d5e1c1cb82a49493dabd32",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/KinetraStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/KinetraStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 181195,
+          "sha256": "d67acb39452cd9a451ba28f8add94fd37f82a984e3eeb5b54a0a4c47de91a30f",
+          "title": "Kinetra Studio — 3D creation, in motion"
+        }
+      ]
+    },
+    {
+      "name": "LatticeAnalytics",
+      "createdAt": "2026-09-06T20:53:11Z",
+      "createdLocal": "2026-09-06T22:53:11+02:00",
+      "repository": "https://github.com/wieslawsoltes/LatticeAnalytics",
+      "readmeSHA": "b82e8b7a02111c4d2568915f20c0a1f33f403605",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/LatticeAnalytics/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/LatticeAnalytics/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 230839,
+          "sha256": "b8bf1e6b70e782896ccb14c642d661b79247b449be8a7b9be4e64f11a29a8f6f",
+          "title": "Lattice Analytics — Commerce workbook"
+        }
+      ]
+    },
+    {
+      "name": "LithicSculpt",
+      "createdAt": "2026-09-06T20:44:42Z",
+      "createdLocal": "2026-09-06T22:44:42+02:00",
+      "repository": "https://github.com/wieslawsoltes/LithicSculpt",
+      "readmeSHA": "6fd3053f69da4235578175907871411cee45e33b",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/LithicSculpt/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/LithicSculpt/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 11990,
+          "sha256": "7354b0c25ed0ea197240a2e19a51d407e7c33a5f02c04a1fd31430424b09d10d",
+          "title": "Lithic Sculpt — Digital sculpting studio"
+        }
+      ]
+    },
+    {
+      "name": "LumaForge",
+      "createdAt": "2026-09-07T13:47:03Z",
+      "createdLocal": "2026-09-07T15:47:03+02:00",
+      "repository": "https://github.com/wieslawsoltes/LumaForge",
+      "readmeSHA": "daa6c4245d698f686a3d680e664bc365d7cba8f0",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/LumaForge/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/LumaForge/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 1162610,
+          "sha256": "ab8862de826bfcde8e333329cd4b8056d450e3ee38867e48d0657ef888b0ed3f",
+          "title": "LumaForge — Photo Studio"
+        }
+      ]
+    },
+    {
+      "name": "MeridianGISStudio",
+      "createdAt": "2026-09-06T20:34:56Z",
+      "createdLocal": "2026-09-06T22:34:56+02:00",
+      "repository": "https://github.com/wieslawsoltes/MeridianGISStudio",
+      "readmeSHA": "94e26c0afce75320b32348ae5348e1fb02eec4b2",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/MeridianGISStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/MeridianGISStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 10156,
+          "sha256": "a69413ed28d9521514419aa7b5001e868bea382987aebc30293a8d272383871f",
+          "title": "Meridian GIS Studio"
+        }
+      ]
+    },
+    {
+      "name": "MeridianOffice",
+      "createdAt": "2026-09-07T10:20:41Z",
+      "createdLocal": "2026-09-07T12:20:41+02:00",
+      "repository": "https://github.com/wieslawsoltes/MeridianOffice",
+      "readmeSHA": "e9d52c2d22aebe6312f7e7b61a528aba83ec8a00",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/MeridianOffice/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/MeridianOffice/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 259539,
+          "sha256": "3a0e4675ee91caf6e30f21085c227bcaf237f2a536cd17d6ea6387cd38cfa885",
+          "title": "Meridian Office — A little more possible."
+        }
+      ]
+    },
+    {
+      "name": "MeridianPlan",
+      "createdAt": "2026-09-06T20:32:12Z",
+      "createdLocal": "2026-09-06T22:32:12+02:00",
+      "repository": "https://github.com/wieslawsoltes/MeridianPlan",
+      "readmeSHA": "ac91eb49cd8740a5f4dc2ba1b67ef6e80fcd30cd",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/MeridianPlan/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/MeridianPlan/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 938,
+          "sha256": "8c7e81b11e5c4a7188e350892bdc240f66f13bccb213e4e90b6e2d07630c09f2",
+          "title": "Meridian Plan · Project scheduling"
+        }
+      ]
+    },
+    {
+      "name": "NexoraDiagram",
+      "createdAt": "2026-09-06T19:29:06Z",
+      "createdLocal": "2026-09-06T21:29:06+02:00",
+      "repository": "https://github.com/wieslawsoltes/NexoraDiagram",
+      "readmeSHA": "200060a60cbff255abcc3df57a8f539038c35c7c",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/NexoraDiagram/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/NexoraDiagram/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 6962,
+          "sha256": "4f32d970c9f66b2ad889cbaa737d03d65e70b427bdb4c71d7a3af74a568f639e",
+          "title": "Nexora Diagram"
+        }
+      ]
+    },
+    {
+      "name": "NexoraEngineering",
+      "createdAt": "2026-09-07T10:16:42Z",
+      "createdLocal": "2026-09-07T12:16:42+02:00",
+      "repository": "https://github.com/wieslawsoltes/NexoraEngineering",
+      "readmeSHA": "c0eaa9c1a9400965b4129cb025d33626f34ba1ff",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/NexoraEngineering/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/NexoraEngineering/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 185045,
+          "sha256": "b7d80384ed643cff43fa782b1de78797bdefde241e9793cc2094fe791943573c",
+          "title": "Nexora Engineering · Plant intelligence, connected."
+        }
+      ]
+    },
+    {
+      "name": "PageForgeStudio",
+      "createdAt": "2026-09-07T14:05:08Z",
+      "createdLocal": "2026-09-07T16:05:08+02:00",
+      "repository": "https://github.com/wieslawsoltes/PageForgeStudio",
+      "readmeSHA": "afa25820b197c21d27063a85eb827583d29f6e66",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/PageForgeStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/PageForgeStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 194084,
+          "sha256": "b563c8099cef775ee532be18c94d07eb43310a204cee2a3c526530f56fa9c6e9",
+          "title": "PageForge Studio"
+        }
+      ]
+    },
+    {
+      "name": "PaintXP",
+      "createdAt": "2026-09-07T21:21:02Z",
+      "createdLocal": "2026-09-07T23:21:02+02:00",
+      "repository": "https://github.com/wieslawsoltes/PaintXP",
+      "readmeSHA": "fc6609bd16d9d87e4ddc4476fb3786a67d75f557",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/PaintXP/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/PaintXP/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 4077,
+          "sha256": "026438316c2d14d6561c7d5568d0016caea7cb18c99587e3fdf6b7c4d9a1d0c1",
+          "title": "untitled - Paint"
+        }
+      ]
+    },
+    {
+      "name": "PlanforgeReview",
+      "createdAt": "2026-09-06T20:35:56Z",
+      "createdLocal": "2026-09-06T22:35:56+02:00",
+      "repository": "https://github.com/wieslawsoltes/PlanforgeReview",
+      "readmeSHA": "914edc261290ac0cb9b76a4500c8c4cb7e0b464d",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/PlanforgeReview/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/PlanforgeReview/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 7345,
+          "sha256": "8bfde19ee7e113a87a5c93de218819038b5af8b6d753869d5960d1f3ceec6aef",
+          "title": "Planforge Review"
+        }
+      ]
+    },
+    {
+      "name": "PrismForge",
+      "createdAt": "2026-09-07T13:47:44Z",
+      "createdLocal": "2026-09-07T15:47:44+02:00",
+      "repository": "https://github.com/wieslawsoltes/PrismForge",
+      "readmeSHA": "7c71b4005ab34e1104e1c14b9108546999ea69f2",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/PrismForge/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/PrismForge/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 570113,
+          "sha256": "3a8bfe91c7e493dba04f6915da0e0ba9d9d8b0a5005543e2d7122dcc971d9e40",
+          "title": "PrismForge — Image Studio"
+        }
+      ]
+    },
+    {
+      "name": "PrismStudio",
+      "createdAt": "2026-09-07T13:56:47Z",
+      "createdLocal": "2026-09-07T15:56:47+02:00",
+      "repository": "https://github.com/wieslawsoltes/PrismStudio",
+      "readmeSHA": "9cc8b1b252750c79c50ecd8c8f0c829b8f2b4b15",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/PrismStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/PrismStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 177791,
+          "sha256": "01c20da3a5b1784901ea6eca21cf86ef7cead38ea623b7e901d90b37c052637b",
+          "title": "Prism Studio — Visual interface design"
+        }
+      ]
+    },
+    {
+      "name": "PulsegridStudio",
+      "createdAt": "2026-09-06T20:56:20Z",
+      "createdLocal": "2026-09-06T22:56:20+02:00",
+      "repository": "https://github.com/wieslawsoltes/PulsegridStudio",
+      "readmeSHA": "031b9b28968906765c0d53fb7afde82f6686098f",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/PulsegridStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/PulsegridStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 16639,
+          "sha256": "347ae3df8dbcaaed3f89a5e6910701d8bc4ccec55f8c409012c0283296bf6d35",
+          "title": "Pulsegrid — After Hours"
+        }
+      ]
+    },
+    {
+      "name": "Quire",
+      "createdAt": "2026-09-07T13:48:30Z",
+      "createdLocal": "2026-09-07T15:48:30+02:00",
+      "repository": "https://github.com/wieslawsoltes/Quire",
+      "readmeSHA": "b663e32c5c95c6ffd54311870ae1dfd4d2174e34",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Quire/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Quire/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 242877,
+          "sha256": "926a26348f2a38c012b112d2e7bcbe779ada5dd290f56a4e3cf08388e5cf52a8",
+          "title": "Quire — The clarity report"
+        }
+      ]
+    },
+    {
+      "name": "Railbound",
+      "createdAt": "2026-09-06T08:16:43Z",
+      "createdLocal": "2026-09-06T10:16:43+02:00",
+      "repository": "https://github.com/wieslawsoltes/Railbound",
+      "readmeSHA": "0b98799d3a5d54c05b98fd07d0ad65b7e531e618",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Railbound/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Railbound/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 199368,
+          "sha256": "908549aa879ead2e02792c371de96508044b384ded9daf504c402a270b3eb1a4",
+          "title": "Railbound Adventures · Big adventures. Little engineers."
+        }
+      ]
+    },
+    {
+      "name": "RailboundAdventures",
+      "createdAt": "2026-09-07T17:12:25Z",
+      "createdLocal": "2026-09-07T19:12:25+02:00",
+      "repository": "https://github.com/wieslawsoltes/RailboundAdventures",
+      "readmeSHA": "c16cf64bcd22f1dbbd615e5ed8539e29ee366a38",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/RailboundAdventures/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/RailboundAdventures/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 12788,
+          "sha256": "2564e3a9fd27a3b2543840935434d76cd63b387d3c7c14860123dd137585eb6e",
+          "title": "Railbound Adventures · The railway is yours"
+        }
+      ]
+    },
+    {
+      "name": "RelayForgeAutomation",
+      "createdAt": "2026-09-06T21:10:54Z",
+      "createdLocal": "2026-09-06T23:10:54+02:00",
+      "repository": "https://github.com/wieslawsoltes/RelayForgeAutomation",
+      "readmeSHA": "83f66685adb5fcb65cbce958391ca7fb49eba054",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/RelayForgeAutomation/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/RelayForgeAutomation/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 4692,
+          "sha256": "53a291c802b04a49d61d12867db094244c337c99c75399a2a2b13d22d4fd85be",
+          "title": "RelayForge Automation"
+        }
+      ]
+    },
+    {
+      "name": "SELVEDGEStudio",
+      "createdAt": "2026-09-07T14:07:02Z",
+      "createdLocal": "2026-09-07T16:07:02+02:00",
+      "repository": "https://github.com/wieslawsoltes/SELVEDGEStudio",
+      "readmeSHA": "9c0f7e44f7a5c099b6131c3c29720391aa60d647",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/SELVEDGEStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/SELVEDGEStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 9218,
+          "sha256": "a5a1277f6f53fb11cf9beca7f88defb46faeea55b2b4ba2aeec425ac0bb9e086",
+          "title": "SELVEDGE Studio — Garment workspace"
+        }
+      ]
+    },
+    {
+      "name": "SignalForgeStudio",
+      "createdAt": "2026-09-06T20:32:51Z",
+      "createdLocal": "2026-09-06T22:32:51+02:00",
+      "repository": "https://github.com/wieslawsoltes/SignalForgeStudio",
+      "readmeSHA": "7eada2929cd0e64d8c88a420107d136b00c3911a",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/SignalForgeStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/SignalForgeStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 11728,
+          "sha256": "5965d1dc7495d546e0818902f6e60c5638dd544f374de8a9b0570a59aac4ce9a",
+          "title": "SignalForge Studio — Live production, reimagined"
+        }
+      ]
+    },
+    {
+      "name": "SilicoreStudio",
+      "createdAt": "2026-09-06T21:20:38Z",
+      "createdLocal": "2026-09-06T23:20:38+02:00",
+      "repository": "https://github.com/wieslawsoltes/SilicoreStudio",
+      "readmeSHA": "3652f9652113e4e1794f07ac363b0ca0e891a1ec",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/SilicoreStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/SilicoreStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 222497,
+          "sha256": "086b2ad5b9706ab72f208440b79df0d98e7c2118349e880ac1c23fa191c626e6",
+          "title": "Silicore Studio · Aurora"
+        }
+      ]
+    },
+    {
+      "name": "SonoraStudio",
+      "createdAt": "2026-09-07T10:37:51Z",
+      "createdLocal": "2026-09-07T12:37:51+02:00",
+      "repository": "https://github.com/wieslawsoltes/SonoraStudio",
+      "readmeSHA": "92862f936932f24f164784db682068afc4618ecc",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/SonoraStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/SonoraStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 240777,
+          "sha256": "6f72f08da7ebfed1fb653bbb18d21d8df0a890faaa87c4dbe5af06299f38df99",
+          "title": "Sonora Studio — Audio, in its element."
+        }
+      ]
+    },
+    {
+      "name": "StrataForge",
+      "createdAt": "2026-09-06T21:17:04Z",
+      "createdLocal": "2026-09-06T23:17:04+02:00",
+      "repository": "https://github.com/wieslawsoltes/StrataForge",
+      "readmeSHA": "8a4e4ff4428ce1159df2b433e870f929237f6eb8",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/StrataForge/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/StrataForge/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 10886,
+          "sha256": "75fe77825d6e3165bdb42ece7277c31be935e6beec788029d84ef9f28b79227e",
+          "title": "StrataForge — Material Studio"
+        }
+      ]
+    },
+    {
+      "name": "StratumBIM",
+      "createdAt": "2026-09-06T20:56:53Z",
+      "createdLocal": "2026-09-06T22:56:53+02:00",
+      "repository": "https://github.com/wieslawsoltes/StratumBIM",
+      "readmeSHA": "ccdfc9a021ec4c14301caca9cd16fa905738027c",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/StratumBIM/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/StratumBIM/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 9168,
+          "sha256": "9a90db8d0b3cc6ccc3c578d944a2ad20629d868d4f85c8ef330c6ced955980b9",
+          "title": "Stratum BIM · Atelier House"
+        }
+      ]
+    },
+    {
+      "name": "StratumCAD",
+      "createdAt": "2026-09-07T13:50:05Z",
+      "createdLocal": "2026-09-07T15:50:05+02:00",
+      "repository": "https://github.com/wieslawsoltes/StratumCAD",
+      "readmeSHA": "0b09ec21ebbbfbc408a666cee8f0b1112b14e690",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/StratumCAD/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/StratumCAD/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 184229,
+          "sha256": "7cfc41e28bd24a22da0aa02df502ab4490fac7155851e83fb009fc55c3f2370d",
+          "title": "Stratum CAD · Riverside Studio"
+        }
+      ]
+    },
+    {
+      "name": "StratumFrame",
+      "createdAt": "2026-09-06T20:44:05Z",
+      "createdLocal": "2026-09-06T22:44:05+02:00",
+      "repository": "https://github.com/wieslawsoltes/StratumFrame",
+      "readmeSHA": "71820d15bf5587506ceae9607549c32456f90321",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/StratumFrame/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/StratumFrame/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 12889,
+          "sha256": "7987329460b9f981c05c074403817da894c865cad31f28a30b6f474cf63dc9c1",
+          "title": "Stratum Frame — Structural Analysis Workbench"
+        }
+      ]
+    },
+    {
+      "name": "VantaForge",
+      "createdAt": "2026-09-06T20:43:24Z",
+      "createdLocal": "2026-09-06T22:43:24+02:00",
+      "repository": "https://github.com/wieslawsoltes/VantaForge",
+      "readmeSHA": "5b2e1c733ac470bff3eff33f996a413591fcf48c",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/VantaForge/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/VantaForge/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 11521,
+          "sha256": "b75534aca702ae493773ef585a9222697bbd1c7fcf23524678411f8c594ebe8a",
+          "title": "Vanta Forge — Aether Relay"
+        }
+      ]
+    },
+    {
+      "name": "VaporaProcessStudio",
+      "createdAt": "2026-09-06T20:36:50Z",
+      "createdLocal": "2026-09-06T22:36:50+02:00",
+      "repository": "https://github.com/wieslawsoltes/VaporaProcessStudio",
+      "readmeSHA": "723e93008136a0b6fb84245284f0f2bbc93a4792",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/VaporaProcessStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/VaporaProcessStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 984,
+          "sha256": "ed672d6bdcaa5c6ea3890f9e0e31b5a54e0d65fc84dfabde8a88285441f960da",
+          "title": "Vapora — Process Studio"
+        }
+      ]
+    },
+    {
+      "name": "Vectora",
+      "createdAt": "2026-09-07T13:44:07Z",
+      "createdLocal": "2026-09-07T15:44:07+02:00",
+      "repository": "https://github.com/wieslawsoltes/Vectora",
+      "readmeSHA": "dfa0640cce15d725bf06c90afd00674bbf90cef8",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Vectora/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Vectora/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 300289,
+          "sha256": "3e810a405bcc943d0a401b0623fdf387b8808d4a15aaa44ed6cba91e14bbd63f",
+          "title": "Vectora — Vector Design Studio"
+        }
+      ]
+    },
+    {
+      "name": "Vellum",
+      "createdAt": "2026-09-05T22:07:12Z",
+      "createdLocal": "2026-09-06T00:07:12+02:00",
+      "repository": "https://github.com/wieslawsoltes/Vellum",
+      "readmeSHA": "4073ecabf3d97a6a541f52f86b9f84125bbdaeb7",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Vellum/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Vellum/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 8338,
+          "sha256": "c8065eb26466d9544385ee28220cc0672806e4a5b76655c35e05ffc55352537e",
+          "title": "Vellum — a little more possible."
+        }
+      ]
+    },
+    {
+      "name": "VertexForge",
+      "createdAt": "2026-09-07T10:19:20Z",
+      "createdLocal": "2026-09-07T12:19:20+02:00",
+      "repository": "https://github.com/wieslawsoltes/VertexForge",
+      "readmeSHA": "2fc14d217a1c55760a4e771315964de736a0487c",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/VertexForge/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/VertexForge/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 9932,
+          "sha256": "dfb302701861efb3f8c00f4208b6210fcbbbc7d153bf3b265b18617d6e2d5e0d",
+          "title": "Vertex Forge — 3D Studio"
+        }
+      ]
+    },
+    {
+      "name": "VoltWeave",
+      "createdAt": "2026-09-06T19:35:55Z",
+      "createdLocal": "2026-09-06T21:35:55+02:00",
+      "repository": "https://github.com/wieslawsoltes/VoltWeave",
+      "readmeSHA": "d3dabcf54e23b4f15179a8588d91caa93fbb9c40",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/VoltWeave/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/VoltWeave/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 244352,
+          "sha256": "841d483a6cc70b858b36b1277f4689415f265c23c4ec62b822b01bba28e22a45",
+          "title": "VoltWeave · Electrical Engineering"
+        }
+      ]
+    },
+    {
+      "name": "VoltWeaveStudio",
+      "createdAt": "2026-09-06T21:03:57Z",
+      "createdLocal": "2026-09-06T23:03:57+02:00",
+      "repository": "https://github.com/wieslawsoltes/VoltWeaveStudio",
+      "readmeSHA": "ca34f5763a24fd0be1eebbe5a57012c471f07ac7",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/VoltWeaveStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/VoltWeaveStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 8858,
+          "sha256": "554a5ce74a2aba4f16b8fed69533529129d5b9ab4b8851d54cbe46243c360d2d",
+          "title": "VoltWeave Studio · Signal Integrity Bench"
+        }
+      ]
+    },
+    {
+      "name": "VortexFX",
+      "createdAt": "2026-09-06T21:19:15Z",
+      "createdLocal": "2026-09-06T23:19:15+02:00",
+      "repository": "https://github.com/wieslawsoltes/VortexFX",
+      "readmeSHA": "f52672493d87cca386455451367db4a044841a72",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/VortexFX/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/VortexFX/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 13791,
+          "sha256": "935adc41f433056fc9122644df785d693c3ab1c1fcf80abb7020e858e642b3dd",
+          "title": "Vortex FX — Procedural 3D"
+        }
+      ]
+    },
+    {
+      "name": "Wayline",
+      "createdAt": "2026-09-06T19:25:28Z",
+      "createdLocal": "2026-09-06T21:25:28+02:00",
+      "repository": "https://github.com/wieslawsoltes/Wayline",
+      "readmeSHA": "a399328c46ba4825e66c8cc36fd2bb5558188dbe",
+      "included": true,
+      "reason": "Public browser application with a deployed HTML entry point.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Wayline/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Wayline/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 219182,
+          "sha256": "a604e6c3a8545589bc0e46e1ca84cb223143264c41b50bc2b20f78b67ecbedb6",
+          "title": "Wayline — Your world, a little closer"
+        }
+      ]
+    }
+  ]
+}

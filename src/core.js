@@ -106,7 +106,8 @@
     OS.icon = (name, size = 20, cls = '') => `<svg class="icon ${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.file}</svg>`;
     OS.appIcon = (id, size = 32) => {
         const spec = { files: ['folder', 'gold'], browser: ['globe', 'teal'], notepad: ['file', 'blue'], terminal: ['terminal', 'charcoal'], paint: ['paint', 'violet'], photos: ['image', 'blue'], media: ['play', 'coral'], calculator: ['calculator', 'slate'], settings: ['settings', 'slate'], calendar: ['calendar', 'blue'], clock: ['clock', 'slate'], tasks: ['check', 'blue'], taskmanager: ['gpu', 'teal'], store: ['store', 'blue'], code: ['code', 'violet'], mines: ['bug', 'green'], welcome: ['spark', 'blue'], win32: ['gpu', 'violet'], snips: ['cut', 'coral'], trash: ['trash', 'slate'] };
-        const [icon, color] = spec[id] || ['code', 'violet'];
+        const app = OS.apps.get(id);
+        const [icon, color] = spec[id] || (app?.webApp ? [app.icon, app.color] : ['code', 'violet']);
         return `<span class="app-icon app-icon-${color}" style="--icon-size:${size}px">${OS.icon(icon, Math.round(size * .72))}</span>`;
     };
     OS.fileIcon = (e, size = 28) => e.kind === 'directory' ? OS.appIcon('files', size) : OS.appIcon(OS.appForFile(e.path, e.mime), size);

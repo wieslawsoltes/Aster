@@ -19,7 +19,7 @@ async def load(page, inject=False, port=8766, url=None):
         await page.set_content(html)
         await page.add_style_tag(content=(ROOT/'src/styles.css').read_text())
         await page.evaluate('window.ASTER_STANDALONE=true')
-        for name in ['core','renderer','windows','apps-files','apps-creative','apps-tools','apps-system','win32/gdi','apps-win32','shell']:
+        for name in ['core','renderer','windows','apps-files','apps-creative','apps-tools','apps-system','win32/gdi','win32/gui-host','apps-win32','web-app-catalog','apps-web','shell']:
             await page.add_script_tag(content=(ROOT/f'src/{name}.js').read_text())
     else:
         await page.goto(url or f'http://localhost:{port}',wait_until='networkidle')
@@ -57,7 +57,7 @@ async def main(args):
         async def launch(app,options=None):
             await clean()
             return await page.evaluate('async ([app,o])=>{const w=Aster.launch(app,o);await w.ready;window.testWindow=w;if(w.body.querySelector(".app-error"))throw Error(w.body.innerText);return w.id}',[app,options or {}])
-        await check('Boot and 19 registered built-in apps',lambda:js("assert(OS.apps.size===19);assert(OS.windows.size===1);assert(document.querySelector('#taskbar button'));return OS.metrics.mode;"))
+        await check('Boot with 19 built-in apps and 67 lazy web app entries',lambda:js("assert([...OS.apps.values()].filter(a=>!a.webApp).length===19);assert([...OS.apps.values()].filter(a=>a.webApp).length===67);assert(OS.windows.size===1);assert(document.querySelector('#taskbar button'));return OS.metrics.mode;"))
         await check('Virtual file CRUD, subtree copy, move, recycle, restore',lambda:js("""
             assert(OS.fs.normalize('/Documents/../Projects/./a')==='/Projects/a');
             await OS.fs.mkdir('/Documents/Test Suite');await OS.fs.mkdir('/Documents/Test Suite/nested');
@@ -80,7 +80,7 @@ async def main(args):
             let failures=0;for(const expr of ['1/0','sqrt(-1)','alert(1)','2+','171!'])try{OS.calculate(expr);}catch{failures++;}assert(failures===5);return cases.length+' arithmetic and 5 rejection cases';
         """))
         # Every app must mount real controls without an error placeholder.
-        appids=await page.evaluate('[...Aster.apps.keys()]')
+        appids=await page.evaluate('[...Aster.apps.values()].filter(a=>!a.webApp).map(a=>a.id)')
         for app in appids:
             async def appmount(app=app):
                 await launch(app)

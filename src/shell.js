@@ -35,16 +35,39 @@
         footer.append(profile, OS.el('button', { class: 'icon-button', title: 'Power', 'aria-label': 'Power', html: OS.icon('power', 19), onclick: powerMenu }));
         start.append(searchWrap, main, footer);
         mountPanel('start', start);
-        let all = false, searchVersion = 0;
+        let all = false, searchVersion = 0, webMode = false, webCategory = null;
+        const showWeb = (category = null, focus = true) => {
+            ++searchVersion; webMode = true; webCategory = category; input.value = '';
+            OS.renderWebAppStart(main, category, showWeb, () => {
+                if (webCategory) showWeb();
+                else { webMode = false; home(); $('button.web-start-entry', main)?.focus(); }
+            }, focus);
+        };
+        const webEntry = () => OS.el('button', {
+            class: 'web-start-entry', 'aria-label': 'Web apps, ' + (OS.webCatalog?.apps.length || 0) + ' projects',
+            html: OS.icon('grid', 26) + '<span class="grow"><strong>Your web apps</strong><small>' +
+                (OS.webCatalog?.apps.length || 0) + ' projects, organized by category</small></span>' + OS.icon('forward', 15),
+            onclick: () => showWeb()
+        });
+        start.addEventListener('keydown', e => {
+            if (webMode && !input.value && (e.key === 'Escape' || (e.key === 'ArrowLeft' && e.target !== input))) {
+                e.preventDefault(); e.stopPropagation();
+                if (webCategory) showWeb();
+                else { webMode = false; home(); $('button.web-start-entry', main)?.focus(); }
+            }
+        }, true);
         const appButton = (id, cls = 'pinned-app') => { const a = OS.apps.get(id); return OS.el('button', { class: cls, title: a.description || a.title, html: OS.appIcon(id, 34) + `<span>${esc(a.title.replace('Welcome to Aster', 'Welcome').replace('File Explorer', 'File Explorer'))}</span>`, onclick: () => OS.launch(id), oncontextmenu: e => OS.context(e, [{ text: 'Open', icon: 'play', action: () => OS.launch(id) }, { text: 'New window', icon: 'plus', disabled: !!a.singleton, action: () => OS.launch(id) }, { text: OS.pins.includes(id) ? 'Unpin from taskbar' : 'Pin to taskbar', icon: 'pin', action: () => OS.togglePin(id) }, { text: 'Add desktop shortcut', icon: 'desktop', action: () => OS.addDesktopShortcut(id) }, ...(a.custom ? [null, { text: 'Remove app', icon: 'trash', danger: true, action: () => OS.uninstallApp(id) }] : [])]) }); };
         async function home() {
+            ++searchVersion;
+            if (webMode && OS.renderWebAppStart) { showWeb(webCategory, false); return; }
             main.replaceChildren();
+            if (OS.renderWebAppStart) main.append(webEntry());
             const head = OS.el('div', { class: 'section-heading' }, OS.el('span', { text: all ? 'All apps' : 'Pinned' }));
             head.append(OS.el('button', { html: (all ? 'Back' : 'All apps') + OS.icon(all ? 'back' : 'forward', 11), onclick: () => { all = !all; home(); } }));
             main.append(head);
             if (all) {
                 const list = OS.el('div', { class: 'search-results' });
-                for (const app of visibleApps().sort((a, b) => a.title.localeCompare(b.title))) {
+                for (const app of visibleApps().filter(a => !a.webApp).sort((a, b) => a.title.localeCompare(b.title))) {
                     const b = OS.el('button', { class: 'search-result', html: OS.appIcon(app.id, 31) + `<div class="grow"><span>${esc(app.title)}</span><small>${esc(app.category || 'Your apps')}</small></div>` + OS.icon('forward', 13), onclick: () => OS.launch(app.id) });
                     list.append(b);
                 }
@@ -76,14 +99,14 @@
                 home();
                 return;
             }
-            const apps = visibleApps().filter(a => (a.title + ' ' + a.id + ' ' + a.description).toLowerCase().includes(q));
+            const apps = visibleApps().filter(a => [a.title, a.id, a.description, a.category, a.keywords].join(' ').toLowerCase().includes(q));
             const files = (await OS.db.all()).filter(f => !f.path.startsWith('/.Trash') && OS.fs.name(f.path).toLowerCase().includes(q)).slice(0, 9);
             if (version !== searchVersion || !start.isConnected)
                 return;
             main.replaceChildren();
             main.append(OS.el('div', { class: 'section-heading', text: 'Best matches' }));
             const list = OS.el('div', { class: 'search-results' });
-            for (const app of apps.slice(0, 8))
+            for (const app of apps)
                 list.append(OS.el('button', { class: 'search-result', html: OS.appIcon(app.id, 35) + `<div><strong style="font-size:12px;font-weight:500">${esc(app.title)}</strong><small>App · ${esc(app.category || 'Your apps')}</small></div>`, onclick: () => OS.launch(app.id) }));
             for (const file of files)
                 list.append(OS.el('button', { class: 'search-result', html: OS.fileIcon(file, 30) + `<div><strong style="font-size:12px;font-weight:500">${esc(OS.fs.name(file.path))}</strong><small>${esc(OS.fs.parent(file.path))}</small></div>`, onclick: OS.guard(() => OS.openPath(file.path)) }));
@@ -92,18 +115,18 @@
                 if (term.includes(q) || q.includes(term))
                     list.append(OS.el('button', { class: 'search-result', html: OS.appIcon('settings', 30) + `<div><span>${label}</span><small>Setting</small></div>`, onclick: () => OS.launch('settings', { section }) }));
             if (!list.childElementCount)
-                list.append(OS.el('div', { class: 'empty', html: OS.icon('search', 40) + '<strong>No matches yet.</strong><span>Search a built-in app or one of your virtual files.</span>' }));
+                list.append(OS.el('div', { class: 'empty', html: OS.icon('search', 40) + '<strong>No matches yet.</strong><span>Search an app, a web project, a category, or one of your virtual files.</span>' }));
             main.append(list);
         }
         input.oninput = () => OS.guard(search)();
         input.onkeydown = e => { if (e.key === 'Enter') {
             e.preventDefault();
-            $('button.search-result,button.pinned-app', main)?.click();
+            $('button.search-result,button.pinned-app,button.web-category-item,button.web-start-entry', main)?.click();
         } if (e.key === 'ArrowDown') {
             e.preventDefault();
-            $('button.search-result,button.pinned-app', main)?.focus();
+            $('button.search-result,button.pinned-app,button.web-category-item,button.web-start-entry', main)?.focus();
         } };
-        main.onkeydown = e => { if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key))
+        main.onkeydown = e => { if (webMode) return; if (!['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key))
             return; const items = OS.$$('button.pinned-app,button.search-result', main), index = items.indexOf(document.activeElement); if (index < 0)
             return; const columns = input.value || all ? 1 : innerWidth <= 500 ? 4 : 6, delta = { ArrowDown: columns, ArrowUp: -columns, ArrowLeft: -1, ArrowRight: 1 }[e.key]; e.preventDefault(); const next = index + delta; if (next < 0)
             input.focus();
@@ -552,7 +575,7 @@
             OS.notify('Temporary session only', 'Persistent browser storage is unavailable. Export your work before closing this page.', 'warning');
         if (!await OS.db.get('welcomed')) {
             await OS.db.set('welcomed', true);
-            setTimeout(() => OS.notify('Welcome to your new workspace', 'Open Start to explore 19 built-in apps. ' + (OS.db.mode === 'IndexedDB' ? 'Your virtual files are saved in this browser.' : 'Export your work before closing this temporary session.'), 'info', { label: 'Meet Aster', fn: () => OS.launch('welcome') }), 800);
+            setTimeout(() => OS.notify('Welcome to your new workspace', 'Open Start to explore built-in tools and ' + (OS.webCatalog?.apps.length || 0) + ' categorized web apps. ' + (OS.db.mode === 'IndexedDB' ? 'Your virtual files are saved in this browser.' : 'Export your work before closing this temporary session.'), 'info', { label: 'Meet Aster', fn: () => OS.launch('welcome') }), 800);
         }
         return OS;
     })().catch(error => { console.error('Aster startup:', error); const boot = $('#boot'); if (boot) {
