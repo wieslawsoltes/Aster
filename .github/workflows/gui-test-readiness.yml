@@ -1,0 +1,50 @@
+name: Correct GUI test readiness
+on:
+  push:
+    branches: [feat/win32-gui-resources]
+    paths: ['.github/workflows/gui-test-readiness.yml']
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Preserve assertions and await application initialization
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('tests/win32/gui-browser.py');s=p.read_text()
+          old='w.win32Session.renderer?.frames>=2 || w.win32Session.failed'
+          assert s.count(old)==1
+          s=s.replace(old,'w.win32Session?.renderer?.frames>=2 || w.win32Session?.failed')
+          p.write_text(s)
+          p=Path('tests/win32/native-gui.py');s=p.read_text()
+          old="        for id,value in [(1032,'12'),(1031,'13'),(1033,'20')]:assert user.SetWindowTextW(user.GetDlgItem(dialog,id),value)"
+          assert s.count(old)==1
+          new="""        def text(hwnd):
+                      buffer=C.create_unicode_buffer(128)
+                      user.GetWindowTextW(hwnd,buffer,128)
+                      return buffer.value
+                  # Visibility can precede WM_INITDIALOG's final SetDlgItemInt.
+                  wait(lambda: all(text(user.GetDlgItem(dialog,id))==value for id,value in [(1032,'16'),(1031,'16'),(1033,'40')]))
+                  for id,value in [(1032,'12'),(1031,'13'),(1033,'20')]:
+                      control=user.GetDlgItem(dialog,id)
+                      assert control and user.SetWindowTextW(control,value)
+                      assert text(control)==value
+                  report['customControls']={str(id):text(user.GetDlgItem(dialog,id)) for id in [1032,1031,1033]}"""
+          # Literal indentation in this YAML block is not Python nesting.
+          new='\n'.join(line[10:] if line.startswith('          ') else line for line in new.splitlines())
+          s=s.replace(old,new)
+          s=s.replace("report.update({'status':'FAIL','error':str(e)});raise", "report.update({'status':'FAIL','error':str(e),'windows':windows(),'mainClient':size(main) if isinstance(main,int) else None});raise")
+          p.write_text(s)
+          PY
+          python3 -m py_compile tests/win32/gui-browser.py tests/win32/native-gui.py
+          git diff --check
+          rm .github/workflows/gui-test-readiness.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m 'Wait for real browser session and native WM_INITDIALOG completion'
+          git push origin HEAD:feat/win32-gui-resources
