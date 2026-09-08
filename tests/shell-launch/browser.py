@@ -14,8 +14,10 @@ def main(args):
     out=args.output or ROOT/'tests/shell-launch/artifacts';out.mkdir(parents=True,exist_ok=True)
     server=ThreadingHTTPServer(('127.0.0.1',0),partial(Quiet,directory=str(ROOT)));threading.Thread(target=server.serve_forever,daemon=True).start()
     origin=f'http://127.0.0.1:{server.server_port}';report={'mode':'injected memory' if args.inject else 'standalone' if args.standalone else 'HTTP/IndexedDB','checks':[],'errors':[]}
+    # Keep the browser's native policy. Playwright's 'block' option injects an
+    # unguarded navigator.serviceWorker read into opaque-origin sandbox frames.
     with sync_playwright() as p:
-        browser=p.chromium.launch(headless=True,executable_path=args.browser or None,args=['--no-sandbox']);context=browser.new_context(viewport={'width':1440,'height':1000},service_workers='block');page=context.new_page();page.set_default_timeout(12000);page.on('pageerror',lambda e:report['errors'].append(str(e)))
+        browser=p.chromium.launch(headless=True,executable_path=args.browser or None,args=['--no-sandbox']);context=browser.new_context(viewport={'width':1440,'height':1000},service_workers='allow');page=context.new_page();page.set_default_timeout(12000);page.on('pageerror',lambda e:report['errors'].append(str(e)))
         def js(body,arg=None):return page.evaluate('async arg=>{const OS=Aster;const assert=(v,m="Assertion failed")=>{if(!v)throw Error(m);};'+body+'}',arg)
         def clean():js('OS.closePanels();for(const w of [...OS.windows.values()])await w.close(true);document.querySelectorAll(".toast").forEach(e=>e.remove());')
         def launch(app,options={}):
@@ -36,7 +38,10 @@ def main(args):
                 return 'Chooser opens actual HTML bytes in Notepad and stores the extension association'
             check('Explorer Open with performs a real launch and remembers an explicit default',openwith)
             def once():
-                clean();js("void OS.showOpenWith('/Documents/Launch/hello.html');");d=page.get_by_role('dialog',name='Open with',exact=True);d.locator('[data-handler="browser"]').click();assert not d.get_by_label('Always use this app',exact=True).is_checked();d.get_by_role('button',name='Open',exact=True).click();page.wait_for_function('[...Aster.windows.values()].some(w=>w.appId==="browser")');js("assert(OS.appForFile('/Documents/Launch/hello.html','text/html')==='notepad');const w=[...OS.windows.values()].find(w=>w.appId==='browser');await w.ready;assert(w.body.querySelector('iframe'));")
+                clean();js("void OS.showOpenWith('/Documents/Launch/hello.html');");d=page.get_by_role('dialog',name='Open with',exact=True);d.locator('[data-handler="browser"]').click();assert not d.get_by_label('Always use this app',exact=True).is_checked();d.get_by_role('button',name='Open',exact=True).click();page.wait_for_function('[...Aster.windows.values()].some(w=>w.appId==="browser")');js("assert(OS.appForFile('/Documents/Launch/hello.html','text/html')==='notepad');const w=[...OS.windows.values()].find(w=>w.appId==='browser');await w.ready;assert(w.body.querySelector('iframe'));assert(!w.body.querySelector('iframe').sandbox.contains('allow-same-origin'));")
+                page.frame_locator('.window[data-app="browser"] iframe').get_by_role('heading',name='Real document',exact=True).wait_for()
+                child=page.locator('.window[data-app="browser"] iframe').element_handle().content_frame()
+                assert child.evaluate("() => { try { return !parent.Aster; } catch(e) { return e.name === 'SecurityError'; } }")
             check('Open once leaves the stored default unchanged',once)
             def settings():
                 clean();w=launch('settings',{'section':'apps'});w.get_by_text('Default apps',exact=True).locator('..').locator('..').get_by_role('button',name='Manage').click();w.get_by_label('Find a file type',exact=True).fill('.png');w.get_by_label('Default for .png',exact=True).select_option('paint');page.wait_for_function('Aster.shellLaunch.state.defaults.png==="paint"');page.screenshot(path=str(out/'default-apps.png'));js("assert(OS.windows.size===1);assert(OS.appForFile('/Pictures/association.png','image/png')==='paint');assert(OS.fileTypeApp('/Pictures/association.png','image/png')==='photos');const w=await OS.openPath('/Pictures/association.png');assert(w.appId==='paint');await w.ready;assert(w.body.querySelector('canvas')); ")
