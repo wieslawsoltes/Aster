@@ -80,7 +80,7 @@ void aster_entry(void) {{
         raise SystemExit('Install gcc-mingw-w64-i686 and binutils-mingw-w64-i686 for fixture builds')
     subprocess.run([windres, '-I.', 'winemine.rc', '-O', 'coff', '-o', 'resources.o'], cwd=source, check=True)
     command = [gcc, '-Os', '-mno-sse', '-mno-sse2', '-mfpmath=387', '-fno-stack-protector',
-               '-D__USE_MINGW_ANSI_STDIO=0', '-I.', '-nostartfiles', '-mwindows',
+               '-D__USE_MINGW_ANSI_STDIO=0', '-I.', '-include', 'wine/debug.h', '-nostartfiles', '-mwindows',
                '-Wl,--entry,_aster_entry,--no-insert-timestamp', '-o', str(out / 'winemine.exe'),
                'main.c', 'dialog.c', 'entry.c', 'resources.o', '-lcomctl32', '-lshell32',
                '-luser32', '-lgdi32', '-ladvapi32', '-lmsvcrt', '-lkernel32']
@@ -95,7 +95,7 @@ void aster_entry(void) {{
                 archive.writestr(info, path.read_bytes())
     report = {'name': 'WineMine', 'sourceRevision': REV, 'license': 'LGPL-2.1-or-later',
               'sourceBuiltWindowsBinary': True, 'unchangedApplicationSources': True,
-              'buildAdaptation': 'Standalone entry point and disabled debug-trace macros; no gameplay modifications.',
+              'buildAdaptation': 'Standalone entry point and disabled debug-trace/build macros; no gameplay modifications.',
               'compiler': subprocess.check_output([gcc, '--version'], text=True).splitlines()[0],
               'command': command, 'files': records,
               'sha256': {name: hashlib.sha256((out / name).read_bytes()).hexdigest() for name in ['winemine.exe', 'winemine-source.zip']}}
