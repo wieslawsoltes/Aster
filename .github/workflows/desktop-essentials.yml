@@ -1,0 +1,60 @@
+name: Desktop essentials — ten real browser workflows
+on:
+  pull_request:
+    paths: ['src/**', 'tests/**', 'docs/desktop-essentials.md', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/desktop-essentials.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'tests/desktop-features/**', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/desktop-essentials.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-essentials-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  desktop-workflows:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check source, bounded models and actual ZIP codecs
+        run: |
+          for f in src/*.js src/win32/*.js sw.js; do node --check "$f"; done
+          python3 -m py_compile build.py tests/desktop-features/browser.py
+          node --test tests/desktop-features/models.cjs
+          python3 build.py
+          git diff --exit-code -- Aster.html
+          git diff --check
+      - name: Install browser test tools only
+        run: |
+          python3 -m pip install playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Verify HTTP workflows, database migration/reload, video codec and offline edition
+        run: python3 tests/desktop-features/browser.py
+      - name: Record exact tested source and provenance
+        if: always()
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p tests/desktop-features/artifacts
+          git archive --format=zip HEAD -o tests/desktop-features/artifacts/source.zip
+          python3 - <<'PY'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+          p=Path('tests/desktop-features/artifacts/provenance.json')
+          p.write_text(json.dumps({'commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'prHead':os.environ.get('PR_HEAD'),'standaloneSHA256':hashlib.sha256(Path('Aster.html').read_bytes()).hexdigest()},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-essentials-evidence
+          path: |
+            tests/desktop-features/artifacts/
+            Aster.html
+          retention-days: 14
