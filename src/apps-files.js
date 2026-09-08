@@ -35,14 +35,14 @@
             w.body.classList.add('transparent');
             w.body.append(tabs, cmd, nav, layout, status);
             const targetDir = () => path === 'home' ? '/Documents' : archiveActive ? OS.fs.parent(path) : path;
+            const virtualSelection = (paths=[...selected],dir=targetDir()) => !dir.startsWith('/Local') && paths.every(p=>!p.startsWith('/Local/'));
+            const importFiles = async (files,dir=targetDir()) => dir.startsWith('/Local/') ? OS.fs.import(files,dir) : OS.fileOps.execute({kind:'import',destination:dir,files:files.map(f=>({name:f.name,content:f,mime:f.type||OS.fs.mime(f.name)}))});
             const selectedRows = () => rows.filter(e => selected.has(e.path));
             const newItem = async (kind) => { const dir = targetDir(); if (dir === '/.Trash')
                 throw Error('Create files outside the Recycle Bin.'); const name = await OS.prompt(kind === 'directory' ? 'New folder' : 'New text document', kind === 'directory' ? 'New folder' : 'Untitled.txt'); if (name === null)
                 return; OS.fs.validateName(name); const p = OS.fs.join(dir, name); if (await OS.fs.stat(p))
-                throw Error('This name is already in use.'); if (kind === 'directory')
-                await OS.fs.mkdir(p);
-            else
-                await OS.fs.write(p, '', 'text/plain'); selected = new Set([p]); await render(); };
+                throw Error('This name is already in use.'); if (!dir.startsWith('/Local/')) await OS.fileOps.execute({kind:'create',destination:dir,name,directory:kind==='directory'});
+            else if(kind==='directory') await OS.fs.mkdir(p); else await OS.fs.write(p,'','text/plain'); selected = new Set([p]); await render(); };
             const copy = cut => { if (!selected.size)
                 return; OS.clipboard = { paths: [...selected], cut }; OS.notify(cut ? 'Ready to move' : 'Copied', `${selected.size} item${selected.size === 1 ? '' : 's'} on the Aster clipboard.`); updateCommandState(); };
             const paste = async () => {
@@ -53,6 +53,7 @@
                     throw Error('Use Delete to move items to the Recycle Bin.');
                 if (clip.cut && clip.paths.some(p => OS.fs.native(p)) && !await OS.confirm('Move local files?', 'Moving removes the original local files after they are copied.', 'Move'))
                     return;
+                if(virtualSelection(clip.paths,dir)){const outcome=await OS.fileOps.execute({kind:clip.cut?'move':'copy',paths:clip.paths,destination:dir});if(outcome.cancelled)return;if(clip.cut)OS.clipboard=outcome.skipped.length?{paths:outcome.skipped,cut:true}:null;selected=new Set(outcome.results);await render();return;}
                 const result = [];
                 for (const src of clip.paths) {
                     let dest = OS.fs.join(dir, OS.fs.name(src));
@@ -67,9 +68,9 @@
                 selected = new Set(result);
                 await render();
             };
-            const rename = async () => { const [e] = selectedRows(); if (!e)
+            const rename = async () => { if(selected.size>1){if(!virtualSelection())throw Error('Batch rename is available for virtual files only.');const result=await OS.fileOps.renameDialog([...selected]);if(!result.cancelled)selected=new Set(result.results);await render();return;} const [e] = selectedRows(); if (!e)
                 return; const name = await OS.prompt('Rename', displayName(e)); if (name === null || name === displayName(e))
-                return; OS.fs.validateName(name); const dest = OS.fs.join(OS.fs.parent(e.path), name); await OS.fs.copy(e.path, dest, true); selected = new Set([dest]); await render(); };
+                return; OS.fs.validateName(name); const dest = OS.fs.join(OS.fs.parent(e.path), name); if(!e.native)await OS.fileOps.execute({kind:'rename',paths:[e.path],pairs:[{source:e.path,target:dest}],policy:'error'});else await OS.fs.copy(e.path,dest,true);selected = new Set([dest]); await render(); };
             const remove = async () => {
                 const list = selectedRows();
                 if (!list.length)
@@ -77,6 +78,7 @@
                 const permanent = path === '/.Trash' || list.some(e => e.native);
                 if (permanent && !await OS.confirm('Delete permanently?', `Permanently delete ${list.length} selected item${list.length === 1 ? '' : 's'}? This cannot be undone. Local files will be removed from your actual folder.`, 'Delete', true))
                     return;
+                if(!permanent&&virtualSelection()){await OS.fileOps.execute({kind:'trash',paths:list.map(e=>e.path)});selected.clear();await render();return;}
                 const removed = [];
                 for (const e of list) {
                     const result = await OS.fs.remove(e.path, permanent);
@@ -122,27 +124,27 @@
                     ...(!inTrash && sel.length===1 && /\.zip$/i.test(sel[0].path)?[{text:'Extract all…',icon:'folder',action:()=>OS.openCompressedFolder(sel[0].path,targetDir(),navigate)}]:[]),
                     ...(!inTrash && sel.length===1 && sel[0].kind==='file' && !sel[0].native?[{text:'Previous versions',icon:'undo',action:()=>OS.showFileProperties(sel[0].path,'versions')}]:[]),
                     ...(sel.length ? [{ text: inTrash ? 'Restore' : 'Open', icon: inTrash ? 'undo' : 'folder', action: async () => { if (inTrash) {
-                                for (const f of sel)
-                                    await OS.fs.restore(f.path);
+                                await OS.fileOps.execute({kind:'restore',paths:sel.map(f=>f.path)});
                             }
                             else
-                                openSelection(); } }, ...(!inTrash && sel.length === 1 && sel[0].kind === 'file' ? [{ text: 'Open with Notepad', icon: 'file', action: () => OS.launch('notepad', { path: sel[0].path }) }, { text: 'Open with Paint', icon: 'paint', disabled: OS.appForFile(sel[0].path, sel[0].mime) !== 'photos', action: () => OS.launch('paint', { path: sel[0].path }) }] : []), null, { text: 'Cut', icon: 'cut', key: 'Ctrl+X', disabled: inTrash, action: () => copy(true) }, { text: 'Copy', icon: 'copy', key: 'Ctrl+C', disabled: inTrash, action: () => copy(false) }, { text: 'Rename', icon: 'rename', key: 'F2', disabled: sel.length !== 1 || inTrash, action: rename }, { text: inTrash ? 'Delete permanently' : 'Delete', icon: 'trash', key: 'Del', danger: true, action: remove }, { text: 'Download', icon: 'download', action: download }, null, { text: 'Properties', icon: 'info', action: properties }] : [
+                                openSelection(); } }, ...(!inTrash && sel.length === 1 && sel[0].kind === 'file' ? [{ text: 'Open with Notepad', icon: 'file', action: () => OS.launch('notepad', { path: sel[0].path }) }, { text: 'Open with Paint', icon: 'paint', disabled: OS.appForFile(sel[0].path, sel[0].mime) !== 'photos', action: () => OS.launch('paint', { path: sel[0].path }) }] : []), null, { text: 'Cut', icon: 'cut', key: 'Ctrl+X', disabled: inTrash, action: () => copy(true) }, { text: 'Copy', icon: 'copy', key: 'Ctrl+C', disabled: inTrash, action: () => copy(false) }, { text: 'Rename', icon: 'rename', key: 'F2', disabled: !sel.length || inTrash || sel.length>1&&!virtualSelection(), action: rename }, { text: inTrash ? 'Delete permanently' : 'Delete', icon: 'trash', key: 'Del', danger: true, action: remove }, { text: 'Download', icon: 'download', action: download }, null, { text: 'Properties', icon: 'info', action: properties }] : [
                         { text: 'New folder', icon: 'folder', disabled: inTrash, action: () => newItem('directory') }, { text: 'New text document', icon: 'file', disabled: inTrash, action: () => newItem('file') }, { text: 'Paste', icon: 'paste', disabled: !OS.clipboard || inTrash, action: paste }, { text: 'Refresh', icon: 'refresh', action: render }, { text: 'Open in Terminal', icon: 'terminal', action: () => OS.launch('terminal', { cwd: targetDir() }) }
                     ])
                 ]);
             };
             const newButton = OS.el('button', { html: OS.icon('plus', 18) + '<span class="cmd-text">New</span>' + OS.icon('down', 12), onclick: e => OS.context(e, [{ text: 'Folder', icon: 'folder', action: () => newItem('directory') }, { text: 'Text document', icon: 'file', action: () => newItem('file') }]) });
+            const undoB=button('undo','Undo file operation',()=>OS.fileOps.undo()),redoB=button('redo','Redo file operation',()=>OS.fileOps.redo());
             const cutB = button('cut', 'Cut', () => copy(true)), copyB = button('copy', 'Copy', () => copy(false)), pasteB = button('paste', 'Paste', paste), renameB = button('rename', 'Rename', rename), deleteB = button('trash', 'Delete', remove), downloadB = button('download', 'Download selected files', download);
             const sortB = OS.el('button', { html: OS.icon('list', 17) + '<span class="cmd-text">Sort</span>' + OS.icon('down', 11), onclick: e => OS.context(e, [...['name', 'modified', 'type', 'size'].map(s => ({ text: (sort === s ? '✓ ' : '') + s[0].toUpperCase() + s.slice(1), action: () => { sort = s; render(); } })), null, { text: asc ? 'Descending order' : 'Ascending order', action: () => { asc = !asc; render(); } }]) });
             const viewB = OS.el('button', { html: OS.icon('grid', 17) + '<span class="cmd-text">View</span>' + OS.icon('down', 11), onclick: e => OS.context(e, [{ text: 'Details', icon: 'list', action: () => { view = 'list'; w.state.view = view; render(); } }, { text: 'Large icons', icon: 'grid', action: () => { view = 'grid'; w.state.view = view; render(); } }, { text: 'Toggle details pane', icon: 'taskview', action: () => { details.hidden = !details.hidden; } }]) });
             const extractB=OS.el('button',{class:'extract-command',text:'Extract all',hidden:true,onclick:OS.guard(()=>archiveActive?extractCurrent():OS.openCompressedFolder([...selected][0],targetDir(),navigate))});
             const moreB = button('more', 'More actions', e => { }, 'icon-button');
-            moreB.onclick = e => OS.context(e, [{text:'Compress to ZIP file',icon:'folder',disabled:archiveActive||!selected.size||path==='/.Trash',action:createZip},{text:'New folder tab',icon:'plus',action:()=>openTab(path)},{ text: 'Import files', icon: 'upload', disabled:archiveActive, action: async () => { const f = await OS.readFile('', true); if (f.length)
-                        await OS.fs.import(f, targetDir()); } }, { text: 'Connect local folder', icon: 'folder', action: async () => navigate(await OS.fs.mount()) }, { text: 'Open in Terminal', icon: 'terminal', action: () => OS.launch('terminal', { cwd: targetDir() }) }, null, { text: 'Empty Recycle Bin', icon: 'trash', danger: true, action: async () => { if (await OS.confirm('Empty Recycle Bin?', 'All items in the virtual Recycle Bin will be permanently deleted.', 'Empty', true)) {
+            moreB.onclick = e => OS.context(e, [{text:'Undo '+OS.fileOps.undoLabel,icon:'undo',key:'Ctrl+Z',disabled:!OS.fileOps.canUndo,action:()=>OS.fileOps.undo()},{text:'Redo '+OS.fileOps.redoLabel,icon:'redo',key:'Ctrl+Y',disabled:!OS.fileOps.canRedo,action:()=>OS.fileOps.redo()},{text:'File operations',icon:'copy',action:()=>OS.fileOps.show()},null,{text:'Compress to ZIP file',icon:'folder',disabled:archiveActive||!selected.size||path==='/.Trash',action:createZip},{text:'New folder tab',icon:'plus',action:()=>openTab(path)},{ text: 'Import files', icon: 'upload', disabled:archiveActive, action: async () => { const f = await OS.readFile('', true); if (f.length)
+                        await importFiles(f, targetDir()); } }, { text: 'Connect local folder', icon: 'folder', action: async () => navigate(await OS.fs.mount()) }, { text: 'Open in Terminal', icon: 'terminal', action: () => OS.launch('terminal', { cwd: targetDir() }) }, null, { text: 'Empty Recycle Bin', icon: 'trash', danger: true, action: async () => { if (await OS.confirm('Empty Recycle Bin?', 'All items in the virtual Recycle Bin will be permanently deleted.', 'Empty', true)) {
                         for (const f of await OS.fs.list('/.Trash'))
                             await OS.fs.remove(f.path, true);
                     } } }, { text: 'Properties', icon: 'info', disabled: !selected.size, action: properties }]);
-            cmd.append(newButton, OS.el('span', { class: 'divider' }), cutB, copyB, pasteB, renameB, downloadB, deleteB, OS.el('span', { class: 'divider' }), sortB, viewB, extractB, OS.el('span', { class: 'spacer' }), moreB);
+            cmd.append(newButton, OS.el('span', { class: 'divider' }), undoB, redoB, cutB, copyB, pasteB, renameB, downloadB, deleteB, OS.el('span', { class: 'divider' }), sortB, viewB, extractB, OS.el('span', { class: 'spacer' }), moreB);
             const back = button('back', 'Back', () => { if (historyIndex > 0) {
                 historyIndex--;
                 path = history[historyIndex];
@@ -171,7 +173,7 @@
                 }
             } });
             nav.append(back, forward, up, refresh, crumbs, search);
-            function updateCommandState() { extractB.hidden=!(archiveActive || selected.size===1 && /\.zip$/i.test([...selected][0]) && path!=='/.Trash');newButton.disabled=archiveActive;cutB.disabled = copyB.disabled = renameB.disabled = deleteB.disabled = downloadB.disabled = archiveActive||!selected.size; renameB.disabled = archiveActive||selected.size !== 1; pasteB.disabled = archiveActive||!OS.clipboard; }
+            function updateCommandState() {undoB.disabled=!OS.fileOps.canUndo;redoB.disabled=!OS.fileOps.canRedo; extractB.hidden=!(archiveActive || selected.size===1 && /\.zip$/i.test([...selected][0]) && path!=='/.Trash');newButton.disabled=archiveActive;cutB.disabled = copyB.disabled = renameB.disabled = deleteB.disabled = downloadB.disabled = archiveActive||!selected.size; renameB.disabled = archiveActive||!selected.size||selected.size>1&&!virtualSelection(); pasteB.disabled = archiveActive||!OS.clipboard; }
             function markSelection() { for (const item of OS.$$('[data-path]', main)) {
                 item.classList.toggle('selected', selected.has(item.dataset.path));
                 item.setAttribute('aria-selected', String(selected.has(item.dataset.path)));
@@ -365,16 +367,15 @@
             function navItem(name, dest, icon, pin = false) { return OS.el('button', { class: 'nav-item' + (path === dest ? ' active' : ''), html: OS.icon(icon, 17) + `<span>${esc(name)}</span>` + (pin ? OS.icon('pin', 11, 'nav-pin') : ''), onclick: () => navigate(dest) }); }
             function navigate(dest) { archivePrefix='';path = dest; history = history.slice(0, historyIndex + 1); history.push(dest); historyIndex++; selected.clear(); query = ''; search.value = ''; OS.guard(render)(); }
             async function drop(e, dir = targetDir()) { if(archiveActive)throw Error('Extract the compressed folder before adding files.');const nativeFiles = Array.from(e.dataTransfer.files); if (nativeFiles.length) {
-                await OS.fs.import(nativeFiles, dir);
+                await importFiles(nativeFiles, dir);
                 OS.notify('Files imported', `${nativeFiles.length} file${nativeFiles.length === 1 ? '' : 's'} added to ${OS.fs.name(dir)}.`);
             }
             else {
                 const data = e.dataTransfer.getData('application/x-aster-paths');
                 if (data) {
-                    for (const src of JSON.parse(data)) {
-                        const dest = await OS.fs.unique(OS.fs.join(dir, OS.fs.name(src)));
-                        await OS.fs.copy(src, dest, false);
-                    }
+                    const sources=JSON.parse(data);if(!Array.isArray(sources)||sources.length>4096||sources.some(p=>typeof p!=='string'))throw Error('Invalid dropped paths.');
+                    if(virtualSelection(sources,dir))await OS.fileOps.execute({kind:e.ctrlKey?'copy':'move',paths:sources,destination:dir});
+                    else for (const src of sources) {const dest=await OS.fs.unique(OS.fs.join(dir,OS.fs.name(src)));await OS.fs.copy(src,dest,false);}
                 }
             } await render(); }
             main.addEventListener('contextmenu', e => { if (!e.target.closest('[data-path]')) {
@@ -386,13 +387,13 @@
                 selected.clear();
                 markSelection();
             } });
-            main.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+            main.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = e.ctrlKey||e.dataTransfer.types.includes('Files')?'copy':'move'; });
             main.addEventListener('drop', OS.guard(e => { e.preventDefault(); return drop(e); }));
             w.onKey = e => {
                 if((e.ctrlKey||e.metaKey)&&['t','w','Tab'].includes(e.key)){e.preventDefault();e.stopPropagation();if(e.key==='t')openTab(path);else if(e.key==='w')closeTab(activeTab);else switchTab((activeTab+(e.shiftKey?fileTabs.length-1:1))%fileTabs.length);return;}
                 if(archiveActive && (['Delete','F2'].includes(e.key)||(e.ctrlKey||e.metaKey)&&['c','x','v'].includes(e.key.toLowerCase()))){e.preventDefault();return;}
-                if (/INPUT|TEXTAREA/.test(e.target.tagName))
-                return; if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'x', 'v'].includes(e.key.toLowerCase())) {
+                if (/INPUT|TEXTAREA/.test(e.target.tagName)||e.target.isContentEditable)
+                return; if((e.ctrlKey||e.metaKey)&&['z','y'].includes(e.key.toLowerCase())){e.preventDefault();e.stopPropagation();OS.guard(()=>e.key.toLowerCase()==='y'||e.shiftKey?OS.fileOps.redo():OS.fileOps.undo())();return;} if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'x', 'v'].includes(e.key.toLowerCase())) {
                 e.preventDefault();
                 switch (e.key.toLowerCase()) {
                     case 'a':
@@ -440,6 +441,7 @@
             } };
             w.on('fs-change', () => { clearTimeout(w.refreshTimer); w.refreshTimer = setTimeout(() => OS.guard(render)(), 80); });
             w.on('settings', () => renderDetails());
+            w.on('file-operations',updateCommandState);
             w.on('favorites-change',()=>OS.guard(render)());
             w.addCleanup(() => { archiveCache=null;detailToken++;if(previewURL)URL.revokeObjectURL(previewURL);urls.forEach(URL.revokeObjectURL); clearTimeout(w.refreshTimer); });
             w.navigate = navigate;

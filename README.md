@@ -206,3 +206,9 @@ Unsaved text/source drafts participate in session metadata; unsaved Paint pixels
 - Screen capture: https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia
 
 Aster's branding, wallpaper, icons, sample artwork, and sample audio are original. No Microsoft logos, proprietary OS assets, or bundled font files are included. Aster is not affiliated with Microsoft.
+
+## Explorer workflow update (1.7)
+
+Explorer now integrates atomic copy/move conflicts, multi-item rename previews,
+session undo/redo, transactional imports and cancellable preparation progress.
+See [file workflows](docs/file-workflows.md) for limits and verification.

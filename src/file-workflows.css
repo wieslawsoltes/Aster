@@ -1,0 +1,10 @@
+/* Integrated Explorer activity and rename surfaces. */
+.file-operation-panel{position:fixed;right:18px;bottom:66px;width:min(400px,calc(100vw - 24px));max-height:65vh;z-index:12000;pointer-events:auto;display:flex;flex-direction:column;padding:0;overflow:hidden}
+.file-operation-panel header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border)}
+.file-operation-list{overflow:auto;padding:4px 18px}.file-operation-row{padding:12px 0;border-bottom:1px solid var(--border)}
+.file-operation-row p{font-size:12px;margin:7px 0;overflow-wrap:anywhere}.file-operation-row button{margin:0 6px 4px 0}.file-operation-row progress{width:100%;height:5px;display:block;margin-top:8px;accent-color:var(--accent)}
+.file-operation-panel footer{padding:12px 18px;display:flex;gap:7px;flex-wrap:wrap}.file-operation-panel footer small{width:100%;color:var(--muted);font-size:11px}
+.batch-rename-form{display:grid;gap:8px}.batch-rename-form label{display:flex;align-items:center;gap:10px}.batch-rename-form input,.batch-rename-form select{margin-left:auto;min-width:0;width:65%}
+.batch-rename-preview{max-height:180px;overflow:auto;border:1px solid var(--border);border-radius:6px;padding:8px}.batch-rename-preview p{margin:4px 0;font:12px ui-monospace,monospace;overflow-wrap:anywhere}
+.file-conflicts p{overflow-wrap:anywhere;font-size:12px}.file-conflicts select{display:block;width:100%;margin-top:8px}
+@media(max-width:520px){.file-operation-panel{right:12px;max-height:52vh}.explorer-commandbar [aria-label="Undo file operation"],.explorer-commandbar [aria-label="Redo file operation"]{display:none}}

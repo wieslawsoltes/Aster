@@ -11,3 +11,5 @@ tests/web-apps/artifacts/
 tests/results.json
 tests/*.png
 tests/integrated-shell/artifacts/
+
+tests/file-workflows/artifacts/
