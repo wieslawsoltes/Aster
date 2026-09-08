@@ -1,0 +1,84 @@
+name: Apply verified categorized web app source
+on:
+  push:
+    branches: [feat/categorized-web-apps]
+    paths: ['.bootstrap/web-apps/ready']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify all source hashes before applying the complete change
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import base64, hashlib, json, lzma
+          folder=Path('.bootstrap/web-apps')
+          manifest=json.loads((folder/'manifest.json').read_text())
+          assert manifest['parts']==4 and manifest['encodedBytes']==35388
+          assert manifest['rawBytes']==142707
+          assert manifest['rawSHA256']=='9dbcae7094aed6d73d034511664e2f2a1a1aa52c7c0f2480bf7adc5c3296c10c'
+          encoded=''.join((folder/f'part-{i:02d}.b64').read_text().strip() for i in range(4))
+          assert len(encoded)==manifest['encodedBytes'], 'Transfer length mismatch'
+          packed=base64.b64decode(encoded,validate=True)
+          assert hashlib.sha256(packed).hexdigest()==manifest['archiveSHA256'], 'Transfer checksum mismatch'
+          decoder=lzma.LZMADecompressor(memlimit=128*1024*1024)
+          raw=decoder.decompress(packed,max_length=manifest['rawBytes']+1)
+          assert decoder.eof and not decoder.unused_data and len(raw)==manifest['rawBytes']
+          assert hashlib.sha256(raw).hexdigest()==manifest['rawSHA256']
+          changes=json.loads(raw)
+          allowed={'src/web-app-catalog.js','src/apps-web.js','docs/web-app-inventory.json','docs/web-apps.md','tests/web-apps/catalog.cjs','tests/web-apps/browser.py','.github/workflows/web-apps.yml','src/core.js','src/shell.js','src/styles.css','index.html','sw.js','tests/smoke.py'}
+          assert len(changes)==13 and {c['path'] for c in changes}==allowed==set(manifest['paths'])
+          outputs=[]
+          for change in changes:
+              name=change['path'];path=PurePosixPath(name)
+              assert not path.is_absolute() and '..' not in path.parts
+              p=Path(name)
+              if change['before'] is None:
+                  data=change['content'].encode('utf-8')
+                  if p.exists():
+                      assert name=='.github/workflows/web-apps.yml' and p.read_bytes()==data, 'Unexpected existing path: '+name
+              else:
+                  before=p.read_bytes()
+                  assert hashlib.sha256(before).hexdigest()==change['before'], 'Concurrent source change: '+name
+                  text=before.decode('utf-8');previous=0
+                  for a,b,value in change['ops']:
+                      assert previous<=a<=b<=len(text) and isinstance(value,str)
+                      previous=b
+                  for a,b,value in reversed(change['ops']):text=text[:a]+value+text[b:]
+                  data=text.encode('utf-8')
+              assert hashlib.sha256(data).hexdigest()==change['after'], 'Result checksum mismatch: '+name
+              outputs.append((p,data))
+          for p,data in outputs:
+              p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)
+          print('Verified and applied all',len(outputs),'source files.')
+          PY
+          for file in src/*.js sw.js; do node --check "$file"; done
+          python3 -m py_compile tests/web-apps/browser.py tests/smoke.py
+          python3 build.py
+          node --test tests/web-apps/catalog.cjs
+          git diff --check
+      - name: Commit editable source and rebuilt standalone edition
+        run: |
+          rm -rf .bootstrap/web-apps
+          rm .github/workflows/import-web-apps.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m 'Add 67 reviewed web apps in categorized Start folders and desktop windows'
+          git push origin HEAD:feat/categorized-web-apps
+      - name: Retain the exact imported source
+        run: git archive --format=zip HEAD -o /tmp/aster-web-apps-source.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: categorized-web-apps-import
+          path: /tmp/aster-web-apps-source.zip
+          retention-days: 7
