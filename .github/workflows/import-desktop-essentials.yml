@@ -45,6 +45,9 @@ jobs:
               assert not path.is_absolute() and '..' not in path.parts
               p=Path(path)
               assert not p.is_symlink()
+              if c['path']=='.github/workflows/desktop-essentials.yml':
+                  assert hashlib.sha256(p.read_bytes()).hexdigest()==c['after'], 'Pre-created CI workflow differs'
+                  continue
               if c['before'] is None:
                   assert not p.exists(), 'New path already exists: '+str(p)
                   data=c['content'].encode('utf-8')
@@ -61,7 +64,7 @@ jobs:
               outputs.append((p,data))
           for p,data in outputs:
               p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)
-          print('Verified and imported',len(outputs),'editable source files.')
+          print('Verified 25 paths and imported',len(outputs),'editable source files.')
           PY
       - name: Validate sources, models and inherited executable compatibility
         run: |
@@ -75,13 +78,13 @@ jobs:
           python3 build.py
           git restore tests/results.json
           git diff --check
-      - name: Commit editable source and remove temporary import material
+      - name: Commit editable source without changing workflow definitions
         run: |
           rm -rf .bootstrap/essentials
-          rm .github/workflows/import-desktop-essentials.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add --all
+          git diff --cached --quiet -- .github/workflows
           git commit -m 'Implement ten Windows-inspired desktop essentials with transactional files and browser tests'
           git push origin HEAD:feat/desktop-essentials
       - uses: actions/upload-artifact@v4
