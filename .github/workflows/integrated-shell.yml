@@ -1,0 +1,62 @@
+name: Integrated shell — flyouts, Explorer and Settings
+on:
+  pull_request:
+    paths: ['src/**', 'tests/**', 'docs/integrated-shell.md', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/integrated-shell.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'tests/integrated-shell/**', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/integrated-shell.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: integrated-shell-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  integrated-shell:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify sources, migration contracts and exact standalone build
+        run: |
+          for f in src/*.js src/win32/*.js sw.js; do node --check "$f"; done
+          python -m py_compile build.py tests/integrated-shell/browser.py tests/smoke.py
+          node --test tests/integrated-shell/contracts.cjs tests/desktop-features/models.cjs tests/web-apps/catalog.cjs
+          python build.py
+          git diff --exit-code -- Aster.html
+          git diff --check
+      - name: Install browser test tools
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Verify visible HTTP workflows, window counts, focus and persistence
+        run: python tests/integrated-shell/browser.py
+      - name: Verify the standalone offline shell through the same workflows
+        run: python tests/integrated-shell/browser.py --standalone --output tests/integrated-shell/artifacts/standalone
+      - name: Keep exact tested source and provenance
+        if: always()
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p tests/integrated-shell/artifacts
+          git archive --format=zip HEAD -o tests/integrated-shell/artifacts/source.zip
+          python - <<'PY'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+          data = {'commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'prHead':os.environ.get('PR_HEAD'),'standaloneSHA256':hashlib.sha256(Path('Aster.html').read_bytes()).hexdigest()}
+          Path('tests/integrated-shell/artifacts/provenance.json').write_text(json.dumps(data,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integrated-shell-evidence
+          path: |
+            tests/integrated-shell/artifacts/
+            Aster.html
+          retention-days: 14
