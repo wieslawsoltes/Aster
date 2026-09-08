@@ -209,7 +209,7 @@
         }
         if (apps.length > max)
             center.append(OS.el('button', { class: 'task-button', html: OS.icon('more', 20), title: 'More running apps', 'aria-label': 'More apps', onclick: e => OS.context(e, apps.slice(max).map(id => ({ text: OS.apps.get(id)?.title || id, icon: 'play', action: () => { const w = Array.from(OS.windows.values()).find(w => w.appId === id); w ? w.restore() : OS.launch(id); } }))) }));
-        const right = OS.el('div', { class: 'task-right' }), quick = OS.el('button', { class: 'tray-status', id: 'quick-settings-button', title: 'Quick settings', 'aria-label': 'Quick settings', html: OS.icon(navigator.onLine ? 'wifi' : 'disconnect', 16) + OS.icon('speaker', 16) + OS.icon(OS.battery ? 'battery' : 'shield', 16), onclick: () => OS.toggleQuick() }), clock = OS.el('button', { class: 'tray-clock', id: 'tray-clock', title: 'Notification Center and calendar', 'aria-label': 'Notifications and calendar', onclick: () => OS.showNotifications() }), bell = OS.el('button', { class: 'icon-button', title: OS.settings.dnd ? 'Do not disturb' : 'Notifications', 'aria-label': 'Notifications', html: OS.icon(OS.settings.dnd ? 'moon' : 'bell', 17), onclick: () => OS.showNotifications() });
+        const right = OS.el('div', { class: 'task-right' }), quick = OS.el('button', { class: 'tray-status', id: 'quick-settings-button', title: 'Quick settings', 'aria-label': 'Quick settings', html: OS.icon(navigator.onLine ? 'wifi' : 'disconnect', 16) + OS.icon('speaker', 16) + OS.icon(OS.battery ? 'battery' : 'shield', 16), onclick: () => OS.toggleQuick() }), clock = OS.el('button', { class: 'tray-clock', id: 'tray-clock', title: 'Notification Center and calendar', 'aria-label': 'Notifications and calendar', onclick: () => OS.showNotifications() }), bell = OS.el('button', { class: 'icon-button', title: OS.settings.dnd ? 'Do not disturb' : 'Notifications', 'aria-label': 'Notifications', html: OS.icon(OS.quiet?.active() ? 'moon' : 'bell', 17), onclick: () => OS.showNotifications() });
         const unread = OS.notifications.filter(n => !n.read).length;
         if (unread) {
             bell.style.position = 'relative';
@@ -260,7 +260,7 @@
             return;
         }
         const p = OS.el('section', { class: 'panel notification-panel flyout', role: 'dialog', 'aria-label': 'Notifications and calendar' }), head = OS.el('div', { class: 'notification-header' }), list = OS.el('div', { class: 'notification-list' }), calendar = OS.el('div', { class: 'mini-calendar' });
-        head.append(OS.el('strong', { text: 'Notifications', style: 'font-size:13px' }), OS.el('button', { class: 'secondary', text: 'Clear all', style: 'font-size:10px;padding:4px 8px', onclick: async () => { OS.notifications = []; await OS.db.set('notifications', []); OS.showNotifications(true); renderTaskbar(); } }));
+        head.append(iconButton('clock', 'Focus sessions', () => OS.launch('focus')), OS.el('strong', { text: 'Notifications', style: 'font-size:13px' }), OS.el('button', { class: 'secondary', text: 'Clear all', style: 'font-size:10px;padding:4px 8px', onclick: async () => { OS.notifications = []; await OS.db.set('notifications', []); OS.showNotifications(true); renderTaskbar(); } }));
         if (!OS.notifications.length)
             list.append(OS.el('div', { class: 'empty', style: 'height:110px;min-height:110px;font-size:12px', html: OS.icon('bell', 26) + '<span>You’re all caught up.</span>' }));
         for (const n of OS.notifications.slice(0, 8)) {
@@ -282,32 +282,7 @@
         mountPanel('notifications', p);
         renderTaskbar();
     };
-    OS.showWidgets = async () => {
-        if (panel === 'widgets') {
-            OS.closePanels();
-            return;
-        }
-        const p = OS.el('section', { class: 'panel widgets-panel flyout', role: 'dialog', 'aria-label': 'Your day' });
-        mountPanel('widgets', p);
-        p.append(OS.el('div', { class: 'row' }, OS.el('span', { class: 'eyebrow', text: 'YOUR DAY' }), OS.el('span', { class: 'spacer' }), iconButton('close', 'Close widgets', () => OS.closePanels())));
-        p.append(OS.el('div', { class: 'widget-clock', text: OS.time() }), OS.el('p', { class: 'muted', text: new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }), style: 'margin-top:0' }));
-        const tasks = await OS.db.get('tasks') || [], pending = tasks.filter(t => !t.done), events = await OS.db.get('calendarEvents') || [], today = OS.isoDate(new Date());
-        const taskCard = OS.el('div', { class: 'widget-card', html: `<div class="row">${OS.appIcon('tasks', 30)}<h3 style="margin:0;flex:1">One thing at a time.</h3><span class="pill">${pending.length} to do</span></div>` });
-        for (const task of pending.slice(0, 3))
-            taskCard.append(OS.el('p', { text: '○  ' + task.title }));
-        if (!pending.length)
-            taskCard.append(OS.el('p', { text: 'Your list is clear. Enjoy a little breathing room.' }));
-        taskCard.append(OS.el('button', { class: 'secondary', text: 'Open Tasks', style: 'margin-top:17px;font-size:11px', onclick: () => OS.launch('tasks') }));
-        p.append(taskCard);
-        const eventCard = OS.el('div', { class: 'widget-card', html: `<div class="row">${OS.appIcon('calendar', 30)}<h3 style="margin:0">On your calendar</h3></div>` });
-        const dayEvents = events.filter(e => e.date === today).sort((a, b) => a.time.localeCompare(b.time));
-        for (const event of dayEvents.slice(0, 3))
-            eventCard.append(OS.el('p', { text: event.time + '  ' + event.title }));
-        if (!dayEvents.length)
-            eventCard.append(OS.el('p', { text: 'Nothing scheduled for today.' }));
-        eventCard.append(OS.el('button', { class: 'secondary', text: 'Open Calendar', style: 'margin-top:17px;font-size:11px', onclick: () => OS.launch('calendar') }));
-        p.append(eventCard, OS.el('div', { class: 'widget-card', html: `<div class="row">${OS.icon('gpu', 22)}<h3 style="margin:0">Your desktop, locally.</h3></div><p>${esc(OS.metrics.mode)} graphics · ${OS.windows.size} open windows<br>No account or cloud sync required.</p>` }));
-    };
+    OS.showWidgets = () => OS.launch('widgets');
     OS.showTaskView = () => {
         if (panel === 'taskview') {
             OS.closePanels();
@@ -319,7 +294,7 @@
             if (!p.isConnected)
                 return;
             p.replaceChildren();
-            const header = OS.el('div', { class: 'row' }, OS.el('h2', { text: OS.desktops.find(d => d.id === OS.activeDesktop)?.name || 'Your desktop', style: 'flex:1;margin:0' }), OS.el('span', { style: 'font-size:11px;color:#cfdaeb', text: 'Drag a window onto another desktop to move it.' }), iconButton('close', 'Close Task View', OS.closePanels));
+            const header = OS.el('div', { class: 'row' }, OS.el('h2', { text: OS.desktops.find(d => d.id === OS.activeDesktop)?.name || 'Your desktop', style: 'flex:1;margin:0' }), OS.el('span', { style: 'font-size:11px;color:#cfdaeb', text: 'Drag a window onto another desktop to move it.' }), iconButton('taskview', 'Saved window groups', () => OS.launch('workspaces')), iconButton('close', 'Close Task View', OS.closePanels));
             p.append(header);
             const grid = OS.el('div', { class: 'task-view-grid' }), windows = Array.from(OS.windows.values()).filter(w => w.desktop === OS.activeDesktop).sort((a, b) => b.z - a.z);
             for (const w of windows) {
@@ -481,7 +456,7 @@
             OS.audioContext.resume();
     }
     catch { } };
-    OS.tone = () => { if (OS.settings.muted || OS.settings.volume === 0)
+    OS.tone = () => { if (OS.settings.muted || OS.settings.volume === 0 || OS.quiet?.active())
         return; try {
         const c = OS.audioContext;
         if (!c || c.state !== 'running')
@@ -538,7 +513,9 @@
     window.addEventListener('resize', renderTaskbar);
     matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (OS.settings.theme === 'auto')
         OS.applySettings(); });
-    document.addEventListener('keydown', e => { if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'l') {
+    document.addEventListener('keydown', e => {
+        if(e.ctrlKey && e.altKey && ['v','f','w','u','r'].includes(e.key.toLowerCase()) && !OS.$('#dialog-layer').children.length && !OS.$('.lock-screen')){e.preventDefault();const id={v:'clipboard',f:'focus',w:'workspaces',u:'accessibility',r:'recorder'}[e.key.toLowerCase()];OS.launch(id);}
+        if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'l') {
         e.preventDefault();
         OS.lock();
     } });
@@ -572,7 +549,7 @@
         setTimeout(() => boot.remove(), 320);
         OS.booted = true;
         if (OS.db.mode !== 'IndexedDB')
-            OS.notify('Temporary session only', 'Persistent browser storage is unavailable. Export your work before closing this page.', 'warning');
+            OS.notify('Temporary session only', 'Persistent browser storage is unavailable. Export your work before closing this page. '+(OS.db.problem||''), 'warning');
         if (!await OS.db.get('welcomed')) {
             await OS.db.set('welcomed', true);
             setTimeout(() => OS.notify('Welcome to your new workspace', 'Open Start to explore built-in tools and ' + (OS.webCatalog?.apps.length || 0) + ' categorized web apps. ' + (OS.db.mode === 'IndexedDB' ? 'Your virtual files are saved in this browser.' : 'Export your work before closing this temporary session.'), 'info', { label: 'Meet Aster', fn: () => OS.launch('welcome') }), 800);

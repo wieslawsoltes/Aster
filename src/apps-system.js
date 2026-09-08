@@ -99,7 +99,7 @@
             w.body.classList.add('transparent');
             layout.append(side, main);
             w.body.append(layout);
-            const navigation = [['system', 'desktop', 'System', 'display sound brightness volume startup renderer network'], ['personalization', 'paint', 'Personalization', 'theme wallpaper dark light accent taskbar transparency animation'], ['apps', 'store', 'Apps', 'installed import html applications default local folder'], ['storage', 'folder', 'Storage', 'backup restore files disk recycle bin reset'], ['accessibility', 'eye', 'Accessibility', 'text size motion contrast keyboard'], ['about', 'info', 'About Aster', 'version browser capabilities privacy security help']];
+            const navigation = [['essentials','spark','Desktop essentials','tabs archives clipboard focus widgets window groups history storage accessibility recorder'], ['system', 'desktop', 'System', 'display sound brightness volume startup renderer network'], ['personalization', 'paint', 'Personalization', 'theme wallpaper dark light accent taskbar transparency animation'], ['apps', 'store', 'Apps', 'installed import html applications default local folder'], ['storage', 'folder', 'Storage', 'backup restore files disk recycle bin reset'], ['accessibility', 'eye', 'Accessibility', 'text size motion contrast keyboard'], ['about', 'info', 'About Aster', 'version browser capabilities privacy security help']];
             const user = OS.el('div', { class: 'settings-user', html: `<div class="user-avatar">${esc(OS.settings.username[0] || 'A')}</div><div><strong>${esc(OS.settings.username)}</strong><small>Local account</small></div>` }), search = OS.el('input', { class: 'settings-search', placeholder: 'Find a setting', 'aria-label': 'Find a setting' }), nav = OS.el('div');
             side.append(user, search, nav);
             const row = (icon, title, description, control) => { const r = OS.el('div', { class: 'setting-row' }, OS.el('span', { html: OS.icon(icon, 23) }), OS.el('div', { class: 'setting-label' }, OS.el('strong', { text: title }), OS.el('small', { text: description }))); if (control)
@@ -116,7 +116,14 @@
                 for (const [id, icon, title] of navigation)
                     nav.append(OS.el('button', { class: 'nav-item' + (section === id ? ' active' : ''), html: OS.icon(icon, 19) + title, onclick: () => navigate(id) }));
                 main.replaceChildren(OS.el('h1', { text: navigation.find(n => n[0] === section)?.[2] || 'Settings' }));
-                if (section === 'system') {
+                if (section === 'essentials') {
+                    main.append(OS.el('p',{class:'muted',text:'Ten Windows-inspired workflows, implemented for this browser desktop.'}));
+                    for(const id of ['files','archives','clipboard','focus','widgets','workspaces','history','storage','accessibility','recorder']){
+                        const app=OS.apps.get(id);main.append(row(app.icon||'folder',app.title,app.description,OS.el('button',{class:'secondary',text:'Open',onclick:()=>OS.launch(id)})));
+                    }
+                }
+                else if (section === 'system') {
+                    main.append(row('spark','New desktop essentials','Explore ten new file, productivity, recovery and accessibility workflows.',OS.el('button',{class:'primary',text:'Explore',onclick:()=>navigate('essentials')})));
                     main.append(OS.el('div', { class: 'settings-hero', html: `<div class="device-preview"><div class="aster-symbol"></div></div><div><strong style="font-size:17px;font-weight:550">Your Aster workspace</strong><div class="muted" style="font-size:11px;margin:5px 0">A browser desktop. A world of possibilities.</div><span class="pill">${OS.icon('shield', 12)} Local session</span></div>` }));
                     main.append(row('desktop', 'Display brightness', 'Dims Aster only. Your real display brightness is unchanged.', range('brightness', 15, 100)), row('speaker', 'App volume', 'Controls Aster media playback and notification tones.', range('volume', 0, 100)), row('speaker', 'Mute Aster audio', 'Does not change your device’s volume.', toggle('muted')));
                     heading('Your session');
@@ -165,6 +172,7 @@
                     }
                 }
                 else if (section === 'storage') {
+                    main.append(row('folder','Storage Sense & File History','Review virtual storage and recover previous versions.',OS.el('button',{class:'primary',text:'Storage Manager',onclick:()=>OS.launch('storage')})));
                     const all = await OS.db.all(), bytes = all.reduce((n, f) => n + (f.size || 0), 0);
                     let estimate = {};
                     try {
@@ -190,6 +198,7 @@
                     main.append(OS.el('p', { class: 'muted', text: 'Browser-local storage is not a cloud backup. Changing browser profiles, clearing site data, private browsing, or browser eviction can remove virtual files. Export your work regularly.', style: 'font-size:11px;line-height:1.8;margin:22px 0' }));
                 }
                 else if (section === 'accessibility') {
+                    main.append(row('eye','Reading and visual tools','Color filters, large pointer, reading guide and local-voice reading.',OS.el('button',{class:'primary',text:'Accessibility Tools',onclick:()=>OS.launch('accessibility')})));
                     main.append(row('file', 'Text size', 'Adjust the base interface text size.', select('fontSize', [[12, 'Small · 12 px'], [13, 'Default · 13 px'], [14, 'Medium · 14 px'], [15, 'Large · 15 px']])), row('eye', 'High-contrast interface', 'Stronger borders and opaque surfaces.', toggle('highContrast')), row('spark', 'Animations', 'Disable for a quieter, more static desktop.', toggle('motion')), row('eye', 'Transparent surfaces', 'Turn off for stronger separation between surfaces.', toggle('transparency')), row('bell', 'Do not disturb', 'Keep notifications in Notification Center without pop-up toasts.', toggle('dnd')));
                     heading('Keyboard shortcuts');
                     main.append(OS.el('div', { class: 'card', html: `<table class="shortcut-table">${[['Start and search', 'Ctrl + Space'], ['Task view', 'Ctrl + Alt + Tab'], ['New terminal', 'Ctrl + Alt + T'], ['New note', 'Ctrl + Alt + N'], ['Show desktop', 'Ctrl + Alt + D'], ['Snap left / right', 'Ctrl + Alt + ← / →'], ['Maximize', 'Ctrl + Alt + ↑'], ['Save in editors', 'Ctrl + S'], ['Close active app', 'Alt + F4'], ['Dismiss menus', 'Escape']].map(([a, b]) => `<tr><td>${a}</td><td><kbd>${b}</kbd></td></tr>`).join('')}</table><p class="muted" style="font-size:10px;margin:15px 0 0">Some shortcuts may be intercepted by your real OS or browser. Every action is also available with the mouse.</p>` }));

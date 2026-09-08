@@ -458,6 +458,7 @@
                         } }) }));
             };
             w.addTask = async (title) => { tasks.push({ id: OS.uid(), title, done: false, priority: 'normal', due: '', notes: '' }); await save(); };
+            w.on('tasks-change',async()=>{tasks=await OS.db.get('tasks')||[];if(!w.closed)render();});
             render();
         }
     });

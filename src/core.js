@@ -2,7 +2,7 @@
 'use strict';
 (() => {
     const OS = window.Aster = {
-        version: '1.0.0', apps: new Map(), windows: new Map(), mounts: new Map(),
+        version: '1.5.0', apps: new Map(), windows: new Map(), mounts: new Map(),
         events: new EventTarget(), clipboard: null, started: performance.now(),
         metrics: { fps: 0, frameMs: 0, drawCalls: 0, mode: 'Starting', frames: [] },
         settings: { theme: 'light', accent: '#176ae6', wallpaper: 'bloom', transparency: true, motion: true,
@@ -107,7 +107,7 @@
     OS.appIcon = (id, size = 32) => {
         const spec = { files: ['folder', 'gold'], browser: ['globe', 'teal'], notepad: ['file', 'blue'], terminal: ['terminal', 'charcoal'], paint: ['paint', 'violet'], photos: ['image', 'blue'], media: ['play', 'coral'], calculator: ['calculator', 'slate'], settings: ['settings', 'slate'], calendar: ['calendar', 'blue'], clock: ['clock', 'slate'], tasks: ['check', 'blue'], taskmanager: ['gpu', 'teal'], store: ['store', 'blue'], code: ['code', 'violet'], mines: ['bug', 'green'], welcome: ['spark', 'blue'], win32: ['gpu', 'violet'], snips: ['cut', 'coral'], trash: ['trash', 'slate'] };
         const app = OS.apps.get(id);
-        const [icon, color] = spec[id] || (app?.webApp ? [app.icon, app.color] : ['code', 'violet']);
+        const [icon, color] = spec[id] || (app?.icon ? [app.icon, app.color || 'blue'] : ['code', 'violet']);
         return `<span class="app-icon app-icon-${color}" style="--icon-size:${size}px">${OS.icon(icon, Math.round(size * .72))}</span>`;
     };
     OS.fileIcon = (e, size = 28) => e.kind === 'directory' ? OS.appIcon('files', size) : OS.appIcon(OS.appForFile(e.path, e.mime), size);
@@ -121,6 +121,7 @@
         } });
     OS.appForFile = (path, mime = '') => {
         const ext = path.split('.').pop().toLowerCase();
+        if (ext === 'zip') return 'archives';
         if (ext === 'exe') return 'win32';
         if (mime.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'avif'].includes(ext))
             return 'photos';
@@ -141,12 +142,13 @@
     class Database {
         async init() {
             try {
-                this.db = await new Promise((resolve, reject) => { const r = indexedDB.open('aster-desktop', 1); r.onupgradeneeded = () => { r.result.createObjectStore('files', { keyPath: 'path' }); r.result.createObjectStore('meta'); }; r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
+                this.db = await new Promise((resolve, reject) => { const r = indexedDB.open('aster-desktop', 2); r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains('files')) r.result.createObjectStore('files', { keyPath: 'path' }); if (!r.result.objectStoreNames.contains('meta')) r.result.createObjectStore('meta'); if (!r.result.objectStoreNames.contains('history')) r.result.createObjectStore('history', { keyPath: 'id' }); }; let blocked=false;r.onblocked=()=>{blocked=true;reject(Error('Close other Aster tabs, then reload to upgrade storage. This tab is memory-only until then.'));};r.onsuccess = () => {if(blocked)r.result.close();else resolve(r.result);}; r.onerror = () => reject(r.error); });
+                this.db.onversionchange=()=>{this.db.close();this.problem='Storage changed in another Aster tab. Reload before saving.';console.warn(this.problem);};
                 this.mode = 'IndexedDB';
             }
             catch (e) {
-                console.warn('Persistent storage unavailable', e);
-                this.memory = { files: new Map(), meta: new Map() };
+                this.problem=e.message;console.warn('Persistent storage unavailable', e);
+                this.memory = { files: new Map(), meta: new Map(), history: new Map() };
                 this.mode = 'Memory only';
             }
         }
@@ -254,7 +256,7 @@
             throw Error('File not found: ' + path); return f; }
         async text(file) { return file.content instanceof Blob ? file.content.text() : String(file.content ?? ''); }
         async blob(file) { return file.content instanceof Blob ? file.content : new Blob([file.content ?? ''], { type: file.mime || 'text/plain' }); }
-        mime(path) { const e = path.split('.').pop().toLowerCase(); return ({ txt: 'text/plain', md: 'text/markdown', json: 'application/json', js: 'text/javascript', css: 'text/css', html: 'text/html', svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', wav: 'audio/wav', mp3: 'audio/mpeg', mp4: 'video/mp4', webm: 'video/webm', ogg: 'audio/ogg' })[e] || 'application/octet-stream'; }
+        mime(path) { const e = path.split('.').pop().toLowerCase(); return ({ zip: 'application/zip', txt: 'text/plain', md: 'text/markdown', json: 'application/json', js: 'text/javascript', css: 'text/css', html: 'text/html', svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', wav: 'audio/wav', mp3: 'audio/mpeg', mp4: 'video/mp4', webm: 'video/webm', ogg: 'audio/ogg' })[e] || 'application/octet-stream'; }
         async write(path, content, mime) {
             path = this.normalize(path);
             this.validateName(this.name(path));
@@ -283,7 +285,7 @@
                 const old = await this.stat(path);
                 if (old?.kind === 'directory')
                     throw Error('A folder already uses this name.');
-                await OS.db.batch([{ path, kind: 'file', mime, content, size: content instanceof Blob ? content.size : new Blob([content]).size, modified: Date.now() }]);
+                await OS.db.writeVersioned({ path, kind: 'file', mime, content, size: content instanceof Blob ? content.size : new Blob([content]).size, modified: Date.now() });
             }
             OS.emit('fs-change', { path });
             return path;
@@ -449,6 +451,7 @@
         await OS.fs.seed();
         OS.customApps = await OS.db.get('customApps') || [];
         OS.customApps.forEach(OS.registerCustom);
+        await OS.initDesktopServices();
         OS.applySettings();
     };
 })();

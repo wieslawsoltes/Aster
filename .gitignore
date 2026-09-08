@@ -6,3 +6,7 @@ _site/
 Thumbs.db
 tests/win32/artifacts/
 tests/win32/native-artifacts/
+tests/desktop-features/artifacts/
+tests/web-apps/artifacts/
+tests/results.json
+tests/*.png

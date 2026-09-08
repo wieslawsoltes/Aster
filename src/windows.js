@@ -87,13 +87,13 @@
     });
     OS.confirm = (title, message, confirm = 'Continue', danger = false) => OS.dialog({ title, message, confirm, danger });
     OS.prompt = (title, value = '', message = '') => OS.dialog({ title, value, message, confirm: 'Save' });
-    OS.notify = (title, message = '', kind = 'info', action = null) => {
-        const n = { id: OS.uid(), title, message, kind, time: Date.now() };
+    OS.notify = (title, message = '', kind = 'info', action = null, options = {}) => {
+        const n = { id: OS.uid(), title, message, kind, time: Date.now(), priority: options.priority === 'high' ? 'high' : 'normal' };
         OS.notifications.unshift(n);
         OS.notifications = OS.notifications.slice(0, 80);
         OS.db.set('notifications', OS.notifications);
         OS.emit('notification', n);
-        if (OS.settings.dnd)
+        if ((OS.quiet?.active() || OS.settings.dnd) && n.priority !== 'high')
             return n;
         const toast = OS.el('article', { class: 'toast flyout' });
         toast.innerHTML = `<div class="toast-header">${OS.icon(kind === 'warning' ? 'shield' : 'spark', 15)}<span>Aster Desktop</span><button aria-label="Dismiss notification">${OS.icon('close', 13)}</button></div><strong>${OS.esc(title)}</strong><p>${OS.esc(message)}</p>`;

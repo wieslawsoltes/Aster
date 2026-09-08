@@ -4,10 +4,32 @@
     const button = (icon, label, fn, cls = '') => OS.el('button', { class: cls, title: label, 'aria-label': label, html: OS.icon(icon, 18), onclick: OS.guard(fn) });
     const displayName = e => OS.fs.name(e.originalPath || e.path);
     const fileType = e => e.kind === 'directory' ? 'File folder' : (e.mime?.startsWith('image/') ? 'Image' : e.mime?.startsWith('audio/') ? 'Audio file' : e.mime?.startsWith('video/') ? 'Video file' : ({ md: 'Markdown document', txt: 'Text document', html: 'HTML document', js: 'JavaScript file', json: 'JSON document', css: 'CSS stylesheet' })[e.path.split('.').pop()] || 'File');
+    OS.fileQueryMatches = (entry, source) => {
+        const name=displayName(entry).toLowerCase(),mime=entry.mime||'',kind=entry.kind==='directory'?'folder':mime.startsWith('image/')?'image':mime.startsWith('audio/')?'audio':mime.startsWith('video/')?'video':/\.zip$/i.test(name)?'archive':mime.startsWith('text/')?'text':'file';
+        return String(source).slice(0,200).toLowerCase().split(/\s+/).filter(Boolean).every(term=>{
+            if(term.startsWith('kind:'))return term.slice(5)==='file'?entry.kind==='file':kind===term.slice(5);
+            if(term.startsWith('ext:'))return entry.kind==='file'&&name.endsWith('.'+term.slice(4).replace(/^\./,''));
+            const size=/^size:([<>])(\d+(?:\.\d+)?)(kb|mb|gb|b)?$/.exec(term);
+            if(size){const bytes=Number(size[2])*({b:1,kb:1024,mb:1048576,gb:1073741824}[size[3]||'b']);return size[1]==='>'?(entry.size||0)>bytes:(entry.size||0)<bytes;}
+            return name.includes(term);
+        });
+    };
     OS.register('files', { title: 'File Explorer', description: 'Files, folders, and everything in between.', category: 'Essentials', width: 1020, height: 665, minWidth: 430, minHeight: 320,
         mount: async (w, options) => {
             let path = options.path || w.state.path || 'home', history = [path], historyIndex = 0, rows = [], selected = new Set(), anchor = null, view = w.state.view || 'list', query = '', sort = 'name', asc = true, token = 0, urls = [];
-            const tabs = OS.el('div', { class: 'explorer-tabs' }, OS.el('div', { class: 'explorer-tab', html: OS.icon('folder', 16) + '<span>Home</span>' }), button('plus', 'New Explorer window', () => OS.launch('files', { path }), 'icon-button'));
+            const validTab = t => t && typeof t.path === 'string' && t.path.length < 1024;
+            let fileTabs = (Array.isArray(w.state.explorerTabs) ? w.state.explorerTabs : []).filter(validTab).slice(0,12);
+            if (!fileTabs.length) fileTabs = [{path, history:[path], historyIndex:0, query:'', view, sort:'name', asc:true}];
+            let activeTab = Math.min(fileTabs.length-1, Math.max(0, Number(w.state.activeFileTab)||0)), detailToken=0, previewURL='';
+            const tabs = OS.el('div', { class: 'explorer-tabs', role:'tablist', 'aria-label':'Folder tabs' });
+            function stashTab() { fileTabs[activeTab] = {path,history:history.slice(-50),historyIndex:Math.min(historyIndex,49),query,view,sort,asc}; w.state.explorerTabs=fileTabs.map(t=>({...t})); w.state.activeFileTab=activeTab; }
+            function loadTab() { const t=fileTabs[activeTab];path=t.path;history=(Array.isArray(t.history)?t.history:[path]).filter(p=>typeof p==='string').slice(-50);if(!history.length)history=[path];historyIndex=Math.min(history.length-1,Math.max(0,Number(t.historyIndex)||0));query=typeof t.query==='string'?t.query.slice(0,200):'';view=t.view==='grid'?'grid':'list';sort=['name','modified','type','size'].includes(t.sort)?t.sort:'name';asc=t.asc!==false;selected.clear();anchor=null; }
+            loadTab();
+            function openTab(dest=path) { if(fileTabs.length>=12) {OS.notify('Tab limit reached','Close a folder tab first (limit 12).');return;}stashTab();fileTabs.push({path:dest});activeTab=fileTabs.length-1;loadTab();search.value=query;OS.guard(render)(); }
+            function closeTab(index) { if(fileTabs.length===1) return w.close();stashTab();fileTabs.splice(index,1);if(index<activeTab)activeTab--;else if(index===activeTab)activeTab=Math.min(index,fileTabs.length-1);loadTab();search.value=query;OS.guard(render)(); }
+            function switchTab(index) { stashTab();activeTab=index;loadTab();search.value=query;OS.guard(render)(); }
+            function renderTabs() { tabs.replaceChildren();fileTabs.forEach((tab,i)=>{const name=tab.path==='home'?'Home':OS.fs.name(tab.path),wrap=OS.el('div',{class:'explorer-tab-slot'}),b=OS.el('button',{class:'explorer-tab'+(i===activeTab?' active':''),role:'tab','aria-selected':String(i===activeTab),tabindex:i===activeTab?'0':'-1',html:OS.icon('folder',15)+'<span>'+esc(name)+'</span>',onclick:()=>switchTab(i)});b.onkeydown=e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();switchTab((i+(e.key==='ArrowRight'?1:fileTabs.length-1))%fileTabs.length);setTimeout(()=>OS.$('[role=tab][aria-selected=true]',tabs)?.focus(),0);}};wrap.append(b,button('close','Close tab '+name,()=>closeTab(i),'icon-button'));tabs.append(wrap);});tabs.append(button('plus','New folder tab',()=>openTab(path),'icon-button')); }
+
             const cmd = OS.el('div', { class: 'toolbar explorer-commandbar' }), nav = OS.el('div', { class: 'explorer-nav' }), side = OS.el('aside', { class: 'explorer-sidebar', 'aria-label': 'Folder navigation' }), main = OS.el('div', { class: 'explorer-main', tabindex: '0', 'aria-label': 'Files' }), details = OS.el('aside', { class: 'explorer-details', 'aria-label': 'Details pane' }), layout = OS.el('div', { class: 'explorer-layout' }, side, main, details), status = OS.el('footer', { class: 'statusbar' });
             w.body.classList.add('transparent');
             w.body.append(tabs, cmd, nav, layout, status);
@@ -83,6 +105,7 @@
                 else
                     OS.guard(OS.openPath)(e.path);
             } };
+            const createZip = async () => {const chosen=[...selected];if(!chosen.length)throw Error('Select files or folders to archive.');const dir=targetDir();const name=await OS.prompt('ZIP file name','Archive.zip');if(name===null)return;OS.fs.validateName(name);await OS.archives.create(chosen,OS.fs.join(dir,name.endsWith('.zip')?name:name+'.zip'));await render();};
             const context = (e, entry = null) => {
                 if (entry && !selected.has(entry.path)) {
                     selected = new Set([entry.path]);
@@ -90,6 +113,10 @@
                 }
                 const inTrash = path === '/.Trash', sel = selectedRows();
                 OS.context(e, [
+                    ...(!inTrash && sel.length===1 && sel[0].kind==='directory'?[{text:'Open in new tab',icon:'plus',action:()=>openTab(sel[0].path)}]:[]),
+                    ...(!inTrash && sel.length?[{text:'Create ZIP',icon:'folder',action:createZip}]:[]),
+                    ...(!inTrash && sel.length===1 && /\.zip$/i.test(sel[0].path)?[{text:'Extract ZIP here',icon:'folder',action:async()=>{await OS.archives.extract(sel[0].path,targetDir());await render();}}]:[]),
+                    ...(!inTrash && sel.length===1 && sel[0].kind==='file' && !sel[0].native?[{text:'Previous versions',icon:'undo',action:()=>OS.launch('history',{path:sel[0].path})}]:[]),
                     ...(sel.length ? [{ text: inTrash ? 'Restore' : 'Open', icon: inTrash ? 'undo' : 'folder', action: async () => { if (inTrash) {
                                 for (const f of sel)
                                     await OS.fs.restore(f.path);
@@ -105,7 +132,7 @@
             const sortB = OS.el('button', { html: OS.icon('list', 17) + '<span class="cmd-text">Sort</span>' + OS.icon('down', 11), onclick: e => OS.context(e, [...['name', 'modified', 'type', 'size'].map(s => ({ text: (sort === s ? '✓ ' : '') + s[0].toUpperCase() + s.slice(1), action: () => { sort = s; render(); } })), null, { text: asc ? 'Descending order' : 'Ascending order', action: () => { asc = !asc; render(); } }]) });
             const viewB = OS.el('button', { html: OS.icon('grid', 17) + '<span class="cmd-text">View</span>' + OS.icon('down', 11), onclick: e => OS.context(e, [{ text: 'Details', icon: 'list', action: () => { view = 'list'; w.state.view = view; render(); } }, { text: 'Large icons', icon: 'grid', action: () => { view = 'grid'; w.state.view = view; render(); } }, { text: 'Toggle details pane', icon: 'taskview', action: () => { details.hidden = !details.hidden; } }]) });
             const moreB = button('more', 'More actions', e => { }, 'icon-button');
-            moreB.onclick = e => OS.context(e, [{ text: 'Import files', icon: 'upload', action: async () => { const f = await OS.readFile('', true); if (f.length)
+            moreB.onclick = e => OS.context(e, [{text:'Create ZIP',icon:'folder',disabled:!selected.size||path==='/.Trash',action:createZip},{text:'New folder tab',icon:'plus',action:()=>openTab(path)},{ text: 'Import files', icon: 'upload', action: async () => { const f = await OS.readFile('', true); if (f.length)
                         await OS.fs.import(f, targetDir()); } }, { text: 'Connect local folder', icon: 'folder', action: async () => navigate(await OS.fs.mount()) }, { text: 'Open in Terminal', icon: 'terminal', action: () => OS.launch('terminal', { cwd: targetDir() }) }, null, { text: 'Empty Recycle Bin', icon: 'trash', danger: true, action: async () => { if (await OS.confirm('Empty Recycle Bin?', 'All items in the virtual Recycle Bin will be permanently deleted.', 'Empty', true)) {
                         for (const f of await OS.fs.list('/.Trash'))
                             await OS.fs.remove(f.path, true);
@@ -126,7 +153,8 @@
                 render();
             } }, 'icon-button'), up = button('up', 'Up', () => { if (path !== 'home')
                 navigate(OS.fs.parent(path)); }, 'icon-button'), refresh = button('refresh', 'Refresh', () => render(), 'icon-button'), crumbs = OS.el('div', { class: 'breadcrumbs' }), search = OS.el('input', { class: 'folder-search', placeholder: 'Search Home', 'aria-label': 'Search this folder' });
-            search.oninput = () => { query = search.value; renderMain(); };
+            search.value=query;search.title='Search by name, kind:image, ext:txt, or size:>1mb';
+            search.oninput = () => { query = search.value; stashTab(); OS.saveSession(); renderMain(); };
             crumbs.ondblclick = OS.guard(async () => { const p = await OS.prompt('Go to folder', path === 'home' ? '/' : path); if (p !== null) {
                 if (p.toLowerCase() === 'home')
                     navigate('home');
@@ -163,7 +191,8 @@
                 el.ondrop = OS.guard(async (e) => { e.preventDefault(); e.stopPropagation(); await drop(e, entry.path); });
             } return el; }
             async function renderDetails() {
-                const e = selectedRows()[0];
+                const e = selectedRows()[0], currentDetail=++detailToken;
+                if(previewURL){URL.revokeObjectURL(previewURL);previewURL='';}
                 details.replaceChildren();
                 if (!e) {
                     details.innerHTML = `<div class="detail-preview">${OS.icon('taskview', 56)}</div><h3>A little more detail</h3><p class="muted" style="font-size:11px;line-height:1.7">Select a file to see its information.<br>Double-click to open it.</p><div class="spacer"></div><span class="pill">${OS.icon('shield', 12)} Local-first, always</span>`;
@@ -173,7 +202,8 @@
                 if (e.kind === 'file' && e.mime?.startsWith('image/') && (e.size || 0) < 20e6) {
                     try {
                         const url = URL.createObjectURL(await OS.fs.blob(await OS.fs.read(e.path)));
-                        urls.push(url);
+                        if(currentDetail!==detailToken||w.closed){URL.revokeObjectURL(url);return;}
+                        previewURL=url;
                         if (selected.has(e.path)) {
                             const preview = $('.detail-preview', details);
                             preview?.replaceChildren(OS.el('img', { src: url, alt: displayName(e) }));
@@ -181,6 +211,12 @@
                     }
                     catch { }
                 }
+                else if(e.kind==='file' && (e.size||0)<=256000 && (/^text\//.test(e.mime||'') || /\.(txt|md|json|csv|js|css)$/i.test(e.path))) {
+                    try {const text=await OS.fs.text(await OS.fs.read(e.path));if(currentDetail!==detailToken||w.closed)return;details.append(OS.el('pre',{class:'explorer-text-preview',text:text.slice(0,8000)}));}catch{}
+                }
+                if(currentDetail!==detailToken||w.closed)return;
+                if(!e.native && e.kind==='file' && !e.path.startsWith('/.')) details.append(OS.el('button',{class:'secondary',text:'Previous versions',onclick:()=>OS.launch('history',{path:e.path})}));
+                details.append(OS.el('button',{class:'secondary',text:OS.fileFavorites.includes(e.path)?'Unpin favorite':'Pin to favorites',onclick:OS.guard(async()=>{OS.fileFavorites=OS.fileFavorites.includes(e.path)?OS.fileFavorites.filter(p=>p!==e.path):[e.path,...OS.fileFavorites].slice(0,30);await OS.db.set('file-favorites',OS.fileFavorites);OS.emit('favorites-change');})}));
             }
             function table(entries) { const table = OS.el('table', { class: 'file-table', role: 'grid', 'aria-label': 'Files' }), head = OS.el('thead'), tr = OS.el('tr'); for (const [name, key] of [['Name', 'name'], ['Date modified', 'modified'], ['Type', 'type'], ['Size', 'size']]) {
                 const th = OS.el('th');
@@ -211,7 +247,7 @@
                     return;
                 entries = entries.filter(e => path === '/.Trash' || !OS.fs.name(e.path).startsWith('.'));
                 if (query)
-                    entries = entries.filter(e => displayName(e).toLowerCase().includes(query.toLowerCase()));
+                    entries = entries.filter(e => OS.fileQueryMatches(e, query));
                 rows = entries.sort((a, b) => { let n = (a.kind === b.kind ? 0 : a.kind === 'directory' ? -1 : 1); if (!n) {
                     if (sort === 'name')
                         n = displayName(a).localeCompare(displayName(b), undefined, { numeric: true });
@@ -258,7 +294,7 @@
             async function render() {
                 w.state.path = path;
                 w.setTitle((path === 'home' ? 'Home' : path === '/.Trash' ? 'Recycle Bin' : OS.fs.name(path)) + ' — File Explorer');
-                $('.explorer-tab span', tabs).textContent = path === 'home' ? 'Home' : path === '/.Trash' ? 'Recycle Bin' : OS.fs.name(path);
+                stashTab();renderTabs();
                 back.disabled = historyIndex === 0;
                 forward.disabled = historyIndex === history.length - 1;
                 up.disabled = path === 'home' || path === '/';
@@ -281,6 +317,8 @@
                 for (const [name, dest, icon] of [['Home', 'home', 'home'], ['Gallery', '/Pictures', 'image']])
                     side.append(navItem(name, dest, icon));
                 side.append(OS.el('div', { class: 'separator' }));
+                if(OS.fileFavorites.length){side.append(OS.el('div',{class:'menu-label',text:'Favorites'}));for(const dest of OS.fileFavorites)side.append(OS.el('button',{class:'nav-item',text:OS.fs.name(dest),onclick:OS.guard(async()=>{const f=await OS.fs.stat(dest);if(!f)throw Error('Favorite no longer exists. Unpin it from its folder or reset favorites.');if(f.kind==='directory')navigate(dest);else OS.openPath(dest);}),oncontextmenu:e=>OS.context(e,[{text:'Unpin favorite',action:async()=>{OS.fileFavorites=OS.fileFavorites.filter(p=>p!==dest);await OS.db.set('file-favorites',OS.fileFavorites);OS.emit('favorites-change');}}])}));}
+
                 for (const [name, icon] of [['Desktop', 'desktop'], ['Downloads', 'download'], ['Documents', 'file'], ['Pictures', 'image'], ['Music', 'music'], ['Videos', 'video'], ['Projects', 'code']])
                     side.append(navItem(name, '/' + name, icon, true));
                 side.append(OS.el('div', { class: 'separator' }), navItem('This PC', '/', 'desktop'), navItem('Local folders', '/Local', 'folder'));
@@ -316,7 +354,9 @@
             } });
             main.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
             main.addEventListener('drop', OS.guard(e => { e.preventDefault(); return drop(e); }));
-            w.onKey = e => { if (/INPUT|TEXTAREA/.test(e.target.tagName))
+            w.onKey = e => {
+                if((e.ctrlKey||e.metaKey)&&['t','w','Tab'].includes(e.key)){e.preventDefault();e.stopPropagation();if(e.key==='t')openTab(path);else if(e.key==='w')closeTab(activeTab);else switchTab((activeTab+(e.shiftKey?fileTabs.length-1:1))%fileTabs.length);return;}
+                if (/INPUT|TEXTAREA/.test(e.target.tagName))
                 return; if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'x', 'v'].includes(e.key.toLowerCase())) {
                 e.preventDefault();
                 switch (e.key.toLowerCase()) {
@@ -362,7 +402,8 @@
             } };
             w.on('fs-change', () => { clearTimeout(w.refreshTimer); w.refreshTimer = setTimeout(() => OS.guard(render)(), 80); });
             w.on('settings', () => renderDetails());
-            w.addCleanup(() => { urls.forEach(URL.revokeObjectURL); clearTimeout(w.refreshTimer); });
+            w.on('favorites-change',()=>OS.guard(render)());
+            w.addCleanup(() => { detailToken++;if(previewURL)URL.revokeObjectURL(previewURL);urls.forEach(URL.revokeObjectURL); clearTimeout(w.refreshTimer); });
             w.navigate = navigate;
             w.refresh = render;
             await render();

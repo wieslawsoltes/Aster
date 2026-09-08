@@ -208,7 +208,7 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
         drawGPU(now) {
             if (!this.device || !this.context)
                 return;
-            const s = OS.settings, style = ['bloom', 'midnight', 'dusk', 'sage'].indexOf(s.wallpaper), ws = this.getWindows();
+            const s = OS.settings, style = ['bloom', 'midnight', 'dusk', 'sage'].indexOf(OS.effectiveWallpaper()), ws = this.getWindows();
             const dark = document.body.dataset.theme === 'dark';
             this.uniformData.set([this.canvas.width, this.canvas.height, (now - this.start) / 1000, this.ratio, dark ? 1 : 0, Math.max(0, style), ws.length, s.motion ? 1 : 0, 0, 0, 0, 0]);
             this.device.queue.writeBuffer(this.uniform, 0, this.uniformData);
@@ -254,7 +254,7 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                 return;
             const width = this.canvas.width, height = this.canvas.height;
             c.setTransform(1, 0, 0, 1, 0, 0);
-            const p = ({ bloom: ['#072962', '#0754bd', '#8bd4ff'], midnight: ['#070e2c', '#35317a', '#9ca4ff'], dusk: ['#371438', '#9c437f', '#ffd2b6'], sage: ['#082f31', '#187869', '#adebc9'] })[OS.settings.wallpaper] || ['#072962', '#0754bd', '#8bd4ff'];
+            const p = ({ bloom: ['#072962', '#0754bd', '#8bd4ff'], midnight: ['#070e2c', '#35317a', '#9ca4ff'], dusk: ['#371438', '#9c437f', '#ffd2b6'], sage: ['#082f31', '#187869', '#adebc9'] })[OS.effectiveWallpaper()] || ['#072962', '#0754bd', '#8bd4ff'];
             const bg = c.createLinearGradient(0, 0, width, height);
             bg.addColorStop(0, p[0]);
             bg.addColorStop(1, p[1]);

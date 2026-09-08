@@ -587,7 +587,7 @@
             } };
             const captureB = OS.el('button', { class: 'primary', html: OS.icon('plus', 16) + 'New capture', onclick: OS.guard(capture) }), downloadB = OS.el('button', { html: OS.icon('download', 17) + 'Download', disabled: true, onclick: () => { if (blob)
                     OS.download(blob, OS.fs.name(path)); } });
-            toolbar.append(captureB, downloadB, OS.el('span', { class: 'spacer' }), OS.el('span', { class: 'pill', html: OS.icon('shield', 12) + 'Permission required' }));
+            toolbar.append(captureB, OS.el('button',{html:OS.icon('video',16)+'Record video',onclick:()=>OS.launch('recorder')}), downloadB, OS.el('span', { class: 'spacer' }), OS.el('span', { class: 'pill', html: OS.icon('shield', 12) + 'Permission required' }));
             w.addCleanup(() => { if (url)
                 URL.revokeObjectURL(url); });
         }
