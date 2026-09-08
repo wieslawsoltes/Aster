@@ -1,0 +1,54 @@
+name: Explorer file workflows — atomic operations and undo
+on:
+  pull_request:
+    paths: ['src/**', 'tests/**', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/file-workflows.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'tests/file-workflows/**', 'index.html', 'Aster.html', 'sw.js', '.github/workflows/file-workflows.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: file-workflows-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  explorer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate source, planner and standalone reproducibility
+        run: |
+          for f in src/*.js; do node --check "$f"; done
+          node --test tests/file-workflows/models.cjs
+          python build.py
+          git diff --exit-code -- Aster.html
+          git diff --check
+      - name: Install verification browser
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Verify real Explorer controls and database transactions over HTTP
+        run: python tests/file-workflows/browser.py
+      - name: Repeat against the standalone edition
+        run: python tests/file-workflows/browser.py --standalone --output tests/file-workflows/artifacts/standalone
+      - name: Preserve exact source
+        if: always()
+        run: |
+          mkdir -p tests/file-workflows/artifacts
+          git archive --format=zip HEAD -o tests/file-workflows/artifacts/source.zip
+          git rev-parse HEAD > tests/file-workflows/artifacts/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: explorer-file-workflows-evidence
+          path: |
+            tests/file-workflows/artifacts/
+            Aster.html
+          retention-days: 14
