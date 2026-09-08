@@ -1,0 +1,84 @@
+name: Theme system — shell profiles and Windows format interoperability
+on:
+  pull_request:
+    paths: ['src/**', 'tests/**', 'docs/themes.md', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/themes.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'tests/themes/**', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/themes.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: themes-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify formats, runtime semantics and standalone reproducibility
+        run: |
+          for f in src/*.js src/win32/*.js sw.js; do node --check "$f"; done
+          python -m py_compile build.py tests/themes/*.py tests/file-workflows/browser.py
+          node --test tests/themes/models.cjs tests/themes/win32.cjs
+          python build.py
+          git diff --exit-code -- Aster.html
+          git diff --check
+      - name: Install verification browser and software Vulkan
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libvulkan1 mesa-vulkan-drivers xvfb xauth
+          python -m pip install playwright pillow
+          python -m playwright install --with-deps chromium
+      - name: Verify real Settings, taskbars, theme assets and IndexedDB reloads
+        run: python tests/themes/browser.py
+      - name: Repeat against standalone, including offline theme changes
+        run: python tests/themes/browser.py --standalone --output tests/themes/artifacts/standalone
+      - name: Require real WebGPU window surfaces through theme changes
+        run: xvfb-run -a -s '-screen 0 1440x1000x24' python tests/themes/browser.py --gpu --headed --output tests/themes/artifacts/webgpu
+      - name: Preserve exact tested source
+        if: always()
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p tests/themes/artifacts
+          git archive --format=zip HEAD -o tests/themes/artifacts/source.zip
+          python - <<'PY'
+          import hashlib,json,os,subprocess
+          from pathlib import Path
+          Path('tests/themes/artifacts/provenance.json').write_text(json.dumps({'checkout':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'prHead':os.environ.get('PR_HEAD'),'standaloneSHA256':hashlib.sha256(Path('Aster.html').read_bytes()).hexdigest()},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: theme-browser-evidence
+          path: |
+            tests/themes/artifacts/
+            Aster.html
+          retention-days: 14
+  native-formats:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Cross-check original CAB, MSZIP, CUR, ANI and WAV against native Windows
+        run: python tests/themes/native.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: theme-native-format-evidence
+          path: tests/themes/artifacts/native/
+          retention-days: 14
