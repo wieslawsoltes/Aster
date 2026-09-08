@@ -23,20 +23,20 @@ jobs:
           p=Path('tests/win32/native-gui.py');s=p.read_text()
           old="        for id,value in [(1032,'12'),(1031,'13'),(1033,'20')]:assert user.SetWindowTextW(user.GetDlgItem(dialog,id),value)"
           assert s.count(old)==1
-          new="""        def text(hwnd):
-                      buffer=C.create_unicode_buffer(128)
-                      user.GetWindowTextW(hwnd,buffer,128)
-                      return buffer.value
-                  # Visibility can precede WM_INITDIALOG's final SetDlgItemInt.
-                  wait(lambda: all(text(user.GetDlgItem(dialog,id))==value for id,value in [(1032,'16'),(1031,'16'),(1033,'40')]))
-                  for id,value in [(1032,'12'),(1031,'13'),(1033,'20')]:
-                      control=user.GetDlgItem(dialog,id)
-                      assert control and user.SetWindowTextW(control,value)
-                      assert text(control)==value
-                  report['customControls']={str(id):text(user.GetDlgItem(dialog,id)) for id in [1032,1031,1033]}"""
-          # Literal indentation in this YAML block is not Python nesting.
-          new='\n'.join(line[10:] if line.startswith('          ') else line for line in new.splitlines())
-          s=s.replace(old,new)
+          lines=[
+              'def text(hwnd):',
+              '    buffer=C.create_unicode_buffer(128)',
+              '    user.GetWindowTextW(hwnd,buffer,128)',
+              '    return buffer.value',
+              '# Wait until WM_INITDIALOG has populated all fields.',
+              "wait(lambda: all(text(user.GetDlgItem(dialog,id))==value for id,value in [(1032,'16'),(1031,'16'),(1033,'40')]))",
+              "for id,value in [(1032,'12'),(1031,'13'),(1033,'20')]:",
+              '    control=user.GetDlgItem(dialog,id)',
+              '    assert control and user.SetWindowTextW(control,value)',
+              '    assert text(control)==value',
+              "report['customControls']={str(id):text(user.GetDlgItem(dialog,id)) for id in [1032,1031,1033]}",
+          ]
+          s=s.replace(old,'\n'.join(' '*8+line for line in lines))
           s=s.replace("report.update({'status':'FAIL','error':str(e)});raise", "report.update({'status':'FAIL','error':str(e),'windows':windows(),'mainClient':size(main) if isinstance(main,int) else None});raise")
           p.write_text(s)
           PY
