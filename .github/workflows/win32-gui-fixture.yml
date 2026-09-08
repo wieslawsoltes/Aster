@@ -1,0 +1,26 @@
+name: Build upstream Win32 GUI fixture
+on:
+  push:
+    branches: [feat/win32-gui-resources]
+    paths: ['third-party/winemine/**', '.github/workflows/win32-gui-fixture.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install maintainer-only Windows cross compiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-i686 binutils-mingw-w64-i686
+      - name: Compile unchanged upstream gameplay and Windows resources
+        run: python3 third-party/winemine/build.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: win32-gui-upstream-fixture
+          path: tests/win32/artifacts/winemine-build/
+          retention-days: 14
