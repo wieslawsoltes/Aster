@@ -1,0 +1,72 @@
+name: Import verified visual material source
+on:
+  push:
+    branches: [feat/profile-fidelity-glass]
+    paths: ['.github/workflows/import-visual-materials.yml']
+permissions:
+  contents: write
+concurrency:
+  group: import-visual-materials
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate the complete bounded source delta before modifying files
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import base64, hashlib, json, lzma
+          encoded=''.join(Path(f'.transfer/visual-{i}.b64').read_text().strip() for i in range(5))
+          assert len(encoded)==39904
+          compressed=base64.b64decode(encoded,validate=True)
+          assert hashlib.sha256(compressed).hexdigest()=='a98185e4ce33d19ff95e485ef9132f80335064641f297a88e33242b9f36f9382'
+          decoder=lzma.LZMADecompressor(memlimit=128*1024*1024)
+          raw=decoder.decompress(compressed,max_length=113269)
+          assert decoder.eof and not decoder.unused_data and len(raw)==113268
+          assert hashlib.sha256(raw).hexdigest()=='0c48fd34ee3cfcb39ca89489d2bd8a5d93c596138ebac99a239be93f3065a935'
+          changes=json.loads(raw)
+          allowed={'.gitignore','README.md','docs/visual-materials.md','index.html','src/core.js','src/liquid-material.js','src/material-optics.js','src/profile-artwork.js','src/renderer.js','src/shell.js','src/theme-engine.js','src/theme-models.js','src/theme-settings.js','src/theme-shell.js','src/visual-profiles.css','sw.js','tests/visual-materials/README.md','tests/visual-materials/browser.py','tests/visual-materials/models.cjs'}
+          assert len(changes)==19 and {c['path'] for c in changes}==allowed
+          outputs=[]
+          for c in changes:
+              path=PurePosixPath(c['path']);p=Path(path)
+              assert not path.is_absolute() and '..' not in path.parts and not p.is_symlink()
+              assert p.resolve().is_relative_to(Path.cwd())
+              if c['before'] is None:
+                  assert not p.exists(),str(p)
+                  data=c['content'].encode('utf-8')
+              else:
+                  before=p.read_bytes()
+                  assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent change: '+str(p)
+                  text=before.decode('utf-8');last=0
+                  for a,b,value in c['ops']:
+                      assert isinstance(a,int) and isinstance(b,int) and last<=a<=b<=len(text) and isinstance(value,str)
+                      last=b
+                  for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+                  data=text.encode('utf-8')
+              assert hashlib.sha256(data).hexdigest()==c['after'],'Output mismatch: '+str(p)
+              outputs.append((p,data))
+          for p,data in outputs:p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)
+          print('Verified all 19 editable source paths.')
+          PY
+      - name: Check optical fields, inherited contracts and rebuilt standalone
+        run: |
+          for f in src/*.js src/win32/*.js sw.js; do node --check "$f"; done
+          python3 -m py_compile build.py tests/visual-materials/browser.py
+          python3 build.py
+          node --test tests/visual-materials/models.cjs tests/themes/models.cjs tests/themes/win32.cjs tests/web-chrome/models.cjs tests/shell-launch/models.cjs tests/file-workflows/models.cjs tests/integrated-shell/contracts.cjs tests/desktop-features/models.cjs tests/web-apps/catalog.cjs
+          git diff --check
+      - name: Commit editable source and remove transfer parts
+        run: |
+          rm -rf .transfer
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m 'Refine Windows, macOS and Ubuntu profiles with bounded refractive glass materials'
+          git push origin HEAD:feat/profile-fidelity-glass
