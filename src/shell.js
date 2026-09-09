@@ -175,7 +175,8 @@
         setTimeout(() => input.focus(), 40);
     };
     OS.togglePin = async (id) => { OS.pins = OS.pins.includes(id) ? OS.pins.filter(x => x !== id) : [...OS.pins, id]; await OS.db.set('taskbarPins', OS.pins); renderTaskbar(); };
-    function showPreview(id, anchor) { const windows = Array.from(OS.windows.values()).filter(w => w.appId === id); if (!windows.length)
+    OS.cancelTaskPreviewTimer=()=>clearTimeout(previewTimer);
+    function showPreview(id, anchor) { if(OS.showTaskWindows)return OS.showTaskWindows(id,anchor);const windows = Array.from(OS.windows.values()).filter(w => w.appId === id); if (!windows.length)
         return; if (panel && panel !== 'preview')
         return; const p = OS.el('div', { class: 'task-preview flyout' }); for (const w of windows.slice(0, 4)) {
         const card = OS.el('div', { class: 'preview-card', role: 'button', tabindex: '0' }), header = OS.el('div', { class: 'row' }), title = OS.el('div', { class: 'preview-title grow', text: w.title }), close = iconButton('close', 'Close ' + w.title, () => { });
@@ -217,6 +218,19 @@
             else
                 windows[0].restore();
         } };
+        b.onkeydown=e=>{
+            if(e.altKey&&e.shiftKey&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)&&OS.pins.includes(id)){
+                e.preventDefault();e.stopPropagation();OS.guard(()=>OS.taskbarPinMove(id,['ArrowLeft','ArrowUp'].includes(e.key)?-1:1))();return;
+            }
+            if(['ArrowUp','ArrowDown'].includes(e.key)&&windows.length){e.preventDefault();e.stopPropagation();clearTimeout(previewTimer);OS.showTaskWindows?.(id,b,true);}
+        };
+        if(OS.pins.includes(id)){
+            b.draggable=true;
+            b.ondragstart=e=>{clearTimeout(previewTimer);OS.closePanels();e.dataTransfer.setData('application/x-aster-taskbar-pin',id);e.dataTransfer.effectAllowed='move';};
+            b.ondragover=e=>{if([...e.dataTransfer.types].includes('application/x-aster-taskbar-pin')){e.preventDefault();e.dataTransfer.dropEffect='move';b.classList.add('pin-drop-target');}};
+            b.ondragleave=()=>b.classList.remove('pin-drop-target');
+            b.ondrop=OS.guard(async e=>{e.preventDefault();e.stopPropagation();b.classList.remove('pin-drop-target');await OS.moveTaskbarPin(e.dataTransfer.getData('application/x-aster-taskbar-pin'),id);});
+        }
         b.onauxclick = e => { if (e.button === 1) {
             e.preventDefault();
             OS.openApp(id);

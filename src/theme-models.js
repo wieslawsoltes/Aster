@@ -28,7 +28,7 @@
         shellMode: 'light', appMode: 'light', accent: '#176ae6', selection: '#176ae6', autoAccent: false,
         accentOnShell: false, accentOnTitle: false, transparency: true, motion: true,
         optics: {quality:'balanced',bend:65,dispersion:8,magnify:true},
-        glass: 'clear', iconStyle: 'colorful', font: 'system', fontSize: 13, titleHeight: 32,
+        glass: 'clear', iconStyle: 'colorful', iconFamily: 'auto', font: 'system', fontSize: 13, titleHeight: 32,
         borderWidth: 1, radius: 8, scrollbarWidth: 10,
         taskbar: { position: 'bottom', align: 'center', size: 40, autoHide: false, showSearch: true, showTaskView: true, showWidgets: true },
         background: { type: 'builtin', builtin: 'bloom', color: '#123b75', fit: 'fill', images: [], interval: 60000, shuffle: false },
@@ -48,6 +48,7 @@
         for (const k of ['autoAccent','accentOnShell','accentOnTitle','transparency','motion']) t[k] = bool(o[k], b[k]);
         const optics=o.optics||{};t.optics={quality:choice(optics.quality,['balanced','high','blur'],'balanced'),bend:number(optics.bend,0,100,65),dispersion:number(optics.dispersion,0,25,8),magnify:bool(optics.magnify,true)};
         t.glass = choice(o.glass, ['clear','tinted'], b.glass); t.iconStyle = choice(o.iconStyle, ['colorful','dark','tinted','clear'], b.iconStyle);
+        t.iconFamily = choice(o.iconFamily, ['auto','windows','macos26','ubuntu','prism'], 'auto');
         t.font = choice(o.font, ['system','sans','serif','mono'], b.font);
         for (const [k,min,max] of [['fontSize',11,22],['titleHeight',30,52],['borderWidth',1,4],['radius',0,20],['scrollbarWidth',8,24]]) t[k] = number(o[k],min,max,b[k]);
         const bar = o.taskbar || {}, db = b.taskbar;

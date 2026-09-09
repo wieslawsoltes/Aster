@@ -38,6 +38,14 @@
             const virtualSelection = (paths=[...selected],dir=targetDir()) => !dir.startsWith('/Local') && paths.every(p=>!p.startsWith('/Local/'));
             const importFiles = async (files,dir=targetDir()) => dir.startsWith('/Local/') ? OS.fs.import(files,dir) : OS.fileOps.execute({kind:'import',destination:dir,files:files.map(f=>({name:f.name,content:f,mime:f.type||OS.fs.mime(f.name)}))});
             const selectedRows = () => rows.filter(e => selected.has(e.path));
+            const quickPreview=()=>{
+                if(archiveActive)throw Error('Extract this file before previewing it.');
+                const candidates=rows.filter(e=>e.kind==='file'&&!e.native&&AsterDesktopRefinementModels.virtualPath(e.path)).map(e=>e.path);
+                const selectedPath=[...selected][0],index=candidates.indexOf(selectedPath);
+                if(index<0)return;
+                return OS.previewFiles(candidates,index,w);
+            };
+
             const newItem = async (kind) => { const dir = targetDir(); if (dir === '/.Trash')
                 throw Error('Create files outside the Recycle Bin.'); const name = await OS.prompt(kind === 'directory' ? 'New folder' : 'New text document', kind === 'directory' ? 'New folder' : 'Untitled.txt'); if (name === null)
                 return; OS.fs.validateName(name); const p = OS.fs.join(dir, name); if (await OS.fs.stat(p))
@@ -127,7 +135,7 @@
                                 await OS.fileOps.execute({kind:'restore',paths:sel.map(f=>f.path)});
                             }
                             else
-                                openSelection(); } }, ...(!inTrash && sel.length === 1 && sel[0].kind === 'file' ? [{ text: 'Open with…', icon: 'file', action: () => OS.showOpenWith(sel[0].path) }] : []), null, { text: 'Cut', icon: 'cut', key: 'Ctrl+X', disabled: inTrash, action: () => copy(true) }, { text: 'Copy', icon: 'copy', key: 'Ctrl+C', disabled: inTrash, action: () => copy(false) }, { text: 'Rename', icon: 'rename', key: 'F2', disabled: !sel.length || inTrash || sel.length>1&&!virtualSelection(), action: rename }, { text: inTrash ? 'Delete permanently' : 'Delete', icon: 'trash', key: 'Del', danger: true, action: remove }, { text: 'Download', icon: 'download', action: download }, null, { text: 'Properties', icon: 'info', action: properties }] : [
+                                openSelection(); } }, ...(!inTrash && sel.length === 1 && sel[0].kind === 'file' ? [{ text: 'Open with…', icon: 'file', action: () => OS.showOpenWith(sel[0].path) }, {text:'Quick preview',icon:'eye',key:'Space',disabled:sel[0].native,action:quickPreview}] : []), null, { text: 'Cut', icon: 'cut', key: 'Ctrl+X', disabled: inTrash, action: () => copy(true) }, { text: 'Copy', icon: 'copy', key: 'Ctrl+C', disabled: inTrash, action: () => copy(false) }, { text: 'Rename', icon: 'rename', key: 'F2', disabled: !sel.length || inTrash || sel.length>1&&!virtualSelection(), action: rename }, { text: inTrash ? 'Delete permanently' : 'Delete', icon: 'trash', key: 'Del', danger: true, action: remove }, { text: 'Download', icon: 'download', action: download }, null, { text: 'Properties', icon: 'info', action: properties }] : [
                         { text: 'New folder', icon: 'folder', disabled: inTrash, action: () => newItem('directory') }, { text: 'New text document', icon: 'file', disabled: inTrash, action: () => newItem('file') }, { text: 'Paste', icon: 'paste', disabled: !OS.clipboard || inTrash, action: paste }, { text: 'Refresh', icon: 'refresh', action: render }, { text: 'Open in Terminal', icon: 'terminal', action: () => OS.launch('terminal', { cwd: targetDir() }) }
                     ])
                 ]);
@@ -203,7 +211,7 @@
                 if(previewURL){URL.revokeObjectURL(previewURL);previewURL='';}
                 details.replaceChildren();
                 if (!e) {
-                    details.innerHTML = `<div class="detail-preview">${OS.icon('taskview', 56)}</div><h3>A little more detail</h3><p class="muted" style="font-size:11px;line-height:1.7">Select a file to see its information.<br>Double-click to open it.</p><div class="spacer"></div><span class="pill">${OS.icon('shield', 12)} Local-first, always</span>`;
+                    details.innerHTML = `<div class="detail-preview">${OS.icon('taskview', 56)}</div><h3>A little more detail</h3><p class="muted" style="font-size:11px;line-height:1.7">Select a file to see its information.<br>Press Space for Quick Preview.</p><div class="spacer"></div><span class="pill">${OS.icon('shield', 12)} Local-first, always</span>`;
                     return;
                 }
                 details.innerHTML = `<div class="detail-preview">${OS.fileIcon(e, 64)}</div><h3 style="word-break:break-word">${esc(displayName(e))}</h3><span class="muted" style="font-size:11px">${esc(fileType(e))}</span><dl class="detail-info"><dt>Location</dt><dd>${esc(OS.fs.parent(e.originalPath || e.path))}</dd><dt>Modified</dt><dd>${e.modified ? esc(new Date(e.modified).toLocaleString()) : '—'}</dd><dt>Size</dt><dd>${e.kind === 'directory' ? 'Folder' : OS.formatBytes(e.size)}</dd><dt>Stored in</dt><dd>${e.native ? 'Your connected local folder' : 'This browser'}</dd></dl>`;
@@ -412,6 +420,7 @@
                         break;
                 }
             }
+            else if(e.key === ' ' && !e.ctrlKey && !e.metaKey && !e.altKey){e.preventDefault();e.stopPropagation();OS.guard(quickPreview)();}
             else if (e.key === 'Delete') {
                 e.preventDefault();
                 OS.guard(remove)();

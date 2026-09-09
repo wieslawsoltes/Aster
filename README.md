@@ -1,3 +1,19 @@
+## Aster 1.9.4 — adaptive artwork and integrated desktop workflows
+
+Original **Aster Atelier** icons now follow the selected desktop: distinct layered
+objects for Windows, rounded layered enclosures for macOS, and sculpted geometric
+objects for Ubuntu/GNOME. Override the family in **Settings → Personalization →
+Window metrics → Icon design**; legacy Prism remains selectable.
+
+**Quick Preview** opens real virtual files with Space in Explorer, including inert
+text/code, raster images and browser-supported media. The taskbar/Dock window list
+now exposes more than four windows, supports keyboard navigation and safe closing.
+Pinned apps can be reordered by dragging or Alt+Shift+arrow keys. Show Desktop
+retains an independent restore set for each virtual desktop.
+
+[Implementation, bounds and design references](docs/desktop-refinement.md) ·
+[Verification instructions](tests/desktop-refinement/README.md)
+
 ## Aster 1.9.3 — working caption targets and original artwork
 
 The macOS-style caption controls now sit above glass decoration and have larger
