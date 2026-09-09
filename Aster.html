@@ -10220,7 +10220,7 @@ struct Params { size:vec2f, radius:f32, rim:f32, grid:vec2u, pad:vec2u };
         cover.onkeydown=e=>{
             if(e.key==='Escape'||(e.code==='Space'&&!e.target.closest('button,audio,video,input'))){e.preventDefault();e.stopPropagation();finish();return;}
             if(['ArrowLeft','ArrowRight'].includes(e.key)&&!e.target.closest('audio,video')){e.preventDefault();e.stopPropagation();if(e.key==='ArrowLeft')before.click();else after.click();return;}
-            if(e.key==='Tab'){const nodes=[...dialog.querySelectorAll('button:not(:disabled),[tabindex="0"],audio,video')];const i=nodes.indexOf(document.activeElement);e.preventDefault();nodes[(i+(e.shiftKey?nodes.length-1:1))%nodes.length]?.focus();}
+            if(e.key==='Tab'){const nodes=[...dialog.querySelectorAll('button:not(:disabled),[tabindex="0"],audio,video')];const i=nodes.indexOf(document.activeElement);e.preventDefault();const next=i<0?(e.shiftKey?nodes.length-1:0):(i+(e.shiftKey?nodes.length-1:1))%nodes.length;nodes[next]?.focus();}
             e.stopPropagation();
         };
         dialog.focus();await load(index);return{close:finish};
