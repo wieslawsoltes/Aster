@@ -15,3 +15,18 @@ test('Concurrent dirty close requests share one prompt and cancellation preserve
 test('Confirmation exceptions clear the guard so close can be tried again',async()=>{const OS=windows();let calls=0;const w=Object.assign(Object.create(OS.DesktopWindow.prototype),{closed:false,beforeClose:()=>{calls++;throw Error('confirmation failed');}});await assert.rejects(w.close(),/confirmation failed/);assert.equal(w.closePending,null);await assert.rejects(w.close(),/confirmation failed/);assert.equal(calls,2);});
 test('Center respects the current theme work area without changing window dimensions',()=>{const OS=windows();OS.viewport=()=>({w:1000,h:720});const w=Object.assign(Object.create(OS.DesktopWindow.prototype),{rect:{x:30,y:70,w:500,h:400},sync(){},focus(){},closed:false,maximized:false});w.center();assert.deepEqual(w.rect,{x:250,y:160,w:500,h:400});});
 test('Rebuilt static/standalone/cache all include the UI fix and original artwork',()=>{for(const name of ['src/ui-refinement.css','src/profile-artwork.js']){assert(read('index.html').includes(name));assert(read('sw.js').includes(name));assert(read('Aster.html').includes(read(name).slice(0,90)));}});
+test('Closing Run releases its dialog guard while an earlier launch is still pending',async()=>{
+    // Execute the actual production dialog method. Only DOM and async launch
+    // dependencies are controlled here; the inherited browser suite uses real apps.
+    const source=read('src/shell-launch.js'),start=source.indexOf('    OS.showRun=async'),end=source.indexOf('    OS.shellLaunch=',start);
+    let resolveLaunch,launchCalls=0;const launching=new Promise(r=>resolveLaunch=r),dialogs=[];
+    const input={value:'calc',setAttribute(){},focus(){},select(){}},yes={addEventListener(){}};
+    const dialog={querySelector:q=>q==='input'?input:yes},OS={apps:new Map(),closePanels(){},guard:f=>f,
+        el:()=>({append(){},setAttribute(){}}),dialog:()=>new Promise(resolve=>dialogs.push(resolve))};
+    vm.runInNewContext('let runOpen=false;'+source.slice(start,end),{OS,$:()=>dialog,state:{runHistory:[]},note:()=>null,button:()=>null,M:{parseRun(){}},executeRun:()=>{launchCalls++;return launching;}});
+    const first=OS.showRun();await OS.showRun();assert.equal(dialogs.length,1,'Only one dialog may be open');
+    dialogs[0]('calc');await Promise.resolve();await Promise.resolve();assert.equal(launchCalls,1);
+    const next=OS.showRun();assert.equal(dialogs.length,2,'A completed dialog must not stay locked by slow launch/history persistence');
+    dialogs[1](null);await next;resolveLaunch('application');assert.equal(await first,'application');
+    const third=OS.showRun();assert.equal(dialogs.length,3);dialogs[2](null);await third;
+});

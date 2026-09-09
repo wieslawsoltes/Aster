@@ -98,6 +98,7 @@
     }
     OS.showRun=async(initialValue='')=>{
         if(runOpen)return;runOpen=true;OS.closePanels?.();
+        let value=null;
         const hint=OS.el('div',{class:'run-options'}),examples=OS.el('div',{class:'run-examples'});
         hint.append(note('Open an Aster app, saved file or folder. Examples: calc, notepad /Documents/note.txt, C:\\Documents, ms-settings:defaultapps. Commands never run on the host OS.'),examples);
         try {
@@ -107,8 +108,11 @@
             for(const text of ['calc','explorer','ms-settings:defaultapps','shell:startup'])examples.append(button(text,()=>{input.value=text;input.focus();}));
             const error=OS.el('p',{class:'run-error',role:'alert'});hint.append(error);
             const yes=dialog.querySelector('.dialog-actions .primary');yes.addEventListener('click',e=>{try{M.parseRun(input.value,[...OS.apps.values()].filter(a=>!a.hidden));}catch(err){e.preventDefault();e.stopImmediatePropagation();error.textContent=err.message;input.focus();}},true);
-            const value=await pending;if(value!==null)return await executeRun(value);
+            value=await pending;
         } finally {runOpen=false;}
+        // The guard belongs to the visible dialog, not to app readiness or
+        // IndexedDB history persistence. A quick second Run must remain usable.
+        if(value!==null)return executeRun(value);
     };
     OS.shellLaunch={get state(){return structuredClone(state);},setDefault,launchFile,remember,pin,setTracking,clearRecent,setStartup,executeRun,save,
         async resetDefaults(){state.defaults={};await save();emit();},async clearRun(){state.runHistory=[];await save();OS.emit('shell-launch');}};

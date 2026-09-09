@@ -107,6 +107,21 @@ prove every operation in all 74 external websites, hardware GPU performance,
 Safari rendering or host permission dialogs. This pass does not expand the
 Win32 instruction/API subset or implement the missing native compositor effects.
 
+## Additional verification findings
+
+Run's open-dialog guard previously remained held while the chosen app mounted
+and its command history was saved. A second Run shortcut during that interval
+could be silently ignored even though the dialog had disappeared. The guard now
+ends with the visible dialog, not the asynchronous launch. A model regression
+executes the actual production dialog method with delayed launch dependencies;
+the inherited HTTP/standalone suite retains its real consecutive Run commands.
+
+The column-sort test waits for the actual IndexedDB-backed ascending/descending
+header state rather than asserting against the old render. The offline test
+minimizes the deliberately restored always-on-top editor through its real
+caption before clicking the underlying Explorer. It does not force clicks
+through an intentionally higher window or disable window stacking.
+
 ## Primary behavior references
 
 Reviewed September 9, 2026. Aster's original artwork is deliberately not modeled

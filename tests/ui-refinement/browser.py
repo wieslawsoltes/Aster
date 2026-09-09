@@ -257,6 +257,10 @@ def main(args):
                 check('Pinned-window state and theme survive a real page reload',persist)
                 if args.standalone:
                     clean();context.set_offline(True);page.reload();page.wait_for_function('window.Aster?.booted && Aster.iconArtwork');page.locator('#boot').wait_for(state='detached')
+                    # The preceding case intentionally persisted an on-top editor.
+                    # Minimize it through its actual caption before testing a window below it.
+                    page.locator('.window[data-app=notepad] [data-window-action=minimize]').click()
+                    page.wait_for_function('[...Aster.windows.values()].find(w=>w.appId==="notepad")?.minimized')
                     app('files');page.locator('.window[data-app=files] [data-window-action=maximize]').click();js('assert(w.maximized);')
                     report['tests'].append({'name':'Standalone icons and controls work with networking disabled','status':'PASS'})
             assert not report['errors'], report['errors']
