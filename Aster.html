@@ -9488,6 +9488,7 @@ struct Params { size:vec2f, radius:f32, rim:f32, grid:vec2u, pad:vec2u };
     // verified backend. Other engines deliberately use the labeled blur tier.
     const blink=/(?:Chrome|Chromium|Edg|OPR)\//.test(navigator.userAgent)&&!/EdgiOS|CriOS|OPiOS/.test(navigator.userAgent);
     const svgCapable=blink&&typeof SVGFEImageElement!=='undefined'&&CSS.supports('backdrop-filter','url("#aster-test")');
+    let needsField=false;
     let svg=null,defs=null,serial=0,scheduled=0,epoch=0,disposed=false,builds=0,hits=0,gpuBuilds=0,cpuBuilds=0,fieldBackend='CPU',reason='',pipeline=null,pipelineDevice=null,gpuQueue=Promise.resolve(),gpuLive=0;
     let sheenFrame=0,pointer=null,lastSheen=null,dockFrame=0,dockPointer=null,lastDock=null;
     const svgNode=(name,attrs={})=>{const n=document.createElementNS(NS,name);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,String(v));return n;};
@@ -9549,7 +9550,7 @@ struct Params { size:vec2f, radius:f32, rim:f32, grid:vec2u, pad:vec2u };
     function visible(el){return el.isConnected&&!el.hidden&&!el.closest('[hidden],.minimized,.other-desktop')&&el.getClientRects().length>0;}
     function schedule(){if(disposed||scheduled||document.hidden)return;scheduled=requestAnimationFrame(reconcile);}
     function reconcile(){
-        scheduled=0;const c=config();document.body.dataset.glassBackend=c.opaque?'opaque':c.enabled?(svgCapable&&c.optics.quality!=='blur'?'svg-refraction':'css-blur'):'off';
+        scheduled=0;const c=config();needsField=c.enabled&&svgCapable&&c.optics.quality!=='blur';document.body.dataset.glassBackend=c.opaque?'opaque':c.enabled?(svgCapable&&c.optics.quality!=='blur'?'svg-refraction':'css-blur'):'off';
         document.body.classList.toggle('material-reduced-motion',!c.motion);document.body.classList.toggle('material-contrast',media.contrast.matches);document.body.classList.toggle('material-solid',c.opaque);
         if(!c.enabled){if(active.size||cache.size)clear();return;}
         const nodes=[...document.querySelectorAll(priority),...document.querySelectorAll(selector)].filter((el,i,a)=>a.indexOf(el)===i&&visible(el));
@@ -9594,7 +9595,7 @@ struct Params { size:vec2f, radius:f32, rim:f32, grid:vec2u, pad:vec2u };
     const disposers=['theme-change','renderer','windows','ready','settings','desktop'].map(e=>OS.on(e,change));
     function destroy(){if(disposed)return;disposed=true;cancelAnimationFrame(scheduled);cancelAnimationFrame(sheenFrame);cancelAnimationFrame(dockFrame);clear();mutation.disconnect();resize.disconnect();document.removeEventListener('pointermove',pointerMove);document.removeEventListener('visibilitychange',visibility);for(const m of Object.values(media))m.removeEventListener('change',change);for(const off of disposers)off();}
     window.addEventListener('pagehide',e=>{if(!e.persisted)destroy();});
-    OS.materials={refresh:schedule,destroy,get diagnostics(){return{backend:document.body.dataset.glassBackend||'off',fieldBackend,surfaces:active.size,cache:cache.size,bytes:[...cache.values()].reduce((n,v)=>n+v.bytes,0),encodedBytes:[...cache.values()].reduce((n,v)=>n+v.encodedBytes,0),pending:pending.size,gpuLive,builds,hits,gpuBuilds,cpuBuilds,reason,limits:M.LIMITS};}};
+    OS.materials={refresh:schedule,destroy,get diagnostics(){const unresolved=needsField?[...active].filter(([el,state])=>visible(el)&&!state.resource).length:0;return{scheduled:!!scheduled,unresolved,settled:!scheduled&&!pending.size&&!gpuLive&&!unresolved,backend:document.body.dataset.glassBackend||'off',fieldBackend,surfaces:active.size,cache:cache.size,bytes:[...cache.values()].reduce((n,v)=>n+v.bytes,0),encodedBytes:[...cache.values()].reduce((n,v)=>n+v.encodedBytes,0),pending:pending.size,gpuLive,builds,hits,gpuBuilds,cpuBuilds,reason,limits:M.LIMITS};}};
     schedule();
 })();
 

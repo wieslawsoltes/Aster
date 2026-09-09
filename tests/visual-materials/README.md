@@ -26,3 +26,8 @@ not native OS visual parity. The GPU test requires production WebGPU field use
 and independently reads the compute output. Windows/macOS/Ubuntu light/dark and
 mobile screenshots are retained for review. Physical-GPU speed, Safari/Firefox
 rendering and native font metrics are outside this Chromium evidence.
+
+The material readiness gate includes scheduled reconciliation and unresolved visible
+surfaces, not just the current compute queue. Tests flush pending resize frames
+before awaiting that gate; software-GPU waits allow 60 seconds but preserve all
+optical-pixel and production-backend assertions.

@@ -27,12 +27,15 @@ def main(args):
             if sys.platform.startswith('linux'): flags+=['--enable-features=Vulkan','--use-angle=vulkan','--use-vulkan=swiftshader','--use-webgpu-adapter=swiftshader','--disable-vulkan-surface']
         browser=p.chromium.launch(headless=not args.headed,args=flags,**({'executable_path':args.browser} if args.browser else {}))
         context=browser.new_context(viewport={'width':1440,'height':1000},service_workers='allow')
-        page=context.new_page();page.set_default_timeout(20000)
+        page=context.new_page();page.set_default_timeout(60000 if args.gpu else 20000)
         page.on('pageerror',lambda e:report['errors'].append(str(e)))
         def js(source,arg=None): return page.evaluate('async arg=>{const OS=Aster;const assert=(v,m="Assertion failed")=>{if(!v)throw Error(m);};'+source+'}',arg)
         def settle():
-            page.wait_for_function('Aster.materials.diagnostics.pending===0 && Aster.materials.diagnostics.gpuLive===0',polling=100)
-            js('await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));')
+            # Flush queued style/ResizeObserver reconciliation BEFORE checking
+            # field completion. Waiting before rAF can observe an empty queue
+            # just before that frame starts new asynchronous GPU maps.
+            js('OS.materials.refresh();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));')
+            page.wait_for_function('Aster.materials.diagnostics.settled',polling=100)
         def clear(): js('OS.closePanels();for(const w of [...OS.windows.values()])await w.close(true);document.querySelectorAll(".toast").forEach(e=>e.remove());')
         def preset(id):
             report['currentProfile']=id;js('await OS.themes.select(arg);',id);settle()
