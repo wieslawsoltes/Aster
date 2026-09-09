@@ -1,0 +1,79 @@
+name: Import adaptive desktop source
+on:
+  push:
+    branches: [feat/adaptive-icons-desktop-preview]
+    paths: ['.github/workflows/import-adaptive-desktop.yml']
+permissions:
+  contents: write
+concurrency:
+  group: import-adaptive-desktop
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify the complete bounded source delta before writing files
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import base64, hashlib, json, lzma
+          encoded=''.join(Path(f'.transfer/atelier-{i}.b64').read_text().strip() for i in range(5))
+          assert len(encoded)==36816
+          packed=base64.b64decode(encoded,validate=True)
+          assert len(packed)==27612 and hashlib.sha256(packed).hexdigest()=='f2198c4196b379035f6a689c20b8f025610aaa1b304368555db0afce95ae8ea3'
+          decoder=lzma.LZMADecompressor(memlimit=128*1024*1024)
+          raw=decoder.decompress(packed,max_length=92213)
+          assert decoder.eof and not decoder.unused_data and len(raw)==92212
+          assert hashlib.sha256(raw).hexdigest()=='0518f4ca88d2321687af2cc283d82871fb1994eee2ada0fa5a9105de2db530b4'
+          changes=json.loads(raw)
+          allowed={'.gitignore','README.md','docs/desktop-refinement.md','index.html','src/apps-files.js','src/core.js','src/desktop-refinement-models.js','src/desktop-refinement.css','src/desktop-refinement.js','src/profile-artwork.js','src/shell.js','src/theme-engine.js','src/theme-models.js','src/theme-settings.js','sw.js','tests/desktop-refinement/README.md','tests/desktop-refinement/browser.py','tests/desktop-refinement/models.cjs'}
+          assert len(changes)==18 and {c['path'] for c in changes}==allowed
+          outputs=[]
+          for c in changes:
+              path=PurePosixPath(c['path']);p=Path(path)
+              assert not path.is_absolute() and '..' not in path.parts and not p.is_symlink()
+              if c['before'] is None:
+                  assert not p.exists(),str(p)
+                  data=c['content'].encode('utf-8')
+              else:
+                  before=p.read_bytes()
+                  assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent change: '+str(p)
+                  text=before.decode('utf-8');last=0
+                  for a,b,value in c['ops']:
+                      assert isinstance(a,int) and isinstance(b,int) and last<=a<=b<=len(text) and isinstance(value,str)
+                      last=b
+                  for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+                  data=text.encode('utf-8')
+              assert hashlib.sha256(data).hexdigest()==c['after'],'Output mismatch: '+str(p)
+              outputs.append((p,data))
+          for p,data in outputs:p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)
+          print('Verified all 18 editable source files.')
+          PY
+      - name: Rebuild standalone and validate models and inherited contracts
+        run: |
+          for f in src/*.js src/win32/*.js sw.js; do node --check "$f"; done
+          python3 -m py_compile build.py tests/desktop-refinement/browser.py
+          python3 build.py
+          node --test tests/desktop-refinement/models.cjs tests/ui-refinement/models.cjs tests/visual-materials/models.cjs tests/themes/models.cjs tests/themes/win32.cjs tests/shell-launch/models.cjs tests/file-workflows/models.cjs tests/integrated-shell/contracts.cjs tests/desktop-features/models.cjs tests/web-apps/catalog.cjs tests/web-chrome/models.cjs
+          git diff --check
+      - name: Commit editable source and remove staged transfer chunks
+        run: |
+          rm -rf .transfer
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m 'Integrate adaptive original icons, Quick Preview, taskbar ordering and desktop restoration'
+          git push origin HEAD:feat/adaptive-icons-desktop-preview
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: adaptive-source-import-diagnostics
+          path: |
+            src/desktop-refinement*.js
+            tests/desktop-refinement/
+          retention-days: 7
