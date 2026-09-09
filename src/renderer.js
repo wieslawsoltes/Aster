@@ -61,7 +61,11 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
   let q=abs(i.local-w.rect.zw*.5)-w.rect.zw*.5+radius;
   let d=min(max(q.x,q.y),0.)+length(max(q,vec2f(0.)))-radius;
   let cover=1.-smoothstep(-.5,.5,d);
-  let shadow=exp(-max(d,0.)/10.)*.20*w.extra.x;
+  let offset=select(select(4.,12.,w.extra.z>0.5),6.,w.extra.z>1.5);
+  let sigma=select(select(11.,19.,w.extra.z>0.5),13.,w.extra.z>1.5);
+  let sq=abs(i.local-vec2f(0,offset)-w.rect.zw*.5)-w.rect.zw*.5+radius;
+  let sd=min(max(sq.x,sq.y),0.)+length(max(sq,vec2f(0.)))-radius;
+  let shadow=exp(-pow(max(sd,0.)/sigma,2.)*.5)*.21*w.extra.x;
   let a=cover*w.fill.a+(1.-cover)*shadow;
   let tint=w.fill.rgb*cover*w.fill.a/max(a,.001);
   return vec4f(tint,a);
@@ -235,7 +239,8 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                 const themeColor = OS.themes?.tokens?.app?.mica;
                 const color = themeColor ? themeColor.slice(1).match(/../g).map(x=>parseInt(x,16)/255) : dark ? [.115, .13, .16] : [.948, .962, .983];
                 const uniform = new Float32Array([width, height, 0, this.ratio, 0, 0, 0, 0, 0, 0, 0, 0]);
-                const rect = new Float32Array([40, 40, w.rect.w, w.rect.h, ...color, 1, w.id === OS.focused ? 1 : .55, w.maximized ? 0 : (OS.themes?.metrics?.radius ?? 8), 0, 0]);
+                const fillAlpha = OS.themes?.chrome.profile === 'macos26' && !document.body.classList.contains('no-transparency') && !document.body.classList.contains('material-solid') ? 0 : 1;
+                const rect = new Float32Array([40, 40, w.rect.w, w.rect.h, ...color, fillAlpha, w.id === OS.focused ? 1 : .55, w.maximized ? 0 : (OS.themes?.metrics?.radius ?? 8), ({windows:0,macos26:1,ubuntu:2})[OS.themes?.chrome.profile]||0, 0]);
                 this.device.queue.writeBuffer(surface.uniform, 0, uniform);
                 this.device.queue.writeBuffer(surface.rect, 0, rect);
                 const p = encoder.beginRenderPass({ colorAttachments: [{ view: surface.context.getCurrentTexture().createView(), loadOp: 'clear', clearValue: { r: 0, g: 0, b: 0, a: 0 }, storeOp: 'store' }] });

@@ -18,3 +18,5 @@ tests/shell-launch/artifacts/
 tests/themes/artifacts/
 
 tests/web-chrome/artifacts/
+
+tests/visual-materials/artifacts/

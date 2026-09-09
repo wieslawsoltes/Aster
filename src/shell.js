@@ -273,7 +273,9 @@
     }
     function updateClock() { const el = $('#tray-clock'); if (el) {
         const now = new Date();
-        el.replaceChildren(OS.el('div', { text: OS.time(now) }), OS.el('div', { text: now.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }) }));
+        const profile=OS.themes?.chrome.profile||'windows';
+        if(profile!=='windows'){const date=now.toLocaleDateString(undefined,profile==='macos26'?{weekday:'short',month:'short',day:'numeric'}:{month:'short',day:'numeric'});el.replaceChildren(OS.el('span',{text:date+'  '+OS.time(now)}));}
+        else el.replaceChildren(OS.el('div', { text: OS.time(now) }), OS.el('div', { text: now.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }) }));
     } }
     OS.toggleQuick = () => {
         if (panel === 'quick') {

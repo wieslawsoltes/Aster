@@ -1,5 +1,16 @@
 # Aster Desktop
 
+## Aster 1.9.2 — refined profiles and refractive glass
+
+Windows, macOS 26 and Ubuntu now have refined caption controls, taskbar/Dock
+layouts, menus, Explorer/Settings spacing and original vector icons. macOS adds
+real browser-backdrop lensing, optional RGB dispersion, pointer highlights and
+Dock magnification, with WebGPU-computed or CPU-computed bounded normal maps.
+Choose **Personalization → Colors → Glass rendering** to tune the material.
+Accessibility retains solid/reduced-motion fallbacks, and web apps keep their
+compact titlebar-free layout. [Implementation, primary references and precise
+fidelity boundaries](docs/visual-materials.md).
+
 ## Aster 1.9.1 — compact web apps
 
 Web apps now hide the host title bar and address toolbar by default. Restore either

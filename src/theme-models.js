@@ -27,9 +27,10 @@
         version: 1, id: 'windows-light', title: 'Windows Light', profile: 'windows',
         shellMode: 'light', appMode: 'light', accent: '#176ae6', selection: '#176ae6', autoAccent: false,
         accentOnShell: false, accentOnTitle: false, transparency: true, motion: true,
-        glass: 'clear', iconStyle: 'colorful', font: 'system', fontSize: 13, titleHeight: 38,
+        optics: {quality:'balanced',bend:65,dispersion:8,magnify:true},
+        glass: 'clear', iconStyle: 'colorful', font: 'system', fontSize: 13, titleHeight: 32,
         borderWidth: 1, radius: 8, scrollbarWidth: 10,
-        taskbar: { position: 'bottom', align: 'center', size: 44, autoHide: false, showSearch: true, showTaskView: true, showWidgets: true },
+        taskbar: { position: 'bottom', align: 'center', size: 40, autoHide: false, showSearch: true, showTaskView: true, showWidgets: true },
         background: { type: 'builtin', builtin: 'bloom', color: '#123b75', fit: 'fill', images: [], interval: 60000, shuffle: false },
         cursor: { scheme: 'default', size: 24, custom: {} },
         sounds: { enabled: false, scheme: 'aster', volume: 35, events: {} },
@@ -45,6 +46,7 @@
         for (const k of ['shellMode','appMode']) t[k] = choice(o[k], ['light','dark','auto'], b[k]);
         for (const k of ['accent','selection']) t[k] = color(o[k], o.accent && k === 'selection' ? color(o.accent) : b[k]);
         for (const k of ['autoAccent','accentOnShell','accentOnTitle','transparency','motion']) t[k] = bool(o[k], b[k]);
+        const optics=o.optics||{};t.optics={quality:choice(optics.quality,['balanced','high','blur'],'balanced'),bend:number(optics.bend,0,100,65),dispersion:number(optics.dispersion,0,25,8),magnify:bool(optics.magnify,true)};
         t.glass = choice(o.glass, ['clear','tinted'], b.glass); t.iconStyle = choice(o.iconStyle, ['colorful','dark','tinted','clear'], b.iconStyle);
         t.font = choice(o.font, ['system','sans','serif','mono'], b.font);
         for (const [k,min,max] of [['fontSize',11,22],['titleHeight',30,52],['borderWidth',1,4],['radius',0,20],['scrollbarWidth',8,24]]) t[k] = number(o[k],min,max,b[k]);
@@ -95,7 +97,7 @@
     function merge(theme, patch) {
         const n = structuredClone(theme);
         for (const [key,v] of Object.entries(patch)) {
-            if (['taskbar','background','cursor','sounds','contrast'].includes(key)) n[key] = {...n[key], ...v};
+            if (['taskbar','background','cursor','sounds','contrast','optics'].includes(key)) n[key] = {...n[key], ...v};
             else n[key] = v;
         }
         return normalize(n);
@@ -105,8 +107,8 @@
         preset('windows-light','Windows Light',{}),
         preset('windows-dark','Windows Dark',{shellMode:'dark',appMode:'dark',background:{builtin:'midnight'}}),
         preset('windows-custom','Windows Custom',{shellMode:'dark',appMode:'light'}),
-        preset('macos26-light','macOS 26 · Glass',{profile:'macos26',accent:'#007aff',selection:'#007aff',radius:14,titleHeight:40,background:{builtin:'tahoe'},taskbar:{size:52}}),
-        preset('macos26-dark','macOS 26 · Dark',{profile:'macos26',shellMode:'dark',appMode:'dark',accent:'#82acff',selection:'#517eca',radius:14,titleHeight:40,glass:'tinted',background:{builtin:'tahoe'},taskbar:{size:52}}),
+        preset('macos26-light','macOS 26 · Glass',{profile:'macos26',accent:'#007aff',selection:'#007aff',radius:18,titleHeight:46,background:{builtin:'tahoe'},taskbar:{size:52}}),
+        preset('macos26-dark','macOS 26 · Dark',{profile:'macos26',shellMode:'dark',appMode:'dark',accent:'#82acff',selection:'#517eca',radius:18,titleHeight:46,glass:'tinted',background:{builtin:'tahoe'},taskbar:{size:52}}),
         preset('ubuntu-light','Ubuntu GNOME · Light',{profile:'ubuntu',accent:'#e95420',selection:'#c74414',radius:12,titleHeight:46,background:{builtin:'ubuntu'},taskbar:{position:'left',size:46}}),
         preset('ubuntu-dark','Ubuntu GNOME · Dark',{profile:'ubuntu',shellMode:'dark',appMode:'dark',accent:'#ed764c',selection:'#ba431f',radius:12,titleHeight:46,background:{builtin:'ubuntu'},taskbar:{position:'left',size:46}}),
         preset('aster-sage','Aster Sage',{accent:'#257966',selection:'#257966',background:{builtin:'sage'}}),

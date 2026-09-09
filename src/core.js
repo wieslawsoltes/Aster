@@ -2,7 +2,7 @@
 'use strict';
 (() => {
     const OS = window.Aster = {
-        version: '1.9.1', apps: new Map(), windows: new Map(), mounts: new Map(),
+        version: '1.9.2', apps: new Map(), windows: new Map(), mounts: new Map(),
         events: new EventTarget(), clipboard: null, started: performance.now(),
         metrics: { fps: 0, frameMs: 0, drawCalls: 0, mode: 'Starting', frames: [] },
         settings: { theme: 'light', accent: '#176ae6', wallpaper: 'bloom', transparency: true, motion: true,
@@ -111,6 +111,7 @@
     OS.appIcon = (id, size = 32) => {
         const spec = { files: ['folder', 'gold'], browser: ['globe', 'teal'], notepad: ['file', 'blue'], terminal: ['terminal', 'charcoal'], paint: ['paint', 'violet'], photos: ['image', 'blue'], media: ['play', 'coral'], calculator: ['calculator', 'slate'], settings: ['settings', 'slate'], calendar: ['calendar', 'blue'], clock: ['clock', 'slate'], tasks: ['check', 'blue'], taskmanager: ['gpu', 'teal'], store: ['store', 'blue'], code: ['code', 'violet'], mines: ['bug', 'green'], welcome: ['spark', 'blue'], win32: ['gpu', 'violet'], snips: ['cut', 'coral'], trash: ['trash', 'slate'] };
         const app = OS.apps.get(id);
+        const artwork = OS.visualIcon?.(id, size); if (artwork) return artwork;
         const [icon, color] = spec[id] || (app?.icon ? [app.icon, app.color || 'blue'] : ['code', 'violet']);
         return `<span class="app-icon app-icon-${color}" style="--icon-size:${size}px">${OS.icon(icon, Math.round(size * .72))}</span>`;
     };

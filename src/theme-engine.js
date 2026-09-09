@@ -36,7 +36,14 @@
     function palette(mode){return{...(mode==='dark'?dark:light)};}
     function applyTokens(){
         const root=document.documentElement,body=document.body,t=current,app=palette(resolveMode(t.appMode)),shell=palette(resolveMode(t.shellMode));
+        if(t.profile==='windows'){for(const [p,mode]of [[app,resolveMode(t.appMode)],[shell,resolveMode(t.shellMode)]])Object.assign(p,mode==='light'?{text:'#1a1a1a',muted:'#606060',surface:'#ffffff',surface2:'#fbfbfb',surface3:'#f3f3f3',mica:'#eef2f7',glass:'#f3f3f3',border:'#00000014'}:{text:'#ffffff',muted:'#c5c5c5',surface:'#2d2d2d',surface2:'#272727',surface3:'#323232',mica:'#202020',glass:'#282828',border:'#ffffff16'});}
+        if(t.profile==='macos26'){for(const [p,mode]of [[app,resolveMode(t.appMode)],[shell,resolveMode(t.shellMode)]])Object.assign(p,mode==='light'?{text:'#222225',muted:'#6c6c70',surface:'#ffffff',surface2:'#f6f6f8',surface3:'#e8e8ed',mica:'#eeedf1',glass:'#f4f3f7',border:'#0000001c'}:{text:'#f4f3f5',muted:'#ababaf',surface:'#29282c',surface2:'#242326',surface3:'#3a383e',mica:'#302e34',glass:'#37353c',border:'#ffffff20'});}
         if(t.profile==='ubuntu'){if(resolveMode(t.appMode)==='light')Object.assign(app,{surface2:'#fafafa',mica:'#ebebeb',surface3:'#eeeeee'});else Object.assign(app,{surface:'#303030',surface2:'#242424',mica:'#303030',surface3:'#3d3d3d'});Object.assign(shell,{text:'#ffffff',muted:'#dddddd',mica:'#242424',glass:'#242424',surface:'#333333',surface2:'#252525',surface3:'#3d3d3d',border:'#ffffff35',hover:'#ffffff20'});}
+        if(t.profile==='windows'&&t.transparency){
+            const bg=effectiveBackground(),tint=bg.type==='color'?bg.color:OS.themes?.imageAccent||({bloom:'#287dda',midnight:'#6c56b7',dusk:'#b24d80',sage:'#287e6c',tahoe:'#7d75e6',ubuntu:'#9c3659',graphite:'#788797'}[bg.builtin]||'#808080');
+            const mix=(a,b,n)=>'#'+a.slice(1).match(/../g).map((v,i)=>Math.round(parseInt(v,16)*(1-n)+parseInt(b.slice(1+i*2,3+i*2),16)*n).toString(16).padStart(2,'0')).join('');
+            app.mica=mix(app.mica,tint,resolveMode(t.appMode)==='dark'?.025:.035);
+        }
         let accent=t.accent;
         if(t.autoAccent){const bg=effectiveBackground();accent=({bloom:'#287dda',midnight:'#9583e8',dusk:'#b24d80',sage:'#287e6c',tahoe:'#7d75e6',ubuntu:'#e95420',graphite:'#aeb6c7'})[bg.builtin]||accent;if(bg.type==='color')accent=bg.color;else if(bg.images.length&&OS.themes.imageAccent)accent=OS.themes.imageAccent;}
         if(t.colors.Window)app.surface=t.colors.Window;if(t.colors.WindowText)app.text=t.colors.WindowText;
@@ -77,7 +84,7 @@
         if(key!==backgroundKey){backgroundKey=key;clearInterval(slideTimer);slideTimer=0;slideIndex=0;OS.themes.imageAccent=null;if(bg.type==='slideshow'&&bg.images.length>1)slideTimer=setInterval(()=>{if(!document.hidden)nextBackground();},bg.interval);}
         node.style.backgroundColor=bg.color;node.style.backgroundPosition='center';node.style.backgroundRepeat=bg.fit==='tile'?'repeat':'no-repeat';node.style.backgroundSize=bg.fit==='fit'?'contain':bg.fit==='stretch'?'100% 100%':['center','tile'].includes(bg.fit)?'auto':'cover';
         if(bg.type==='builtin'){node.style.backgroundImage=builtins[bg.builtin]||'none';node.hidden=!builtins[bg.builtin];}
-        else{node.hidden=false;node.style.backgroundImage=bg.type==='color'?'none':`url("${assetURL(bg.images[slideIndex%bg.images.length])}")`;if(bg.type!=='color'&&current.autoAccent&&!OS.themes.imageAccent)void calculateAccent(bg.images[slideIndex%bg.images.length]);}
+        else{node.hidden=false;node.style.backgroundImage=bg.type==='color'?'none':`url("${assetURL(bg.images[slideIndex%bg.images.length])}")`;if(bg.type!=='color'&&(current.autoAccent||current.profile==='windows')&&!OS.themes.imageAccent)void calculateAccent(bg.images[slideIndex%bg.images.length]);}
         document.documentElement.style.setProperty('--theme-lock-background',node.hidden?'linear-gradient(140deg,#114583,#3468ad)':(node.style.backgroundImage==='none'?bg.color:node.style.backgroundImage));
         node.dataset.fit=bg.fit;node.dataset.slide=String(slideIndex);
     }
@@ -181,7 +188,7 @@
         }catch(error){release();console.info('Theme sound unavailable:',error.message);return false;}
     }
     OS.themes={win32Colors,initialize,applyLegacy,apply,update,select,saveCurrent,remove,install,importFiles,exportTheme,addAssets,playSound,nextBackground,reflow,effectiveBackground,
-        get current(){return structuredClone(current);},get saved(){return structuredClone(saved);},get presets(){return structuredClone(M.PRESETS);},get tokens(){return tokens;},get metrics(){return {radius:current.radius,titleHeight:current.titleHeight};},get chrome(){return {profile:current.profile,taskbar:{...current.taskbar}};},get ready(){return initialized;},get revision(){return revision;},get pending(){return queue;},get diagnostics(){return{urls:urls.size,slideTimer:!!slideTimer,cursorTimer:!!cursorTimer,playing:soundJobs.size,audioEnded};},warnings:[],imageAccent:null,workArea:()=>M.layout(current,innerWidth,innerHeight),publicTheme};
+        get visual(){return{profile:current.profile,glass:current.glass,transparency:current.transparency,motion:current.motion,contrast:current.contrast.enabled,optics:{...current.optics}};},get current(){return structuredClone(current);},get saved(){return structuredClone(saved);},get presets(){return structuredClone(M.PRESETS);},get tokens(){return tokens;},get metrics(){return {radius:current.radius,titleHeight:current.titleHeight};},get chrome(){return {profile:current.profile,taskbar:{...current.taskbar}};},get ready(){return initialized;},get revision(){return revision;},get pending(){return queue;},get diagnostics(){return{urls:urls.size,slideTimer:!!slideTimer,cursorTimer:!!cursorTimer,playing:soundJobs.size,audioEnded};},warnings:[],imageAccent:null,workArea:()=>M.layout(current,innerWidth,innerHeight),publicTheme};
     OS.on('windows',()=>{if(initialized)renderBackground();});
     OS.on('window-ready',()=>{OS.decorateTaskbar?.($('#taskbar'));});
     OS.on('desktop-rendered',()=>{if(initialized)applyIcons();});
