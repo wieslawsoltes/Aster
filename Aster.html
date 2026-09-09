@@ -10201,6 +10201,8 @@ struct Params { size:vec2f, radius:f32, rim:f32, grid:vec2u, pad:vec2u };
                 if(kind==='metadata'||(kind!=='text'&&(entry.size||0)>M.PREVIEW_LIMIT)){body.replaceChildren(OS.el('div',{class:'quick-preview-fallback',html:OS.fileIcon(entry,64)}),message(kind==='metadata'?'No inline preview for this file type. Use Open in app to choose its normal handler.':'Media previews are limited to 16 MiB. The original file is unchanged.'));return;}
                 const file=await OS.fs.read(path);if(disposed||mine!==generation)return;
                 const blob=await OS.fs.blob(file);if(disposed||mine!==generation)return;
+                // The file may have been replaced after stat; bound actual bytes too.
+                if(kind!=='text'&&blob.size>M.PREVIEW_LIMIT){body.replaceChildren(message('Media previews are limited to 16 MiB. The original file is unchanged.'));return;}
                 if(kind==='text'){
                     const text=await blob.slice(0,M.TEXT_LIMIT).text();if(disposed||mine!==generation)return;
                     body.replaceChildren(OS.el('pre',{class:'quick-preview-text',text,tabindex:'0','aria-label':'File content'}));

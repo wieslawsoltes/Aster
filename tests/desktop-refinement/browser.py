@@ -105,7 +105,12 @@ def main(args):
                 page.get_by_text('This browser could not decode the file.',exact=False).wait_for();js('assert(OS.quickPreview.liveURLs===0);');page.keyboard.press('Escape')
                 js('''await OS.fs.write('/Documents/Preview/large.png',new Blob([new Uint8Array(16777217)],{type:'image/png'}),'image/png');await OS.previewFiles(['/Documents/Preview/large.png'],0,w);''')
                 page.get_by_text('Media previews are limited to 16 MiB.',exact=False).wait_for();js('assert(OS.quickPreview.liveURLs===0);assert((await OS.fs.stat("/Documents/Preview/large.png")).size===16777217);');page.keyboard.press('Escape')
-                return 'Corrupt media is reported and freed; oversized media is not loaded or modified'
+                # Pause real metadata lookup, then replace the actual stored file.
+                js('window.originalStat=OS.fs.stat;window.releaseStat=null;OS.fs.stat=async function(path){const entry=await originalStat.call(this,path);if(path.endsWith("h.png"))await new Promise(r=>releaseStat=r);return entry;};window.racedPreview=OS.previewFiles(["/Documents/Preview/h.png"],0,w);')
+                page.wait_for_function('!!releaseStat')
+                js('OS.fs.stat=originalStat;await OS.fs.write("/Documents/Preview/h.png",new Blob([new Uint8Array(16777217)],{type:"image/png"}),"image/png");releaseStat();await racedPreview;assert(OS.quickPreview.liveURLs===0);')
+                page.get_by_text('Media previews are limited to 16 MiB.',exact=False).wait_for();page.keyboard.press('Escape')
+                return 'Corrupt media is freed; metadata and actual byte-size limits hold even after concurrent replacement'
             check('Invalid and oversized media produce bounded non-destructive preview diagnostics',preview_limits)
             def late_preview():
                 clean();app('files',{'path':'/Documents/Preview'});js('window.originalRead=OS.fs.read;window.releasePreview=null;OS.fs.read=async function(path){const file=await originalRead.call(this,path);if(path.endsWith("c.png"))await new Promise(r=>releasePreview=r);return file;};void OS.previewFiles(["/Documents/Preview/c.png"],0,w);');page.wait_for_function('!!releasePreview');page.get_by_role('button',name='Close preview').click();js('releasePreview();OS.fs.read=originalRead;await new Promise(r=>setTimeout(r,30));assert(!OS.quickPreview.active&&OS.quickPreview.liveURLs===0);')
