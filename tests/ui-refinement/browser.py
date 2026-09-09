@@ -227,8 +227,10 @@ def main(args):
                 clean();preset('macos26-light');win=app('files',{'path':'/Documents'})
                 js('w.rect={x:80,y:75,w:690,h:540};w.sync();')
                 win.get_by_role('button',name='Sort by Date modified',exact=True).click()
+                page.wait_for_function('w.body.querySelectorAll(".file-table th")[1]?.getAttribute("aria-sort")==="ascending"')
                 js('const heads=[...w.body.querySelectorAll(".file-table th")];assert(heads[1].getAttribute("aria-sort")==="ascending");for(const th of heads){const b=th.querySelector("button"),r=th.getBoundingClientRect(),q=b.getBoundingClientRect();assert(q.right<=r.right+.5,"Header paints into next column");assert(getComputedStyle(b).textOverflow==="ellipsis");}')
                 win.get_by_role('button',name='Sort by Date modified',exact=True).click()
+                page.wait_for_function('w.body.querySelectorAll(".file-table th")[1]?.getAttribute("aria-sort")==="descending"')
                 js('assert(w.body.querySelectorAll(".file-table th")[1].getAttribute("aria-sort")==="descending");')
                 return 'Narrow column labels stay inside cells while full names and sorting remain accessible'
             check('Explorer header labels no longer overlap and expose live sort direction',column_headers)
