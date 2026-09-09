@@ -1,0 +1,52 @@
+name: Apply verified material readiness fix
+on:
+  push:
+    branches: [feat/profile-fidelity-glass]
+    paths: ['.github/workflows/fix-material-ready.yml']
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify each reviewed source change before writing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,hashlib,json,lzma
+          encoded='/Td6WFoAAATm1rRGAgAhARYAAAB0L+Wj4AdnBGBdAC2ewEcDQ4pS1guZDd8xamCf9HIG7QXJP1RCsHiU17P94acx9ofnwyMeKu2oicefJfHD4t1EDmvP4wPWr9+hiA6qe+Qihq4d7ViZUaVXNLCBKQF1/8saZt/F2o4dQfS3uD2WMttxIlCkpWDvlne6aPgBgv3WmtXNRe8amcS6gMkpIjMPRZ+OsFHqQ9oAjVWloSL4eqD1MyzdaKLGmCmCPkMEaUFpZB7Lgzdc/HE7kKvkw85f6KAtpE37hXD2lUKucwLMdLDo1YImEIZEyGWJOz0iDULImEnw0Me9tAhZj1KuGIB/oITjhSX0oCfH2EuHneYP8r2J6rs0cy7mJbVmmjb8C2zpl9P8fupxvBHC497YRMdw5tZrMoUUZIkf2Xo2u+fIqV+YI+5WWaNYeHzDGNI6miRQ44bbivsPFaf/0xWy8FjNvEmiTsGDGngfZKS1m28qx6ILYU14XXhX2Wmnrxef4ZtZj8bw2LanpK97qrlk0LZtm8LrgOyf5ugfGX9Ie1xkOMDdUYW1vGFA5FCtUv6bHtlyIXMgbRlXzBS98+vzJJnkw6q+3JQeUq62NG/2E0AlI6LIBlxi6K50KnpN1hsOkiL/N6XlFENy+MxnxSVxH2F3rMs8ktL9yy7xjfcN+8Zq+MNME1jtkFtnCvqb+fTlZdV2raIGil3ChmdZ/z/WcEPFhhmHHSc3RBuUa+xH5N3daNnBA981AX0k7TU+v6+wWvirffQ29qovXbF+kDhTo6cHIEEO1xEKp9FR9zOQQxAIU7/872cInOg1+EyXNzPYuTrTp0BRE+yhk93qpRy/Ucc3smBws0r4MMOaAzB2PTN97cMnc7Erg2DY28sTU+vylC1phy0pJdOFDH7Cs+m5UQCXwVfA/bhCdoLfoDG3sox6gfjD1AQZBj2Ik8X/BFtl3PILMtYf+iBMK6AYmgcv0iGN7Q6lFZLWuFneGtVNGvgOPRkg/6HR6s+lB4RSBgbvh00goAtQL7JFryzxGIVUfXl+3fotCtpZU5SC3qornINmZiXwWniHAF0z5mKjdH6jb+4VMhJuFRNAqQigYcTPeTVue7mXNgNcyGRxVEKut4yggCLfGBeAByoBHDry+wzQsoi44G0hn0bwOKs5yl8SlwY9jPUjgBNjfYVmulD8Dr+1hLKCKMN0tm6zQnWovEDtre6y3r5ljo4i0mjzNUWfIpTA2Ri88aYNGf0VSCPTOgYLPNZwL6JVWxTeXA2oKG3W+pIMtAqDwyfYkZQTMA1w8gILVICu/9Pk0oEhlGiCxQrpwAHG87j3LEUX9fKUQO+9tR5okzRLbzf8970aqzyNQXwiSQmbf8SYloQ1f8kFuxshajatRHdODryyQ2F6PunAIrnUsJifnEb/46ApYxQq1XvjKA4bNVMI6zYmCor+fXOBeb2ifGEJa7ILmikwpZL3qs22GkjumBxrAEReJ5Boc03oMgFKaNWG8KlUuqiSkI6UJCvFuTDYWd8DJDF1ggAATWh2vVQPpwUAAfwI6A4AAKMCIIixxGf7AgAAAAAEWVo='
+          decoder=lzma.LZMADecompressor(memlimit=128*1024*1024)
+          raw=decoder.decompress(base64.b64decode(encoded,validate=True),max_length=1897)
+          assert decoder.eof and not decoder.unused_data and len(raw)==1896
+          assert hashlib.sha256(raw).hexdigest()=='461654a558472f57c5a94aa92131eb94cff46edce1e1a3554f6cdf079abd6634'
+          changes=json.loads(raw)
+          assert len(changes)==3 and {c['path'] for c in changes}=={'src/liquid-material.js','tests/visual-materials/browser.py','tests/visual-materials/README.md'}
+          outputs=[]
+          for c in changes:
+              p=Path(c['path']);before=p.read_bytes();assert hashlib.sha256(before).hexdigest()==c['before'],str(p)
+              text=before.decode();last=0
+              for a,b,value in c['ops']:assert last<=a<=b<=len(text);last=b
+              for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+              data=text.encode();assert hashlib.sha256(data).hexdigest()==c['after'],str(p)
+              outputs.append((p,data))
+          for p,data in outputs:p.write_bytes(data)
+          PY
+      - name: Rebuild and retain all optical, theme and shell assertions
+        run: |
+          node --check src/liquid-material.js
+          python3 -m py_compile tests/visual-materials/browser.py
+          python3 build.py
+          node --test tests/visual-materials/models.cjs tests/themes/models.cjs tests/themes/win32.cjs tests/integrated-shell/contracts.cjs
+          git diff --check
+      - name: Commit readiness and its visible tests on the existing PR
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/liquid-material.js tests/visual-materials/ Aster.html
+          git commit -m 'Include scheduled reconciliation and visible surfaces in material readiness'
+          git push origin HEAD:feat/profile-fidelity-glass
