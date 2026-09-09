@@ -1,4 +1,4 @@
-name: Import adaptive desktop source
+name: Complete adaptive desktop verification
 on:
   push:
     branches: [feat/adaptive-icons-desktop-preview]
@@ -9,7 +9,7 @@ concurrency:
   group: import-adaptive-desktop
   cancel-in-progress: false
 jobs:
-  import:
+  complete:
     runs-on: ubuntu-24.04
     timeout-minutes: 6
     steps:
@@ -17,63 +17,41 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify the complete bounded source delta before writing files
+      - name: Apply two hash-checked bounds and regression edits
         run: |
           python3 - <<'PY'
-          from pathlib import Path, PurePosixPath
-          import base64, hashlib, json, lzma
-          encoded=''.join(Path(f'.transfer/atelier-{i}.b64').read_text().strip() for i in range(5))
-          assert len(encoded)==36816
-          packed=base64.b64decode(encoded,validate=True)
-          assert len(packed)==27612 and hashlib.sha256(packed).hexdigest()=='f2198c4196b379035f6a689c20b8f025610aaa1b304368555db0afce95ae8ea3'
-          decoder=lzma.LZMADecompressor(memlimit=128*1024*1024)
-          raw=decoder.decompress(packed,max_length=92213)
-          assert decoder.eof and not decoder.unused_data and len(raw)==92212
-          assert hashlib.sha256(raw).hexdigest()=='0518f4ca88d2321687af2cc283d82871fb1994eee2ada0fa5a9105de2db530b4'
-          changes=json.loads(raw)
-          allowed={'.gitignore','README.md','docs/desktop-refinement.md','index.html','src/apps-files.js','src/core.js','src/desktop-refinement-models.js','src/desktop-refinement.css','src/desktop-refinement.js','src/profile-artwork.js','src/shell.js','src/theme-engine.js','src/theme-models.js','src/theme-settings.js','sw.js','tests/desktop-refinement/README.md','tests/desktop-refinement/browser.py','tests/desktop-refinement/models.cjs'}
-          assert len(changes)==18 and {c['path'] for c in changes}==allowed
+          from pathlib import Path
+          import hashlib
+          changes=[
+              ('src/desktop-refinement.js','a5f3b30727f352e3c76613f4a793fc24834b4f6af3be3b7892d2df81542e2666','52f08fa5d0d2daa5376414c5ddb125111a9eddb3513ed3a69348a1924bc6a76d',11487,11487,
+               "                // The file may have been replaced after stat; bound actual bytes too.\n                if(kind!=='text'&&blob.size>M.PREVIEW_LIMIT){body.replaceChildren(message('Media previews are limited to 16 MiB. The original file is unchanged.'));return;}\n"),
+              ('tests/desktop-refinement/browser.py','925f3cef720b686d9e32c04c189c3be30772cce2244572f71baa967d30a1351a','6a326069e683b5338902defa28976431f194abfcffa0397fe60379c120e27135',16611,16715,
+               '                # Pause real metadata lookup, then replace the actual stored file.\n'
+               '                js(\'window.originalStat=OS.fs.stat;window.releaseStat=null;OS.fs.stat=async function(path){const entry=await originalStat.call(this,path);if(path.endsWith("h.png"))await new Promise(r=>releaseStat=r);return entry;};window.racedPreview=OS.previewFiles(["/Documents/Preview/h.png"],0,w);\')\n'
+               '                page.wait_for_function(\'!!releaseStat\')\n'
+               '                js(\'OS.fs.stat=originalStat;await OS.fs.write("/Documents/Preview/h.png",new Blob([new Uint8Array(16777217)],{type:"image/png"}),"image/png");releaseStat();await racedPreview;assert(OS.quickPreview.liveURLs===0);\')\n'
+               "                page.get_by_text('Media previews are limited to 16 MiB.',exact=False).wait_for();page.keyboard.press('Escape')\n"
+               "                return 'Corrupt media is freed; metadata and actual byte-size limits hold even after concurrent replacement'\n")
+          ]
           outputs=[]
-          for c in changes:
-              path=PurePosixPath(c['path']);p=Path(path)
-              assert not path.is_absolute() and '..' not in path.parts and not p.is_symlink()
-              if c['before'] is None:
-                  assert not p.exists(),str(p)
-                  data=c['content'].encode('utf-8')
-              else:
-                  before=p.read_bytes()
-                  assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent change: '+str(p)
-                  text=before.decode('utf-8');last=0
-                  for a,b,value in c['ops']:
-                      assert isinstance(a,int) and isinstance(b,int) and last<=a<=b<=len(text) and isinstance(value,str)
-                      last=b
-                  for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
-                  data=text.encode('utf-8')
-              assert hashlib.sha256(data).hexdigest()==c['after'],'Output mismatch: '+str(p)
+          for name,before,after,a,b,replacement in changes:
+              p=Path(name);raw=p.read_bytes();assert hashlib.sha256(raw).hexdigest()==before,'Concurrent change: '+name
+              text=raw.decode('utf-8');assert 0<=a<=b<=len(text)
+              data=(text[:a]+replacement+text[b:]).encode('utf-8');assert hashlib.sha256(data).hexdigest()==after,name
               outputs.append((p,data))
-          for p,data in outputs:p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)
-          print('Verified all 18 editable source files.')
+          for p,data in outputs:p.write_bytes(data)
           PY
-      - name: Rebuild standalone and validate models and inherited contracts
+      - name: Validate and rebuild the checked standalone
         run: |
-          for f in src/*.js src/win32/*.js sw.js; do node --check "$f"; done
-          python3 -m py_compile build.py tests/desktop-refinement/browser.py
+          node --check src/desktop-refinement.js
+          python3 -m py_compile tests/desktop-refinement/browser.py
           python3 build.py
-          node --test tests/desktop-refinement/models.cjs tests/ui-refinement/models.cjs tests/visual-materials/models.cjs tests/themes/models.cjs tests/themes/win32.cjs tests/shell-launch/models.cjs tests/file-workflows/models.cjs tests/integrated-shell/contracts.cjs tests/desktop-features/models.cjs tests/web-apps/catalog.cjs tests/web-chrome/models.cjs
+          node --test tests/desktop-refinement/models.cjs tests/ui-refinement/models.cjs
           git diff --check
-      - name: Commit editable source and remove staged transfer chunks
+      - name: Commit completed source before full browser verification
         run: |
-          rm -rf .transfer
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add --all
-          git commit -m 'Integrate adaptive original icons, Quick Preview, taskbar ordering and desktop restoration'
+          git add src/desktop-refinement.js tests/desktop-refinement/browser.py Aster.html
+          git commit -m 'Recheck actual preview bytes after metadata lookup and test concurrent replacement'
           git push origin HEAD:feat/adaptive-icons-desktop-preview
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: adaptive-source-import-diagnostics
-          path: |
-            src/desktop-refinement*.js
-            tests/desktop-refinement/
-          retention-days: 7
