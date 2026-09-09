@@ -1,26 +1,54 @@
-/* Original vector app artwork; no platform logos, proprietary icons or fonts. MIT. */
+/* Aster Prism: original geometric app artwork. MIT.
+ * The same owned symbols are used in every OS-inspired profile; no platform
+ * logos, smile-face file manager, compass, flower or marketplace monogram.
+ * ID-free SVGs avoid collisions when hundreds of icons share a document. */
 'use strict';
 (() => {
-    const OS=Aster;
-    const glyph={
-        files:`<g class="art-windows"><path fill="#cf8c13" d="M5 17a4 4 0 0 1 4-4h18l6 6h23a4 4 0 0 1 4 4v29H5z"/><path fill="#ffe18c" d="M8 23h47v27H8z"/><path fill="#ffd052" d="M4 28a3 3 0 0 1 3-3h51a3 3 0 0 1 3 4l-5 24H8z"/><path fill="#ffbe32" d="m4 29 4 24h48l3-14z"/></g><g class="art-macos"><rect x="3" y="3" width="58" height="58" rx="14" fill="#218afb"/><path fill="#9bd5ff" d="M34 3h13a14 14 0 0 1 14 14v30a14 14 0 0 1-14 14H33l-4-18h8l-4-16z"/><path d="M20 22v6m25-6v6M17 40q15 14 31 0M33 17l-5 19h9l-1 15" fill="none" stroke="#163e66" stroke-width="2.1" stroke-linecap="round"/></g><g class="art-ubuntu"><path fill="#923817" d="M4 18a5 5 0 0 1 5-5h18l7 7h20a5 5 0 0 1 5 5v28H4z"/><path fill="#f2be91" d="M8 23h46v26H8z"/><rect x="4" y="27" width="56" height="29" rx="4" fill="#eb955e"/><path fill="#ffffff25" d="M7 27h50v2H7z"/></g>`,
-        browser:`<circle cx="32" cy="32" r="28" fill="#29b8ec"/><circle cx="32" cy="32" r="23" fill="#167ad5"/><g stroke="#c9f5ff" fill="none" stroke-width="1.2"><circle cx="32" cy="32" r="19"/><path d="M13 32h38M32 13v38"/></g><path fill="#ff6156" d="m39 15-2 20-10-6z"/><path fill="white" d="m25 49 2-20 10 6z"/><circle cx="32" cy="32" r="3" fill="#164c7c"/>`,
-        notepad:`<rect x="10" y="7" width="44" height="51" rx="5" fill="#4c9bd1"/><rect x="14" y="6" width="40" height="49" rx="3" fill="#fcfdff"/><path fill="#fbdc68" d="M14 6h40v12H14z"/><path stroke="#a7c5d9" stroke-width="1.5" d="M22 25h24M22 32h24M22 39h24M22 46h17"/><path stroke="#486b8d" stroke-width="2" d="M22 4v7m9-7v7m9-7v7m9-7v7"/>`,
-        settings:`<rect x="3" y="3" width="58" height="58" rx="13" fill="#bcc1c6"/><path fill="#848c96" d="m26 7 12 0 2 8 7-3 7 9-5 6 8 4-2 11-8 0-1 8-11 4-4-7-8 3-7-9 5-6-8-4 2-11 8 0z"/><circle cx="32" cy="32" r="16" fill="#e8ebef"/><circle cx="32" cy="32" r="11" fill="#697686"/><circle cx="32" cy="32" r="6" fill="#bfc7d1"/>`,
-        terminal:`<rect x="3" y="6" width="58" height="52" rx="9" fill="#212329" stroke="#676a73" stroke-width="2"/><path d="m14 21 11 10-11 10m18 0h17" stroke="#eff4fa" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
-        calculator:`<rect x="10" y="3" width="45" height="58" rx="10" fill="#444851"/><rect x="15" y="9" width="35" height="15" rx="3" fill="#c5d6ce"/><path d="M20 33h4m13 0h6M22 31v4m-2 9h4m13-2 6 4m-6 0 6-4m-23 9h4" stroke="#fff" stroke-width="2" stroke-linecap="round"/><rect x="34" y="49" width="12" height="7" rx="2" fill="#f39c4b"/>`,
-        photos:`<rect x="3" y="3" width="58" height="58" rx="14" fill="#fbfbfd"/><g transform="translate(32 32)" opacity=".9"><ellipse rx="10" ry="21" cy="-7" fill="#f9b700"/><ellipse rx="10" ry="21" cy="-7" fill="#e04e5a" transform="rotate(60)"/><ellipse rx="10" ry="21" cy="-7" fill="#9c5fc8" transform="rotate(120)"/><ellipse rx="10" ry="21" cy="-7" fill="#40a4df" transform="rotate(180)"/><ellipse rx="10" ry="21" cy="-7" fill="#52ac82" transform="rotate(240)"/><ellipse rx="10" ry="21" cy="-7" fill="#a3ca40" transform="rotate(300)"/></g><circle cx="32" cy="32" r="6" fill="#fff9"/>`,
-        calendar:`<rect x="5" y="5" width="54" height="54" rx="10" fill="#fff"/><path fill="#f3564e" d="M5 17V15A10 10 0 0 1 15 5h34a10 10 0 0 1 10 10v7H5z"/><g stroke="#353c47" stroke-width="4" fill="none"><path d="M19 32h10l-7 18m13-18h9v18"/></g>`,
-        clock:`<circle cx="32" cy="32" r="28" fill="#fafafa" stroke="#c6cad0" stroke-width="2"/><g stroke="#454951" stroke-width="2"><path d="M32 7v4m0 42v4M7 32h4m42 0h4"/><path d="M32 17v16l10 7" fill="none" stroke-width="3" stroke-linecap="round"/></g><path stroke="#f55a51" stroke-width="1.5" d="M32 35V12"/><circle cx="32" cy="32" r="3" fill="#f55a51"/>`,
-        store:`<rect x="3" y="3" width="58" height="58" rx="14" fill="#168fea"/><path d="m19 47 15-28m-8 0 16 28M15 39h35" stroke="#fff" stroke-width="5" stroke-linecap="round"/><path d="M18 39h7" stroke="#9edaff" stroke-width="5" stroke-linecap="round"/>`,
-        trash:`<path d="m14 19 4 39h28l4-39" fill="#cdd6dc" stroke="#8e9fab" stroke-width="2"/><path d="M11 18h42M24 13V8h16v5M25 26l2 24m12-24-2 24" fill="none" stroke="#8b9aa8" stroke-width="3" stroke-linecap="round"/>`,
-        code:`<rect x="4" y="4" width="56" height="56" rx="12" fill="#7262cb"/><path d="m22 20-11 12 11 12m20-24 11 12-11 12M36 17l-9 30" fill="none" stroke="#f7f3ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`
+    const OS = Aster;
+    const paths = {
+        files: '<path d="M17 18h26v11H17zM21 35h26v11H21zM22 23h6m-2 17h6"/>',
+        browser: '<ellipse cx="32" cy="32" rx="18" ry="11" transform="rotate(-35 32 32)"/><path d="m25 19 15 26M19 33l26-4"/><circle cx="19" cy="25" r="3"/><circle cx="45" cy="38" r="3"/>',
+        notepad: '<path d="M18 15h22l7 7v27H18zM39 15v9h8M24 30h16m-16 7h16m-16 7h9"/>',
+        settings: '<path d="M16 21h32M16 32h32M16 43h32"/><rect x="22" y="17" width="7" height="8" rx="2"/><rect x="37" y="28" width="7" height="8" rx="2"/><rect x="25" y="39" width="7" height="8" rx="2"/>',
+        photos: '<path d="M17 19h31v25H17zM14 27v22h25m-20-8 8-9 7 5 6-7 6 7"/><circle cx="25" cy="26" r="2.5"/>',
+        store: '<path d="m22 15 8 5v10l-8 5-8-5V20zm20 16 8 5v10l-8 5-8-5V36zM39 16h12m-6-6v12M15 43h11"/>',
+        calculator: '<path d="M18 15h28v34H18zM23 21h18v7H23zM23 35h6m-3-3v6m10-3h6M23 43h6m7-2h6m-6 4h6"/>',
+        terminal: '<path d="M15 19h34v28H15zM16 25h32m-26 6 5 5-5 5m11 0h8"/>',
+        paint: '<path d="m19 44 4-10 19-19 7 7-19 19zm4-10 7 7m-15 9h24"/><circle cx="19" cy="20" r="3"/>',
+        media: '<path d="M15 22h6v21h-6zm28 0h6v21h-6zM27 18l13 14-13 14z"/>',
+        code: '<path d="m23 21-11 11 11 11m18-22 11 11-11 11M35 17l-6 30"/>',
+        snips: '<path d="M20 12v7h-7m31-7v7h7M13 44h7v7m31-7h-7v7M27 26l14 14m0-14L27 40"/>',
+        calendar: '<path d="M16 19h32v30H16zM16 28h32M24 14v9m16-9v9M23 35h5m8 0h5m-18 8h5"/>',
+        clock: '<path d="M25 14h14l11 11v14L39 50H25L14 39V25zM32 22v12l10 5"/>',
+        tasks: '<path d="m15 23 4 4 7-8m5 5h16M15 36l4 4 7-8m5 5h16M15 48h28"/>',
+        taskmanager: '<path d="M14 45V20m0 25h36M21 37v-9m9 9V16m9 21V25m9 12V20"/>',
+        mines: '<path d="M16 16h32v32H16zM27 16v32m10-32v32M16 27h32M16 37h32"/><circle cx="32" cy="32" r="3"/>',
+        welcome: '<path d="m32 14 6 12 13 6-13 6-6 13-6-13-13-6 13-6z"/><path d="m28 32 4-4 4 4-4 4z"/>',
+        win32: '<rect x="20" y="20" width="24" height="24" rx="4"/><path d="M26 12v8m12-8v8m-12 24v8m12-8v8M12 26h8m-8 12h8m24-12h8m-8 12h8M27 27h10v10H27z"/>',
+        trash: '<path d="M20 22h24l-2 28H22zM17 22h30M26 17h12m-10 12v14m8-14v14"/>',
+        clipboard: '<path d="M24 18h-7v31h30V18h-7M24 14h16v9H24zM24 32h16m-16 8h11"/>',
+        focus: '<path d="M22 16h-6v6m26-6h6v6M16 42v6h6m20 0h6v-6"/><circle cx="32" cy="32" r="10"/><circle cx="32" cy="32" r="3"/>',
+        widgets: '<path d="M15 15h14v20H15zM35 15h14v10H35zM15 41h14v8H15zM35 31h14v18H35z"/>',
+        workspaces: '<path d="M14 17h26v21H14zM24 43h25V26h-4M14 24h26"/>',
+        history: '<path d="M17 28a16 16 0 1 1 1 14M17 16v12h12M33 22v13h9"/>',
+        storage: '<path d="M16 19h32v11H16zM16 36h32v11H16zM22 24h3m-3 17h3m11-17h6m-6 17h6"/>',
+        archives: '<path d="M17 17h30v31H17zM29 17v5h6v6h-6v6h6v6h-6v8M14 17v-4h36v4"/>',
+        accessibility: '<circle cx="32" cy="18" r="5"/><path d="m16 28 16 5 16-5M32 33v9m0-1-10 11m10-11 10 11"/>',
+        recorder: '<path d="M14 20h28v26H14zm28 8 9-5v20l-9-5"/><circle cx="28" cy="33" r="7"/>'
     };
-    const cache=new Map();
-    OS.visualIcon=(id,size)=>{
-        if(!glyph[id])return null;
-        const key=id+':'+size;if(cache.has(key))return cache.get(key);
-        const result=`<span class="app-icon themed-app-icon" data-icon-id="${id}" style="--icon-size:${Math.max(8,Math.min(128,Number(size)||32))}px"><svg width="100%" height="100%" viewBox="0 0 64 64" fill="none" aria-hidden="true">${glyph[id]}</svg></span>`;
-        if(cache.size>=128)cache.delete(cache.keys().next().value);cache.set(key,result);return result;
+    const palettes = [['#245d73','#82d7d2'], ['#61447c','#d4b4ec'], ['#6a4d35','#edc38b'], ['#315d60','#a2ddbc'], ['#654353','#efa9bd'], ['#384e82','#a8c8fa']];
+    const order = Object.keys(paths), cache = new Map();
+    OS.visualIcon = (id, size = 32) => {
+        id = String(id || 'unknown'); size = Math.max(8, Math.min(128, Number.isFinite(Number(size)) ? Number(size) : 32));
+        const app = OS.apps?.get(id), glyph = paths[id] || null;
+        const key = id + ':' + size + ':' + (app?.icon || '');
+        if (cache.has(key)) return cache.get(key);
+        let hash = 0; for (const c of id.slice(0,128)) hash = (hash * 31 + c.charCodeAt(0)) >>> 0;
+        const [base, accent] = palettes[hash % palettes.length];
+        const symbol = glyph || OS.icon(app?.icon || 'code', 32).replace('<svg ', '<svg x="16" y="16" ');
+        const result = `<span class="app-icon themed-app-icon aster-prism-icon" data-icon-id="${OS.esc(id)}" style="--icon-size:${size}px;--art-base:${base};--art-accent:${accent}"><svg class="aster-icon-art" width="100%" height="100%" viewBox="0 0 64 64" fill="none" aria-hidden="true" focusable="false"><path class="art-plate" d="M14 4h28l18 18v28a10 10 0 0 1-10 10H14A10 10 0 0 1 4 50V14A10 10 0 0 1 14 4Z"/><path class="art-fold" d="M42 4v10a8 8 0 0 0 8 8h10Z"/><g class="art-glyph" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${symbol}</g><path class="art-signature" d="m48 52 4-4 4 4-4 4z"/></svg></span>`;
+        if (cache.size >= 256) cache.delete(cache.keys().next().value);
+        cache.set(key, result); return result;
     };
+    OS.iconArtwork = Object.freeze({ name: 'Aster Prism', builtins: Object.freeze(order), get cacheSize() { return cache.size; } });
 })();

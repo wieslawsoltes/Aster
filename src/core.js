@@ -2,7 +2,7 @@
 'use strict';
 (() => {
     const OS = window.Aster = {
-        version: '1.9.2', apps: new Map(), windows: new Map(), mounts: new Map(),
+        version: '1.9.3', apps: new Map(), windows: new Map(), mounts: new Map(),
         events: new EventTarget(), clipboard: null, started: performance.now(),
         metrics: { fps: 0, frameMs: 0, drawCalls: 0, mode: 'Starting', frames: [] },
         settings: { theme: 'light', accent: '#176ae6', wallpaper: 'bloom', transparency: true, motion: true,
@@ -63,6 +63,9 @@
     } };
     const paths = {
         home: '<path d="m3 10 9-7 9 7v10H5V10m4 10v-7h6v7"/>',
+        move: '<path d="M12 2v20M2 12h20m-13-7 3-3 3 3m-6 14 3 3 3-3M5 9l-3 3 3 3m14-6 3 3-3 3"/>',
+        resize: '<path d="M8 3H3v5m0-5 7 7m6 11h5v-5m0 5-7-7"/>',
+        center: '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M12 1v2m0 18v2M1 12h2m18 0h2"/>',
         search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
         folder: '<path d="M3 7V5h7l2 2h9v13H3z" fill="currentColor" opacity=".25"/><path d="M3 7V5h7l2 2h9v13H3zM3 10h18"/>',
         file: '<path d="M6 2h8l5 5v15H6zM14 2v6h5M9 12h7m-7 4h7"/>',
@@ -109,6 +112,7 @@
     };
     OS.icon = (name, size = 20, cls = '') => `<svg class="icon ${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.file}</svg>`;
     OS.appIcon = (id, size = 32) => {
+        size = Math.max(8, Math.min(128, Number.isFinite(Number(size)) ? Number(size) : 32));
         const spec = { files: ['folder', 'gold'], browser: ['globe', 'teal'], notepad: ['file', 'blue'], terminal: ['terminal', 'charcoal'], paint: ['paint', 'violet'], photos: ['image', 'blue'], media: ['play', 'coral'], calculator: ['calculator', 'slate'], settings: ['settings', 'slate'], calendar: ['calendar', 'blue'], clock: ['clock', 'slate'], tasks: ['check', 'blue'], taskmanager: ['gpu', 'teal'], store: ['store', 'blue'], code: ['code', 'violet'], mines: ['bug', 'green'], welcome: ['spark', 'blue'], win32: ['gpu', 'violet'], snips: ['cut', 'coral'], trash: ['trash', 'slate'] };
         const app = OS.apps.get(id);
         const artwork = OS.visualIcon?.(id, size); if (artwork) return artwork;

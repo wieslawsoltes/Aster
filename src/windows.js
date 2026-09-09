@@ -1,7 +1,7 @@
 'use strict';
 (() => {
     const OS = Aster, $ = OS.$;
-    let zCounter = 10, sessionTimer = 0, snapTimer = 0;
+    let zCounter = 10, sessionTimer = 0;
     OS.focused = null;
     OS.cancelSessionSave = () => clearTimeout(sessionTimer);
     OS.persistSessionNow = () => OS.db.set('session', Array.from(OS.windows.values()).filter(w => !w.closed).map(w => ({ app: w.appId, rect: w.rect, restoreRect: w.restoreRect, maximized: w.maximized, minimized: w.minimized, desktop: w.desktop, state: w.state })));
@@ -29,7 +29,7 @@
                 menu.append(OS.el('div', { class: 'menu-label', text: item.label }));
                 continue;
             }
-            const b = OS.el('button', { class: 'menu-item' + (item.danger ? ' danger' : ''), role: 'menuitem', disabled: item.disabled, html: (item.icon ? OS.icon(item.icon) : '<span style="width:16px"></span>') + `<span>${OS.esc(item.text)}</span>` + (item.key ? `<kbd>${OS.esc(item.key)}</kbd>` : '') });
+            const b = OS.el('button', { class: 'menu-item' + (item.danger ? ' danger' : ''), role: typeof item.checked === 'boolean' ? 'menuitemcheckbox' : 'menuitem', 'aria-checked': typeof item.checked === 'boolean' ? String(item.checked) : null, disabled: item.disabled, html: (item.icon ? OS.icon(item.icon) : '<span style="width:16px"></span>') + `<span>${OS.esc(item.text)}</span>` + (item.key ? `<kbd>${OS.esc(item.key)}</kbd>` : '') });
             b.onclick = OS.guard(async () => { menu.hidden = true; if (trigger?.isConnected) trigger.focus({preventScroll:true}); OS.emit('window-action', {action: 'MenuCommand'}); await item.action?.(); });
             menu.append(b);
         }
@@ -43,7 +43,7 @@
         first?.focus();
         menu.onkeydown = e => { const b = Array.from(menu.querySelectorAll('button:not(:disabled)')); const i = b.indexOf(document.activeElement); if (e.key === 'Escape') {
             e.preventDefault(); e.stopPropagation(); menu.hidden = true; if(trigger?.isConnected)trigger.focus({preventScroll:true});
-        } if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        } if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); b[e.key === 'Home' ? 0 : b.length - 1]?.focus(); } if (e.key === 'Tab') { menu.hidden = true; } if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             e.preventDefault();
             b[(i + (e.key === 'ArrowDown' ? 1 : b.length - 1)) % b.length]?.focus();
         } };
@@ -85,7 +85,7 @@
             e.preventDefault();
             elements[(index + (e.shiftKey ? elements.length - 1 : 1)) % elements.length]?.focus();
         } };
-        setTimeout(() => { (input || yes).focus(); input?.select(); }, 20);
+        setTimeout(() => { if (!done && cover.isConnected) { (input || yes).focus(); input?.select(); } }, 20);
     });
     OS.confirm = (title, message, confirm = 'Continue', danger = false) => OS.dialog({ title, message, confirm, danger });
     OS.prompt = (title, value = '', message = '') => OS.dialog({ title, value, message, confirm: 'Save' });
@@ -123,6 +123,8 @@
             this.minimized = false;
             this.maximized = false;
             this.closed = false;
+            this.alwaysOnTop = this.state.alwaysOnTop === true;
+            this.snapTimer = 0;
             this.z = ++zCounter;
             this.cleanups = [];
             const width = Math.min(app.width || 850, vp.w - 30), height = Math.min(app.height || 590, vp.h - 36);
@@ -132,11 +134,14 @@
             this.bar = OS.el('header', { class: 'titlebar' });
             this.bar.hidden = !!(app.webApp || app.custom) && OS.settings.webAppTitleBars !== true;
             this.titleEl = OS.el('div', { class: 'window-title', html: OS.appIcon(app.id, 17) + `<span>${OS.esc(this.title)}</span>` });
-            const controls = OS.el('div', { class: 'window-controls' });
-            const min = OS.el('button', { title: 'Minimize', 'aria-label': 'Minimize', html: OS.icon('min') }), max = OS.el('button', { title: 'Maximize', 'aria-label': 'Maximize', html: OS.icon('max') }), close = OS.el('button', { title: 'Close', 'aria-label': 'Close', html: OS.icon('close') });
-            min.onclick = () => this.minimize();
-            max.onclick = () => this.toggleMaximize();
-            close.onclick = () => this.close();
+            const controls = this.controls = OS.el('div', { class: 'window-controls', role: 'group', 'aria-label': 'Window controls' });
+            const min = this.minButton = OS.el('button', { type: 'button', 'data-window-action': 'minimize', title: 'Minimize', 'aria-label': 'Minimize', html: OS.icon('min') }), max = OS.el('button', { type: 'button', 'data-window-action': 'maximize', title: 'Maximize', 'aria-label': 'Maximize', 'aria-haspopup': 'true', html: OS.icon('max') }), close = this.closeButton = OS.el('button', { type: 'button', 'data-window-action': 'close', title: 'Close', 'aria-label': 'Close', html: OS.icon('close') });
+            const caption = fn => OS.guard(e => { e.stopPropagation(); this.dismissSnapLayouts(); return fn(); });
+            min.onclick = caption(() => this.minimize());
+            max.onclick = caption(() => this.toggleMaximize());
+            close.onclick = caption(() => this.close());
+            // A keyboard user can request the same layout palette as pointer hover.
+            max.addEventListener('keydown', e => { if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); this.showSnapLayouts(true); } });
             this.maxButton = max;
             controls.append(min, max, close);
             this.bar.append(this.titleEl, controls);
@@ -155,8 +160,9 @@
             this.bar.addEventListener('dblclick', e => { if (!e.target.closest('button'))
                 this.toggleMaximize(); });
             this.bar.addEventListener('contextmenu', e => this.titleMenu(e));
-            max.addEventListener('mouseenter', () => { clearTimeout(snapTimer); snapTimer = setTimeout(() => this.showSnapLayouts(), 400); });
-            max.addEventListener('mouseleave', () => clearTimeout(snapTimer));
+            max.addEventListener('mouseenter', () => { clearTimeout(this.snapTimer); this.snapTimer = setTimeout(() => this.showSnapLayouts(), 500); });
+            max.addEventListener('mouseleave', () => clearTimeout(this.snapTimer));
+            this.addCleanup(() => { this.dismissSnapLayouts(); this.keyboardFinish?.(false); });
             this.el.addEventListener('keydown', e => { if (e.altKey && e.key === 'F4') {
                 e.preventDefault();
                 this.close();
@@ -191,17 +197,25 @@
         on(event, fn) { this.addCleanup(OS.on(event, fn)); }
         setTitle(title) { this.title = title; this.titleEl.lastElementChild.textContent = title; this.el.setAttribute('aria-label', title); OS.emit('windows'); }
         constrain() { const v = OS.viewport(); this.rect.w = Math.min(Math.max(280, this.rect.w), v.w - 8); this.rect.h = Math.min(Math.max(180, this.rect.h), v.h - 8); this.rect.x = Math.max(0, Math.min(this.rect.x, v.w - this.rect.w)); this.rect.y = Math.max(0, Math.min(this.rect.y, v.h - this.rect.h)); }
+        get stackOrder() { return this.z + (this.alwaysOnTop ? 10000 : 0); }
         sync() {
             const r = this.rect;
+            // Keep DOM/tab order in step with the visual control order without
+            // replacing nodes during pointerdown or focus.
+            const order = OS.themes?.chrome?.profile === 'macos26' ? [this.closeButton, this.minButton, this.maxButton] : [this.minButton, this.maxButton, this.closeButton];
+            if (order.some((b, i) => this.controls.children[i] !== b)) this.controls.replaceChildren(...order);
             this.el.style.transform = `translate3d(${Math.round(r.x)}px,${Math.round(r.y)}px,0)`;
             this.el.style.width = Math.round(r.w) + 'px';
             this.el.style.height = Math.round(r.h) + 'px';
-            this.el.style.zIndex = this.z;
+            this.el.style.zIndex = this.stackOrder;
             this.el.classList.toggle('minimized', this.minimized);
             this.el.classList.toggle('maximized', this.maximized);
             this.el.classList.toggle('other-desktop', this.desktop !== OS.activeDesktop);
             this.el.classList.toggle('inactive', OS.focused !== this.id);
-            this.maxButton.innerHTML = OS.icon(this.maximized ? 'restore' : 'max');
+            this.el.classList.toggle('always-on-top', this.alwaysOnTop);
+            this.el.dataset.alwaysOnTop = String(this.alwaysOnTop);
+            const captionGlyph = this.maximized ? 'restore' : 'max';
+            if (this.maxButton.dataset.glyph !== captionGlyph) { this.maxButton.innerHTML = OS.icon(captionGlyph); this.maxButton.dataset.glyph = captionGlyph; }
             this.maxButton.setAttribute('aria-label', this.maximized ? 'Restore' : 'Maximize');
             this.maxButton.title = this.maximized ? 'Restore' : 'Maximize';
             this.gpuDirty = true;
@@ -219,7 +233,7 @@
             OS.focused = this.id;
             this.z = ++zCounter;
             if (zCounter > 9000) {
-                Array.from(OS.windows.values()).sort((a, b) => a.z - b.z).forEach((w, i) => { w.z = i + 10; w.el.style.zIndex = w.z; });
+                Array.from(OS.windows.values()).sort((a, b) => a.z - b.z).forEach((w, i) => { w.z = i + 10; w.el.style.zIndex = w.stackOrder; });
                 zCounter = OS.windows.size + 11;
             }
             for (const w of OS.windows.values()) {
@@ -231,13 +245,13 @@
                 this.el.focus({ preventScroll: true });
             OS.emit('windows');
         }
-        minimize() { OS.emit('window-action', {action: 'Minimize'}); this.minimized = true; this.sync(); if (OS.focused === this.id) {
+        minimize() { this.dismissSnapLayouts(); this.keyboardFinish?.(true); OS.emit('window-action', {action: 'Minimize'}); this.minimized = true; this.sync(); if (OS.focused === this.id) {
             OS.focused = null;
-            const next = Array.from(OS.windows.values()).filter(w => !w.minimized && w.desktop === OS.activeDesktop && w.id !== this.id).sort((a, b) => b.z - a.z)[0];
+            const next = Array.from(OS.windows.values()).filter(w => !w.minimized && w.desktop === OS.activeDesktop && w.id !== this.id).sort((a, b) => b.stackOrder - a.stackOrder)[0];
             next?.focus();
         } OS.emit('windows'); }
         restore() { this.minimized = false; this.focus(); }
-        toggleMaximize() { OS.emit('window-action', {action: this.maximized ? 'RestoreDown' : 'Maximize'}); if (this.maximized) {
+        toggleMaximize() { this.dismissSnapLayouts(); this.keyboardFinish?.(true); OS.emit('window-action', {action: this.maximized ? 'RestoreDown' : 'Maximize'}); if (this.maximized) {
             this.rect = { ...this.restoreRect };
             this.maximized = false;
             this.constrain();
@@ -249,6 +263,7 @@
             this.maximized = true;
         } this.sync(); this.focus(); }
         snap(zone) {
+            this.dismissSnapLayouts(); this.keyboardFinish?.(true);
             const v = OS.viewport(), gap = 8, half = (v.w - gap * 3) / 2, hh = (v.h - gap * 3) / 2;
             this.maximized = false;
             this.restoreRect = { ...this.rect };
@@ -359,14 +374,62 @@
             target.addEventListener('pointerup', end, { once: true });
             target.addEventListener('pointercancel', end, { once: true });
         }
+        setAlwaysOnTop(value) {
+            if (this.closed) return;
+            this.alwaysOnTop = value === true;
+            this.state.alwaysOnTop = this.alwaysOnTop;
+            this.sync(); OS.emit('windows');
+        }
+        center() {
+            if (this.closed || this.maximized) return;
+            const area = OS.viewport();
+            this.rect.x = Math.round((area.w - this.rect.w) / 2);
+            this.rect.y = Math.round((area.h - this.rect.h) / 2);
+            this.constrain(); this.sync(); this.focus();
+        }
+        beginKeyboardTransform(mode) {
+            if (this.closed || this.maximized || !['move', 'resize'].includes(mode)) return;
+            OS.cancelWindowTransform?.(false); OS.closePanels?.(); this.dismissSnapLayouts(); this.focus();
+            const initial = { ...this.rect };
+            const hud = OS.el('aside', { class: 'window-transform-hud', role: 'status', 'aria-live': 'polite' });
+            const label = OS.el('strong', { text: mode === 'move' ? 'Move window' : 'Resize window' });
+            const value = OS.el('span');
+            hud.append(label, value, OS.el('small', { text: 'Arrow keys · Shift for 1 px · Enter to keep · Escape to cancel' }));
+            document.body.append(hud);
+            const update = () => { value.textContent = `${Math.round(this.rect.x)}, ${Math.round(this.rect.y)} · ${Math.round(this.rect.w)} × ${Math.round(this.rect.h)}`; };
+            const done = commit => {
+                document.removeEventListener('keydown', key, true); document.removeEventListener('pointerdown', pointer, true);
+                window.removeEventListener('resize', cancel); window.removeEventListener('blur', cancel); offTheme();
+                hud.remove(); this.el.classList.remove('keyboard-transform');
+                if (OS.cancelWindowTransform === done) OS.cancelWindowTransform = null;
+                this.keyboardFinish = null;
+                if (!commit && !this.closed) { this.rect = { ...initial }; this.constrain(); this.sync(); this.onResize?.(); }
+            };
+            const cancel = () => done(false), pointer = () => done(true);
+            const key = e => {
+                if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Escape'].includes(e.key)) return;
+                e.preventDefault(); e.stopImmediatePropagation();
+                if (e.key === 'Escape' || e.key === 'Enter') { done(e.key === 'Enter'); return; }
+                const d = e.shiftKey ? 1 : 10, a = OS.viewport(), dx = e.key === 'ArrowRight' ? d : e.key === 'ArrowLeft' ? -d : 0, dy = e.key === 'ArrowDown' ? d : e.key === 'ArrowUp' ? -d : 0;
+                if (mode === 'move') { this.rect.x += dx; this.rect.y += dy; this.constrain(); }
+                else { this.rect.w = Math.min(a.w - this.rect.x - 4, Math.max(Math.min(this.app.minWidth || 320, a.w - 8), this.rect.w + dx)); this.rect.h = Math.min(a.h - this.rect.y - 4, Math.max(Math.min(this.app.minHeight || 240, a.h - 8), this.rect.h + dy)); this.constrain(); }
+                this.sync(); this.onResize?.(); update();
+            };
+            const offTheme = OS.on('theme-change', cancel);
+            this.keyboardFinish = OS.cancelWindowTransform = done; this.el.classList.add('keyboard-transform'); update();
+            document.addEventListener('keydown', key, true); document.addEventListener('pointerdown', pointer, true);
+            window.addEventListener('resize', cancel); window.addEventListener('blur', cancel);
+        }
         titleMenu(e) { OS.context(e, [{ text: 'Restore', icon: 'restore', disabled: !this.maximized && !this.minimized, action: () => { if (this.maximized)
-                    this.toggleMaximize(); this.restore(); } }, { text: 'Minimize', icon: 'min', action: () => this.minimize() }, { text: 'Maximize', icon: 'max', action: () => { if (!this.maximized)
+                    this.toggleMaximize(); this.restore(); } }, { text: 'Move', icon: 'move', key: 'Alt+F7', disabled: this.maximized, action: () => this.beginKeyboardTransform('move') }, { text: 'Resize', icon: 'resize', key: 'Alt+F8', disabled: this.maximized, action: () => this.beginKeyboardTransform('resize') }, { text: 'Center window', icon: 'center', disabled: this.maximized, action: () => this.center() }, { text: 'Always on top', icon: 'pin', checked: this.alwaysOnTop, action: () => this.setAlwaysOnTop(!this.alwaysOnTop) }, null, { text: 'Minimize', icon: 'min', action: () => this.minimize() }, { text: 'Maximize', icon: 'max', action: () => { if (!this.maximized)
                     this.toggleMaximize(); } }, null, { label: 'Move to desktop' }, ...OS.desktops.map(d => ({ text: d.name, icon: 'desktop', disabled: d.id === this.desktop, action: () => { this.desktop = d.id; this.sync(); OS.emit('windows'); } })), ...(this.extraTitleMenu?.() || []), null, { text: 'Close', icon: 'close', key: 'Alt+F4', action: () => this.close() }]); }
-        showSnapLayouts() {
+        dismissSnapLayouts() { clearTimeout(this.snapTimer); clearTimeout(this.snapDismissTimer); this.snapPanel?.remove(); this.snapPanel = null; this.maxButton?.setAttribute('aria-expanded', 'false'); }
+        showSnapLayouts(keyboard = false) {
             if (this.closed || this.minimized)
                 return;
-            OS.$('.snap-layouts')?.remove();
+            this.dismissSnapLayouts(); OS.$('.snap-layouts')?.remove();
             const r = this.maxButton.getBoundingClientRect(), p = OS.el('div', { class: 'snap-layouts flyout', role: 'group', 'aria-label': 'Snap layouts' });
+            this.snapPanel = p; this.maxButton.setAttribute('aria-expanded', 'true');
             const layouts = [['left', 'right'], ['third', 'two-thirds'], ['top-left', 'top-right', 'bottom-left', 'bottom-right']];
             for (const zones of layouts) {
                 const layout = OS.el('div', { class: 'snap-layout'+(zones.length===4?' snap-four':zones[0]==='third'?' snap-thirds':'') });
@@ -380,15 +443,25 @@
             p.style.left = Math.max(8, Math.min(innerWidth - 270, r.right - 230)) + 'px';
             p.style.top = (r.bottom + 7) + 'px';
             $('#panel-layer').append(p);
-            let t = setTimeout(() => p.remove(), 3000);
-            p.onmouseenter = () => clearTimeout(t);
-            p.onmouseleave = () => { t = setTimeout(() => p.remove(), 350); };
+            const dismiss = () => this.dismissSnapLayouts();
+            if (!keyboard) this.snapDismissTimer = setTimeout(dismiss, 3000);
+            p.onmouseenter = p.onfocusin = () => clearTimeout(this.snapDismissTimer);
+            p.onmouseleave = () => { if (!p.contains(document.activeElement)) this.snapDismissTimer = setTimeout(dismiss, 350); };
+            p.onkeydown = e => {
+                if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); dismiss(); this.maxButton.focus(); return; }
+                if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) { e.preventDefault(); e.stopPropagation(); const buttons = [...p.querySelectorAll('button')], i = buttons.indexOf(document.activeElement), next = e.key === 'Home' ? 0 : e.key === 'End' ? buttons.length - 1 : (i + (e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 1) + buttons.length) % buttons.length; buttons[next]?.focus(); }
+            };
+            if (keyboard) p.querySelector('button')?.focus();
         }
         async close(force = false) {
             if (this.closed)
                 return;
-            if (!force && this.beforeClose && !(await this.beforeClose()))
-                return;
+            if (!force && this.beforeClose) {
+                // Double activation shares one dirty-document confirmation.
+                this.closePending ||= Promise.resolve().then(() => this.beforeClose()).finally(() => { this.closePending = null; });
+                if (!(await this.closePending)) return false;
+            }
+            if (this.closed) return true;
             this.closed = true;
             OS.emit('window-action', {action: 'Close'});
             for (const cleanup of this.cleanups) {
@@ -405,7 +478,7 @@
             OS.renderer?.removeSurface?.(this);
             if (OS.focused === this.id) {
                 OS.focused = null;
-                const next = Array.from(OS.windows.values()).filter(w => !w.minimized && w.desktop === OS.activeDesktop).sort((a, b) => b.z - a.z)[0];
+                const next = Array.from(OS.windows.values()).filter(w => !w.minimized && w.desktop === OS.activeDesktop).sort((a, b) => b.stackOrder - a.stackOrder)[0];
                 next?.focus();
             }
             OS.renderer?.invalidate();
@@ -414,6 +487,7 @@
             return true;
         }
     }
+    OS.DesktopWindow = DesktopWindow;
     OS.launch = (id, options = {}) => {
         OS.closePanels?.();
         const app = OS.apps.get(id);
@@ -438,7 +512,7 @@
     };
     OS.switchDesktop = id => { if (!OS.desktops.some(d => d.id === id))
         return; OS.activeDesktop = id; OS.focused = null; for (const w of OS.windows.values())
-        w.sync(); const top = Array.from(OS.windows.values()).filter(w => w.desktop === id && !w.minimized).sort((a, b) => b.z - a.z)[0]; top?.focus(); OS.renderer?.invalidate(); OS.emit('windows'); };
+        w.sync(); const top = Array.from(OS.windows.values()).filter(w => w.desktop === id && !w.minimized).sort((a, b) => b.stackOrder - a.stackOrder)[0]; top?.focus(); OS.renderer?.invalidate(); OS.emit('windows'); };
     OS.addDesktop = async () => { const d = { id: OS.uid(), name: 'Desktop ' + (OS.desktops.length + 1) }; OS.desktops.push(d); await OS.db.set('desktops', OS.desktops); OS.switchDesktop(d.id); return d; };
     OS.showDesktop = () => { const ws = Array.from(OS.windows.values()).filter(w => w.desktop === OS.activeDesktop); if (ws.some(w => !w.minimized)) {
         OS.hiddenForDesktop = ws.filter(w => !w.minimized).map(w => w.id);
@@ -464,6 +538,13 @@
         if (e.key === 'Escape') {
             $('#context-menu').hidden = true;
             OS.closePanels?.();
+        }
+        if (e.defaultPrevented) return;
+        const active = OS.windows.get(OS.focused);
+        if (active && e.altKey && !e.ctrlKey && !e.metaKey) {
+            if (e.code === 'Space') { e.preventDefault(); active.titleMenu({ preventDefault(){}, stopPropagation(){}, target: active.bar }); return; }
+            if (e.key === 'F7' || e.key === 'F8') { e.preventDefault(); active.beginKeyboardTransform(e.key === 'F7' ? 'move' : 'resize'); return; }
+            if (e.key === 'F10') { e.preventDefault(); active.toggleMaximize(); return; }
         }
         if (e.ctrlKey && e.code === 'Space') {
             e.preventDefault();

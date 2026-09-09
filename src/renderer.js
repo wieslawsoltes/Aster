@@ -146,7 +146,7 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
         resize() { const q = Number(OS.settings.quality) || 1; this.ratio = Math.min(window.devicePixelRatio || 1, 2) * q; const max = this.device?.limits?.maxTextureDimension2D || 8192; this.ratio = Math.min(this.ratio, max / (innerWidth + 80), max / (innerHeight + 80)); this.canvas.width = Math.max(1, Math.round(innerWidth * this.ratio)); this.canvas.height = Math.max(1, Math.round(innerHeight * this.ratio)); this.dirty = true; for (const w of OS.windows.values())
             w.gpuDirty = true; }
         invalidate() { this.dirty = true; }
-        getWindows() { return Array.from(OS.windows.values()).filter(w => !w.minimized && w.desktop === OS.activeDesktop && !w.closed).sort((a, b) => a.z - b.z).slice(-128); }
+        getWindows() { return Array.from(OS.windows.values()).filter(w => !w.minimized && w.desktop === OS.activeDesktop && !w.closed).sort((a, b) => (a.stackOrder ?? a.z) - (b.stackOrder ?? b.z)).slice(-128); }
         frame(now) {
             requestAnimationFrame(this.frame);
             if (document.hidden)

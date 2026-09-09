@@ -4,6 +4,7 @@
     let panel = null, previewTimer = 0, desktopToken = 0, clockInterval = 0, taskViewRender = null;
     const iconButton = (icon, label, fn) => OS.el('button', { class: 'icon-button', title: label, 'aria-label': label, html: OS.icon(icon, 18), onclick: OS.guard(fn) });
     OS.closePanels = (restoreFocus = false) => {
+        for (const w of OS.windows.values()) w.dismissSnapLayouts?.();
         const anchor = OS.panelReturnFocus;
         const cleanup = OS.panelCleanup; OS.panelCleanup = null; OS.panelReturnFocus = null;
         cleanup?.();

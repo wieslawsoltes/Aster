@@ -8,9 +8,6 @@
 .theme-managed :is(button,a,input,select,textarea):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .theme-managed .themed-app-icon{background:transparent;border:0;clip-path:none;border-radius:0;filter:drop-shadow(0 1px 1px #0002)}
 .theme-managed .themed-app-icon>svg{width:100%;height:100%;overflow:visible}
-.themed-app-icon .art-macos,.themed-app-icon .art-ubuntu{display:none}
-[data-profile=macos26] .themed-app-icon .art-windows,[data-profile=ubuntu] .themed-app-icon .art-windows{display:none}
-[data-profile=macos26] .themed-app-icon .art-macos,[data-profile=ubuntu] .themed-app-icon .art-ubuntu{display:block}
 .theme-managed[data-icon-style=tinted] .themed-app-icon>svg,.theme-managed[data-icon-style=clear] .themed-app-icon>svg{filter:grayscale(1)}
 .theme-managed[data-icon-style=dark] .themed-app-icon{background:#22252a;border-radius:22%}
 .theme-managed[data-icon-style=dark] .themed-app-icon>svg{filter:brightness(.85)}

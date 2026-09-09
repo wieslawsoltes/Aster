@@ -20,3 +20,5 @@ tests/themes/artifacts/
 tests/web-chrome/artifacts/
 
 tests/visual-materials/artifacts/
+
+tests/ui-refinement/artifacts/

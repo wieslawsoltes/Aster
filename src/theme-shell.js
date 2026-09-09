@@ -44,6 +44,9 @@
             menus.append(action('Window',event=>OS.context(event,[
                 {text:'Minimize',icon:'min',disabled:!current,action:()=>current.minimize()},
                 {text:current?.maximized?'Restore':'Zoom',icon:'max',disabled:!current,action:()=>current.toggleMaximize()},
+                {text:'Center window',icon:'center',disabled:!current||current.maximized,action:()=>current.center()},
+                {text:'Always on top',icon:'pin',checked:!!current?.alwaysOnTop,disabled:!current,action:()=>current.setAlwaysOnTop(!current.alwaysOnTop)},
+                {text:'Window controls…',icon:'more',disabled:!current,action:()=>current.titleMenu()},
                 {text:'Tile left',icon:'taskview',disabled:!current,action:()=>current.snap('left')},
                 {text:'Tile right',icon:'taskview',disabled:!current,action:()=>current.snap('right')},
                 {text:'Show all windows',icon:'taskview',action:()=>OS.showTaskView()},null,

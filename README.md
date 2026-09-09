@@ -1,3 +1,19 @@
+## Aster 1.9.3 — working caption targets and original artwork
+
+The macOS-style caption controls now sit above glass decoration and have larger
+pointer/touch targets. Aster Prism replaces platform-like application artwork
+with 29 original geometric symbols and generated catalog-app tiles. Dark, tinted,
+clear and high-contrast treatments remain available across all profiles.
+
+Right-click a titlebar or press **Alt+Space** for Move, Resize, Center window and
+Always on top. **Alt+F7/F8** starts keyboard movement/resizing; arrow keys move by
+10 px, Shift by 1 px, Enter accepts and Escape reverts. **Alt+F10** maximizes or
+restores. Focus the maximize button and press Down for keyboard Snap layouts.
+Always-on-top affects only Aster windows and follows existing session restore.
+Host browsers/operating systems may reserve shortcuts.
+
+[Implementation, verification and limitations](docs/ui-refinement.md).
+
 # Aster Desktop
 
 ## Aster 1.9.2 — refined profiles and refractive glass

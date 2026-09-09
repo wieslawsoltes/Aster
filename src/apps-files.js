@@ -228,8 +228,8 @@
                 details.append(OS.el('button',{class:'secondary',text:OS.fileFavorites.includes(e.path)?'Unpin favorite':'Pin to favorites',onclick:OS.guard(async()=>{OS.fileFavorites=OS.fileFavorites.includes(e.path)?OS.fileFavorites.filter(p=>p!==e.path):[e.path,...OS.fileFavorites].slice(0,30);await OS.db.set('file-favorites',OS.fileFavorites);OS.emit('favorites-change');})}));
             }
             function table(entries) { const table = OS.el('table', { class: 'file-table', role: 'grid', 'aria-label': 'Files' }), head = OS.el('thead'), tr = OS.el('tr'); for (const [name, key] of [['Name', 'name'], ['Date modified', 'modified'], ['Type', 'type'], ['Size', 'size']]) {
-                const th = OS.el('th');
-                const b = OS.el('button', { text: name + (sort === key ? (asc ? ' ↑' : ' ↓') : ''), onclick: () => { if (sort === key)
+                const th = OS.el('th', { scope: 'col', 'aria-sort': sort === key ? (asc ? 'ascending' : 'descending') : 'none' });
+                const b = OS.el('button', { title: name, 'aria-label': 'Sort by ' + name, text: name + (sort === key ? (asc ? ' ↑' : ' ↓') : ''), onclick: () => { if (sort === key)
                         asc = !asc;
                     else {
                         sort = key;
@@ -588,7 +588,7 @@
             w.save = save;
             w.editor = editor;
             update();
-            setTimeout(() => { if (OS.focused === w.id)
+            setTimeout(() => { if (!w.closed && !w.minimized && OS.focused === w.id && document.activeElement === w.el && !OS.shellPanelType && OS.$('#context-menu').hidden && !OS.$('#dialog-layer').children.length)
                 editor.focus(); }, 60);
         }
     });
@@ -1063,7 +1063,7 @@
                 input.focus(); };
             w.runCommand = command;
             promptUpdate();
-            setTimeout(() => { if (OS.focused === w.id)
+            setTimeout(() => { if (!w.closed && !w.minimized && OS.focused === w.id && document.activeElement === w.el && !OS.shellPanelType && OS.$('#context-menu').hidden && !OS.$('#dialog-layer').children.length)
                 input.focus(); }, 50);
         }
     });

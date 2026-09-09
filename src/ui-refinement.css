@@ -1,0 +1,73 @@
+/* Aster 1.9.3 — original icon language and reliable shared window controls. MIT. */
+/* The title's glass foreground used z-index:1; controls previously sat below it.
+   Hit targets must be above decorative layers, independent of glass fallback. */
+.theme-managed .window>.titlebar{position:relative}
+.theme-managed .window>.titlebar>.window-controls{z-index:5;isolation:isolate;flex-shrink:0;pointer-events:auto}
+.theme-managed .window>.titlebar>.window-title{pointer-events:none}
+.theme-managed .window-controls>button{position:relative;touch-action:manipulation;cursor:default;flex-shrink:0;order:initial!important}
+.theme-managed .window-controls>button>svg{pointer-events:none;flex:none}
+.theme-managed .window-controls>button:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+.theme-managed .window.always-on-top{outline:1px solid var(--accent);outline-offset:0}
+.theme-managed .window.always-on-top .window-title>span:last-child:before{content:'◆';font-size:9px;color:var(--accent);margin-right:6px}
+.window-transform-hud{position:fixed;left:50%;top:calc(var(--work-top,0px) + 16px);transform:translateX(-50%);z-index:20000;max-width:calc(100vw - 24px);display:flex;flex-direction:column;gap:5px;padding:12px 18px;border-radius:10px;background:var(--shell-surface,var(--surface));color:var(--shell-text,var(--text));border:1px solid var(--accent);box-shadow:var(--shadow);pointer-events:none;font-size:13px}
+.window-transform-hud small{font-size:11px;color:inherit}
+.window.keyboard-transform{outline:2px solid var(--accent)!important}
+.context-menu button[aria-checked=true]{background:var(--selection);color:var(--selection-text)}
+.context-menu button[aria-checked=true]>span:after{content:' ✓';padding-left:6px}
+/* 12px indicators inside separate 26px targets; keyboard follows the visible
+   close/minimize/maximize DOM order. The disks remain original generic controls. */
+body.theme-managed[data-profile=macos26] .window>.titlebar>.window-controls{left:10px;gap:0;height:100%;width:auto}
+body.theme-managed[data-profile=macos26] .window>.titlebar>.window-controls>button{width:26px;min-width:26px;height:26px;border:0!important;border-radius:6px!important;padding:0;background:transparent!important;box-shadow:none!important;display:grid;place-items:center;color:#29252c!important}
+body.theme-managed[data-profile=macos26] .window>.titlebar>.window-controls>button:before{content:'';position:absolute;inset:7px;border-radius:50%;border:1px solid #0003;background:var(--caption-dot);box-shadow:inset 0 1px #fff5;pointer-events:none}
+body.theme-managed[data-profile=macos26] .window-controls>[data-window-action=close]{--caption-dot:#f26465}
+body.theme-managed[data-profile=macos26] .window-controls>[data-window-action=minimize]{--caption-dot:#edbb4f}
+body.theme-managed[data-profile=macos26] .window-controls>[data-window-action=maximize]{--caption-dot:#59bd91}
+body.theme-managed[data-profile=macos26] .window>.titlebar>.window-controls>button>svg{position:relative;z-index:1;width:8px;height:8px}
+body.theme-managed[data-profile=macos26] .window>.titlebar>.window-controls>button:active:before{filter:brightness(.85)}
+body.theme-managed[data-profile=macos26] .window.inactive>.titlebar>.window-controls:not(:hover):not(:focus-within)>button:before{background:var(--muted);opacity:.55}
+body.theme-managed[data-profile=macos26] .window>.titlebar>.window-controls>button:focus-visible{outline-offset:0}
+body.theme-managed[data-profile=ubuntu] .window>.titlebar>.window-controls>button{width:28px;min-width:28px;height:28px}
+body.theme-managed[data-profile=ubuntu] .window>.titlebar>.window-controls{gap:4px;height:100%}
+/* All generated application icons scale as a unit at taskbar, Explorer, Start,
+   desktop and compact-title sizes. No fixed nested px size or folder clipping. */
+body.theme-managed .app-icon.aster-prism-icon{display:inline-flex;width:var(--icon-size);height:var(--icon-size);padding:0;border:0;border-radius:0;clip-path:none;background:transparent;overflow:visible;color:var(--art-accent);filter:drop-shadow(0 1px 1px #0002)}
+body.theme-managed .aster-prism-icon>.aster-icon-art{display:block;width:100%;height:100%;overflow:visible;filter:none!important;pointer-events:none}
+.aster-prism-icon .art-plate{fill:var(--art-base);stroke:color-mix(in srgb,var(--art-base) 75%,white);stroke-width:1}
+.aster-prism-icon .art-fold{fill:var(--art-accent);opacity:.7}
+.aster-prism-icon .art-glyph{stroke:#f6fafb;fill:none;color:#f6fafb}
+.aster-prism-icon .art-signature{fill:var(--art-accent);stroke:none}
+body.theme-managed[data-icon-style=tinted] .aster-prism-icon{--art-base:var(--accent)!important;--art-accent:var(--accent-text)!important}
+body.theme-managed[data-icon-style=tinted] .aster-prism-icon .art-glyph{stroke:var(--accent-text);color:var(--accent-text)}
+body.theme-managed[data-icon-style=dark] .aster-prism-icon .art-plate{fill:#252b36;stroke:#657186}
+body.theme-managed[data-icon-style=dark] .aster-prism-icon .art-glyph{stroke:var(--art-accent);color:var(--art-accent)}
+body.theme-managed[data-icon-style=clear] .aster-prism-icon .art-plate{fill:color-mix(in srgb,var(--surface) 86%,transparent);stroke:var(--muted)}
+body.theme-managed[data-icon-style=clear] .aster-prism-icon .art-glyph{stroke:var(--text);color:var(--text)}
+body.theme-managed.theme-contrast .aster-prism-icon{background:none!important;border:0!important;filter:none}
+body.theme-managed.theme-contrast .aster-prism-icon .art-plate{fill:var(--surface);stroke:var(--text);stroke-width:2}
+body.theme-managed.theme-contrast .aster-prism-icon .art-glyph{stroke:var(--text);color:var(--text)}
+body.theme-managed.theme-contrast .aster-prism-icon :is(.art-fold,.art-signature){fill:var(--text)}
+body.theme-managed.theme-contrast .window>.titlebar>.window-controls>button{border:1px solid var(--text)!important;color:var(--text)!important;background:var(--surface)!important}
+body.theme-managed.theme-contrast .window-controls>button:before{display:none!important}
+body.theme-managed.theme-contrast .window-controls>button>svg{opacity:1!important;width:12px!important;height:12px!important}
+/* Ubuntu dark shell flyouts need their own text tokens even over a light app. */
+body.theme-managed[data-profile=ubuntu]:not(.theme-contrast) :is(.start-menu,.shell-surface,.context-menu,.task-preview,.snap-layouts){--shell-text:#f7f7fa;--shell-muted:#d2ced9;--text:#f7f7fa;--muted:#d2ced9;--surface:#353535;--surface2:#414044;--surface3:#4a4851;--border:#ffffff35;--hover:#ffffff1f;color:var(--shell-text)}
+body.theme-managed[data-profile=ubuntu]:not(.theme-contrast) :is(.start-menu,.shell-surface,.context-menu) button:disabled{opacity:.5}
+/* Windows combined tabs leave a real, always reachable caption drag area. */
+body.theme-managed[data-profile=windows] .window[data-app=files] .explorer-tabs{right:172px}
+body.theme-managed .icon{flex-shrink:0}
+body.theme-managed .menu-item:focus-visible{outline-offset:-2px}
+body.theme-managed .snap-layouts:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+@media(pointer:coarse){
+ body.theme-managed .window>.titlebar{min-height:40px}
+ body.theme-managed[data-profile=macos26] .window>.titlebar>.window-controls>button{width:32px;min-width:32px;height:32px}
+ body.theme-managed[data-profile=macos26] .window>.titlebar>.window-controls>button:before{inset:9px}
+ body.theme-managed[data-profile=macos26] .window>.titlebar>.window-title{padding-left:112px;padding-right:112px}
+ body.theme-managed[data-profile=ubuntu] .window>.titlebar>.window-controls>button{width:32px;min-width:32px;height:32px}
+}
+@media(max-width:540px){body.theme-managed[data-profile=windows] .window[data-app=files] .explorer-tabs{right:143px}body.theme-managed[data-profile=macos26] .window>.titlebar>.window-title{padding-left:94px;padding-right:94px}}
+@media(forced-colors:active){.aster-prism-icon .art-plate{fill:Canvas!important;stroke:CanvasText!important}.aster-prism-icon .art-glyph{stroke:CanvasText!important;color:CanvasText!important}.aster-prism-icon :is(.art-fold,.art-signature){fill:CanvasText!important}body.theme-managed .window>.titlebar>.window-controls>button{background:ButtonFace!important;color:ButtonText!important;border:1px solid ButtonText!important}body.theme-managed .window-controls>button:before{display:none!important}body.theme-managed .window-controls>button>svg{opacity:1!important;width:12px!important;height:12px!important}}
+
+/* A narrow Explorer must not paint one header on top of the next column.
+   Full labels remain available to keyboard/screen readers and via tooltips. */
+body.theme-managed .file-table th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.theme-managed .file-table th button{display:block;max-width:100%;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
