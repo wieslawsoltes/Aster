@@ -1,0 +1,76 @@
+name: Adaptive artwork and desktop workflows
+on:
+  pull_request:
+    paths: ['src/**', 'tests/**', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/desktop-refinement.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'tests/desktop-refinement/**', 'index.html', 'Aster.html', 'sw.js', '.github/workflows/desktop-refinement.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: desktop-refinement-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate artwork bounds, desktop rules and standalone reproducibility
+        run: |
+          for f in src/*.js src/win32/*.js sw.js; do node --check "$f"; done
+          python -m py_compile build.py tests/desktop-refinement/browser.py
+          python build.py
+          git diff --exit-code -- Aster.html
+          node --test tests/desktop-refinement/models.cjs tests/ui-refinement/models.cjs
+          git diff --check
+      - name: Install verification browser
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Test actual controls, file bytes, media and durable preferences over HTTP
+        run: python tests/desktop-refinement/browser.py
+      - name: Repeat with standalone storage and offline startup
+        run: python tests/desktop-refinement/browser.py --standalone --output tests/desktop-refinement/artifacts/standalone
+      - name: Retain exact tested source
+        if: always()
+        run: |
+          mkdir -p tests/desktop-refinement/artifacts
+          git archive --format=zip HEAD -o tests/desktop-refinement/artifacts/source.zip
+          git rev-parse HEAD > tests/desktop-refinement/artifacts/checkout.txt
+          sha256sum Aster.html > tests/desktop-refinement/artifacts/standalone.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: adaptive-desktop-chromium-evidence
+          path: |
+            tests/desktop-refinement/artifacts/
+            Aster.html
+          retention-days: 14
+  firefox:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install independent browser engine
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps firefox
+      - name: Test original icons, shell interactions, decoding and persistence in Firefox
+        run: python tests/desktop-refinement/browser.py --engine firefox --output tests/desktop-refinement/artifacts/firefox
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: adaptive-desktop-firefox-evidence
+          path: tests/desktop-refinement/artifacts/firefox/
+          retention-days: 14
