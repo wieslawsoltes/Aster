@@ -62,7 +62,10 @@ map requests** are tracked. A detailed field has at most **131,072 pixels** and 
 384-pixel axes. This bounds raw field-cache accounting to 12 MiB. PNG encodings and
 browser-internal backdrop buffers are reported/separate: this is not a claim that
 the entire browser uses 12 MiB. One GPU field/readback job runs at a time, and its
-buffers are destroyed in `finally`. Generation checks discard obsolete results.
+buffers are destroyed in `finally`. The desktop renderer keeps at most two GPU
+frame submissions in flight, retaining dirty state while the queue is busy so
+wallpaper rendering cannot flood the queue ahead of interactive compute.
+Generation checks discard obsolete results.
 
 Resize/DOM/theme notifications are coalesced into one animation-frame update.
 Idle surfaces do not rebuild maps. Reduced motion disables moving highlights and

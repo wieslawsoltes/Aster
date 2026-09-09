@@ -18,7 +18,7 @@
     let sheenFrame=0,pointer=null,lastSheen=null,dockFrame=0,dockPointer=null,lastDock=null;
     const svgNode=(name,attrs={})=>{const n=document.createElementNS(NS,name);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,String(v));return n;};
     function root(){if(defs)return defs;svg=svgNode('svg',{'aria-hidden':'true',width:0,height:0,id:'aster-optical-defs'});svg.style.cssText='position:fixed;left:0;top:0;pointer-events:none;overflow:hidden';defs=svgNode('defs');svg.append(defs);document.body.append(svg);return defs;}
-    function config(){const t=OS.themes?.visual;const opaque=!t||!t.transparency||t.contrast||media.colors.matches||media.transparency.matches;return {t,opaque,enabled:!!t&&t.profile==='macos26'&&!opaque,motion:!!t&&t.motion&&!media.motion.matches&&!media.contrast.matches,optics:t?.optics||{quality:'balanced',bend:65,dispersion:8,magnify:true}};}
+    function config(){const t=OS.themes?.visual;const opaque=!t||!t.transparency||t.contrast||media.contrast.matches||media.colors.matches||media.transparency.matches;return {t,opaque,enabled:!!t&&t.profile==='macos26'&&!opaque,motion:!!t&&t.motion&&!media.motion.matches&&!media.contrast.matches,optics:t?.optics||{quality:'balanced',bend:65,dispersion:8,magnify:true}};}
     async function gpuField(g){
         const device=OS.renderer?.mode==='WebGPU'&&OS.renderer.device;
         if(!device)throw Error('No WebGPU device; using bounded CPU optical fields');

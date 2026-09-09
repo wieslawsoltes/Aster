@@ -1734,7 +1734,7 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
   return vec4f(tint,a);
 }`;
     class Renderer {
-        constructor() { this.canvas = OS.$('#compositor'); this.dirty = true; this.lastDraw = 0; this.start = performance.now(); this.count = 0; this.sampleStart = performance.now(); this.rectData = new Float32Array(48 * 128); this.uniformData = new Float32Array(12); this.mode = 'Canvas 2D'; this.frame = this.frame.bind(this); }
+        constructor() { this.canvas = OS.$('#compositor'); this.dirty = true; this.lastDraw = 0; this.start = performance.now(); this.count = 0; this.sampleStart = performance.now(); this.rectData = new Float32Array(48 * 128); this.uniformData = new Float32Array(12); this.mode = 'Canvas 2D'; this.gpuPending = 0; this.gpuPeak = 0; this.frame = this.frame.bind(this); }
         async init() {
             if (navigator.gpu) {
                 try {
@@ -1826,6 +1826,11 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                 }
                 return;
             }
+            // Bound shared-device queue depth: slow adapters must not enqueue
+            // unbounded wallpaper frames ahead of interactive compute/readback.
+            // Keep dirty state intact until a frame can actually be submitted.
+            if (this.mode === 'WebGPU' && this.gpuPending >= 2)
+                return;
             const before = performance.now();
             try {
                 if (this.mode === 'WebGPU')
@@ -1914,7 +1919,16 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                 w.gpuDirty = false;
                 draws++;
             }
-            this.device.queue.submit([encoder.finish()]);
+            const device = this.device;
+            device.queue.submit([encoder.finish()]);
+            this.gpuPending++;
+            this.gpuPeak = Math.max(this.gpuPeak, this.gpuPending);
+            const retire = () => { if (this.device === device) this.gpuPending = Math.max(0, this.gpuPending - 1); };
+            device.queue.onSubmittedWorkDone().then(retire, error => {
+                retire();
+                if (this.device === device && this.mode === 'WebGPU')
+                    this.fallback('GPU submission failed: ' + error.message);
+            });
             OS.metrics.drawCalls = draws;
         }
         draw2D() {
@@ -9478,7 +9492,7 @@ struct Params { size:vec2f, radius:f32, rim:f32, grid:vec2u, pad:vec2u };
     let sheenFrame=0,pointer=null,lastSheen=null,dockFrame=0,dockPointer=null,lastDock=null;
     const svgNode=(name,attrs={})=>{const n=document.createElementNS(NS,name);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,String(v));return n;};
     function root(){if(defs)return defs;svg=svgNode('svg',{'aria-hidden':'true',width:0,height:0,id:'aster-optical-defs'});svg.style.cssText='position:fixed;left:0;top:0;pointer-events:none;overflow:hidden';defs=svgNode('defs');svg.append(defs);document.body.append(svg);return defs;}
-    function config(){const t=OS.themes?.visual;const opaque=!t||!t.transparency||t.contrast||media.colors.matches||media.transparency.matches;return {t,opaque,enabled:!!t&&t.profile==='macos26'&&!opaque,motion:!!t&&t.motion&&!media.motion.matches&&!media.contrast.matches,optics:t?.optics||{quality:'balanced',bend:65,dispersion:8,magnify:true}};}
+    function config(){const t=OS.themes?.visual;const opaque=!t||!t.transparency||t.contrast||media.contrast.matches||media.colors.matches||media.transparency.matches;return {t,opaque,enabled:!!t&&t.profile==='macos26'&&!opaque,motion:!!t&&t.motion&&!media.motion.matches&&!media.contrast.matches,optics:t?.optics||{quality:'balanced',bend:65,dispersion:8,magnify:true}};}
     async function gpuField(g){
         const device=OS.renderer?.mode==='WebGPU'&&OS.renderer.device;
         if(!device)throw Error('No WebGPU device; using bounded CPU optical fields');

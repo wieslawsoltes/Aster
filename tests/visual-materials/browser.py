@@ -31,11 +31,11 @@ def main(args):
         page.on('pageerror',lambda e:report['errors'].append(str(e)))
         def js(source,arg=None): return page.evaluate('async arg=>{const OS=Aster;const assert=(v,m="Assertion failed")=>{if(!v)throw Error(m);};'+source+'}',arg)
         def settle():
-            page.wait_for_function('Aster.materials.diagnostics.pending===0 && Aster.materials.diagnostics.gpuLive===0')
+            page.wait_for_function('Aster.materials.diagnostics.pending===0 && Aster.materials.diagnostics.gpuLive===0',polling=100)
             js('await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));')
         def clear(): js('OS.closePanels();for(const w of [...OS.windows.values()])await w.close(true);document.querySelectorAll(".toast").forEach(e=>e.remove());')
         def preset(id):
-            js('await OS.themes.select(arg);',id);settle()
+            report['currentProfile']=id;js('await OS.themes.select(arg);',id);settle()
         def check(name,fn):
             start=time.perf_counter()
             try:
@@ -97,7 +97,7 @@ def main(args):
             def accessibility():
                 js('await OS.themes.update({transparency:false});');page.wait_for_function('Aster.materials.diagnostics.backend==="opaque"');settle();js('assert(!OS.materials.diagnostics.surfaces);assert(!OS.materials.diagnostics.cache);assert(!document.querySelector("#aster-optical-defs"));assert(getComputedStyle(document.querySelector("#taskbar")).backdropFilter==="none");')
                 js('await OS.themes.update({transparency:true});');page.wait_for_function('document.querySelector("#taskbar")?.dataset.optical==="refractive"')
-                page.emulate_media(forced_colors='active');page.wait_for_function('Aster.materials.diagnostics.backend==="opaque"');settle();js('assert(!OS.materials.diagnostics.cache);');page.emulate_media(forced_colors='none');preset('macos26-light');settle()
+                page.emulate_media(forced_colors='active');page.wait_for_function('Aster.materials.diagnostics.backend==="opaque"');settle();js('assert(!OS.materials.diagnostics.cache);');page.emulate_media(forced_colors='none');preset('macos26-light');settle();page.emulate_media(contrast='more');page.wait_for_function('Aster.materials.diagnostics.backend==="opaque"');settle();js('assert(!OS.materials.diagnostics.cache);assert(getComputedStyle(document.querySelector("#taskbar")).backdropFilter==="none");');page.emulate_media(contrast='no-preference');preset('macos26-light');settle()
                 return 'Transparency off and forced colors dispose active lens resources and render solid controls'
             check('Accessibility uses opaque surfaces and frees material resources',accessibility)
             def blur():
@@ -127,7 +127,7 @@ def main(args):
             if args.gpu:
                 def compute():
                     preset('macos26-light');page.wait_for_function('Aster.renderer.mode==="WebGPU"&&Aster.materials.diagnostics.gpuBuilds>0');settle()
-                    return js('''const device=OS.renderer.device,M=AsterMaterialOptics,g=M.geometry(127,73,17,'high'),expected=M.field(g),size=expected.length;
+                    return js('''assert(OS.renderer.gpuPeak<=2,'Unbounded desktop GPU submissions');const device=OS.renderer.device,M=AsterMaterialOptics,g=M.geometry(127,73,17,'high'),expected=M.field(g),size=expected.length;
                         device.pushErrorScope('validation');const pipeline=await device.createComputePipelineAsync({layout:'auto',compute:{module:device.createShaderModule({code:M.WGSL}),entryPoint:'field'}});
                         const u=device.createBuffer({size:32,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST}),o=device.createBuffer({size,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_SRC}),r=device.createBuffer({size,usage:GPUBufferUsage.MAP_READ|GPUBufferUsage.COPY_DST});
                         try{const params=new ArrayBuffer(32);new Float32Array(params).set([g.width,g.height,g.radius,g.rim]);new Uint32Array(params,16).set([g.cols,g.rows]);device.queue.writeBuffer(u,0,params);const enc=device.createCommandEncoder(),pass=enc.beginComputePass();pass.setPipeline(pipeline);pass.setBindGroup(0,device.createBindGroup({layout:pipeline.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:u}},{binding:1,resource:{buffer:o}}]}));pass.dispatchWorkgroups(Math.ceil(g.cols/8),Math.ceil(g.rows/8));pass.end();enc.copyBufferToBuffer(o,0,r,0,size);device.queue.submit([enc.finish()]);await r.mapAsync(GPUMapMode.READ);const actual=new Uint8Array(r.getMappedRange());let max=0;for(let i=0;i<size;i++)max=Math.max(max,Math.abs(actual[i]-expected[i]));assert(max<=1,'GPU/CPU field discrepancy '+max);r.unmap();return{bytes:size,maxChannelDifference:max,actualEngine:OS.materials.diagnostics};}finally{u.destroy();o.destroy();r.destroy();const error=await device.popErrorScope();assert(!error,error?.message);}''')
@@ -141,7 +141,11 @@ def main(args):
                         context.set_offline(True);page.reload();page.wait_for_function('Aster.booted&&Aster.materials');preset('macos26-light');page.wait_for_function('document.querySelector("#taskbar")?.dataset.optical==="refractive"');preset('ubuntu-dark');preset('windows-light');return 'Complete standalone boot and three profile changes with browser networking disabled'
                     check('Standalone optics and profile assets work with networking disabled',offline)
             assert not report['errors'],report['errors'];report['status']='PASS';report['finalDiagnostics']=js('return OS.materials.diagnostics;')
-        except Exception as e: report['status']='FAIL';report['error']=str(e);raise
+        except Exception as e:
+            report['status']='FAIL';report['error']=str(e)
+            try: report['failureDiagnostics']=js('return {materials:OS.materials?.diagnostics,renderer:OS.renderer?.mode,gpuPending:OS.renderer?.gpuPending,gpuPeak:OS.renderer?.gpuPeak,visibility:document.visibilityState,profile:OS.themes?.visual};')
+            except Exception as diagnostic_error: report['diagnosticError']=str(diagnostic_error)
+            raise
         finally:
             (out/'results.json').write_text(json.dumps(report,indent=2)+'\n');browser.close();server.shutdown()
 if __name__=='__main__':

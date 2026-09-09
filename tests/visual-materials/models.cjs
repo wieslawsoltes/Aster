@@ -14,3 +14,18 @@ test('Theme updates and Windows-format interchange preserve the optics descripto
 test('Invalid material settings cannot introduce CSS, scripts or excessive work',()=>{const t=T.normalize({optics:{quality:'url(evil)',bend:900,dispersion:900,magnify:false,shader:'evil'}});assert.equal(t.optics.quality,'balanced');assert.equal(t.optics.bend,100);assert.equal(t.optics.dispersion,25);assert(!t.optics.magnify);assert(!('shader'in t.optics));});
 test('All optical modules and profile art are present in static, standalone and offline editions',()=>{const index=fs.readFileSync('index.html','utf8'),sw=fs.readFileSync('sw.js','utf8'),html=fs.readFileSync('Aster.html','utf8');for(const n of ['material-optics.js','liquid-material.js','profile-artwork.js','visual-profiles.css']){assert(index.includes('src/'+n));assert(sw.includes('src/'+n));const content=fs.readFileSync('src/'+n,'utf8');assert(html.includes(content.slice(0,80)));}assert(index.indexOf('material-optics.js')<index.indexOf('liquid-material.js'));});
 test('Normal-field shader writes bounded geometry only, with no backdrop texture input',()=>{assert(M.WGSL.includes('@compute'));assert(M.WGSL.includes('any(id.xy>=p.grid)'));assert(!M.WGSL.includes('texture_'));assert(M.WGSL.includes('channel.y<<8u'));});
+
+test('Slow GPU completion bounds desktop submissions and retains pending invalidation',async()=>{
+    const vm=require('node:vm'),waiters=[];let submitted=0;
+    const canvas={width:16,height:16},pass={setPipeline(){},setBindGroup(){},draw(){},end(){}};
+    const OS={$:()=>canvas,settings:{motion:true},windows:new Map(),metrics:{frames:[]},effectiveWallpaper:()=> 'bloom',emit(){}};
+    const sandbox={Aster:OS,performance:{now:()=>1},Float32Array,console,document:{hidden:false,body:{dataset:{theme:'light'}}},matchMedia:()=>({matches:false}),requestAnimationFrame(){}};
+    vm.runInNewContext(fs.readFileSync('src/renderer.js','utf8'),sandbox);
+    const renderer=new OS.Renderer();renderer.mode='WebGPU';renderer.ratio=1;renderer.context={getCurrentTexture:()=>({createView:()=>({})})};
+    renderer.device={queue:{writeBuffer(){},submit(){submitted++;},onSubmittedWorkDone:()=>new Promise((resolve,reject)=>waiters.push({resolve,reject}))},createCommandEncoder:()=>({beginRenderPass:()=>pass,finish:()=>({})})};
+    renderer.frame(100);renderer.invalidate();renderer.frame(140);assert.equal(submitted,2);assert.equal(renderer.gpuPending,2);
+    renderer.invalidate();renderer.frame(180);assert.equal(submitted,2);assert(renderer.dirty,'Deferred work must stay dirty');
+    waiters[0].resolve();await Promise.resolve();assert.equal(renderer.gpuPending,1);
+    renderer.frame(220);assert.equal(submitted,3);assert.equal(renderer.gpuPeak,2);assert(!renderer.dirty);
+    waiters[1].resolve();waiters[2].resolve();await Promise.resolve();assert.equal(renderer.gpuPending,0);
+});

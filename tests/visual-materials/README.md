@@ -14,8 +14,10 @@ require Vulkan/SwiftShader. `--browser PATH` selects an existing Chromium.
 is blocked; it skips full-page storage and offline startup assertions and is not
 substituted for hosted HTTP verification.
 
-Thirteen DOM-free checks cover bounded optical math, symmetry, sampling, theme
-normalization, portable interchange and static/offline inclusion. Browser tests
+Fourteen DOM-free checks cover bounded optical math, symmetry, sampling, theme
+normalization, portable interchange, static/offline inclusion and bounded GPU
+frame submission with preserved dirty state. GPU test waits allow software-adapter
+latency, retaining actual completion assertions and failure diagnostics. Browser tests
 use real windows/menus/settings with no substituted implementation. Reports retain
 page exceptions, screenshots, renderer details and resource counters. The
 checkerboard is labeled a test scene, not an external app or native screenshot.

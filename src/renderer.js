@@ -71,7 +71,7 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
   return vec4f(tint,a);
 }`;
     class Renderer {
-        constructor() { this.canvas = OS.$('#compositor'); this.dirty = true; this.lastDraw = 0; this.start = performance.now(); this.count = 0; this.sampleStart = performance.now(); this.rectData = new Float32Array(48 * 128); this.uniformData = new Float32Array(12); this.mode = 'Canvas 2D'; this.frame = this.frame.bind(this); }
+        constructor() { this.canvas = OS.$('#compositor'); this.dirty = true; this.lastDraw = 0; this.start = performance.now(); this.count = 0; this.sampleStart = performance.now(); this.rectData = new Float32Array(48 * 128); this.uniformData = new Float32Array(12); this.mode = 'Canvas 2D'; this.gpuPending = 0; this.gpuPeak = 0; this.frame = this.frame.bind(this); }
         async init() {
             if (navigator.gpu) {
                 try {
@@ -163,6 +163,11 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                 }
                 return;
             }
+            // Bound shared-device queue depth: slow adapters must not enqueue
+            // unbounded wallpaper frames ahead of interactive compute/readback.
+            // Keep dirty state intact until a frame can actually be submitted.
+            if (this.mode === 'WebGPU' && this.gpuPending >= 2)
+                return;
             const before = performance.now();
             try {
                 if (this.mode === 'WebGPU')
@@ -251,7 +256,16 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                 w.gpuDirty = false;
                 draws++;
             }
-            this.device.queue.submit([encoder.finish()]);
+            const device = this.device;
+            device.queue.submit([encoder.finish()]);
+            this.gpuPending++;
+            this.gpuPeak = Math.max(this.gpuPeak, this.gpuPending);
+            const retire = () => { if (this.device === device) this.gpuPending = Math.max(0, this.gpuPending - 1); };
+            device.queue.onSubmittedWorkDone().then(retire, error => {
+                retire();
+                if (this.device === device && this.mode === 'WebGPU')
+                    this.fallback('GPU submission failed: ' + error.message);
+            });
             OS.metrics.drawCalls = draws;
         }
         draw2D() {
