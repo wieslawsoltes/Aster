@@ -1,0 +1,65 @@
+name: Visual profiles and refractive materials
+on:
+  pull_request:
+    paths: ['src/**', 'tests/**', 'docs/visual-materials.md', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/visual-materials.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'tests/visual-materials/**', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/visual-materials.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: visual-materials-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify bounded optics, theme compatibility and reproducible standalone
+        run: |
+          for f in src/*.js src/win32/*.js sw.js; do node --check "$f"; done
+          python -m py_compile build.py tests/visual-materials/browser.py
+          node --test tests/visual-materials/models.cjs tests/themes/models.cjs tests/themes/win32.cjs
+          python build.py
+          git diff --exit-code -- Aster.html
+          git diff --check
+      - name: Install browser and software Vulkan test dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libvulkan1 mesa-vulkan-drivers xvfb xauth
+          python -m pip install playwright pillow
+          python -m playwright install --with-deps chromium
+      - name: Actual profile controls, isolated refraction pixels and durable preferences
+        run: python tests/visual-materials/browser.py
+      - name: Standalone and offline material rendering
+        run: python tests/visual-materials/browser.py --standalone --output tests/visual-materials/artifacts/standalone
+      - name: Require production WebGPU optical fields and independent GPU/CPU equivalence
+        run: xvfb-run -a -s '-screen 0 1440x1000x24' python tests/visual-materials/browser.py --gpu --headed --output tests/visual-materials/artifacts/webgpu
+      - name: Preserve exact tested source and provenance
+        if: always()
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p tests/visual-materials/artifacts
+          git archive --format=zip HEAD -o tests/visual-materials/artifacts/source.zip
+          python - <<'PY'
+          import hashlib,json,os,subprocess
+          from pathlib import Path
+          Path('tests/visual-materials/artifacts/provenance.json').write_text(json.dumps({'checkout':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'prHead':os.environ.get('PR_HEAD'),'standaloneSHA256':hashlib.sha256(Path('Aster.html').read_bytes()).hexdigest()},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-materials-evidence
+          path: |
+            tests/visual-materials/artifacts/
+            Aster.html
+          retention-days: 14
