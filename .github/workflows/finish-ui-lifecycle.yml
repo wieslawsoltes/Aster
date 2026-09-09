@@ -1,0 +1,57 @@
+name: Complete reviewed UI lifecycle fixes
+on:
+  push:
+    branches: [fix/theme-controls-original-icons]
+    paths: ['.github/workflows/finish-ui-lifecycle.yml']
+permissions:
+  contents: write
+jobs:
+  finish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply the complete hash-checked four-file correction
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,hashlib,json,lzma
+          encoded='/Td6WFoAAATm1rRGAgAhARwAAAAQz1jM4A+YB/JdAC2ewEcDQ4pS1guZDd8xamEcEBjpRtYk+wru6Ew0rnorfQFPi5Vpvg33s+nBBVpF4OXf8neWNncyB/lwwkxUPD5FL+E5RaLVbzx8eggTvPi4cVZ4MyhhtsNHucH/qPMA70yNXbbQQQc40FyHk6LQXiqiwBUscWq+FHQijXlU5YvMpSMCdIKz/5q5cows5sEGZGdmNoZ9TifLIKdhO8zCPkkijruWhbKTAkxotS0FpIEhEqUTH0H3oB9CCra/IF0AxP3Mf3JqezUdBJ1fg17fWdVfdYsP/QCSMow1LvnY/rQDQflq/f5GqjW54kWWTLlj+6cGhkGd/B1xriTgvUAJuhz1awi+YfFdHF52cWutBtGwhuNjwBtQundWLS5iyKT7rYs5Xp95AshRyW+OhknsAr4xWrLbwdTh6LADWH9f45PItOB43lQIYhDd3CLS7xph5a5dK0p24hIcImcyXksoVGe3clrRrMkCUTx95xomO//am0dDnECu7vaAlmg3lDNuHFc843CMUb68UcVG65RtDSvZJtX3v5GFKyFO3yAClSrn4yx2xbE/yrbeH5UtSogt44qT+Ttvrw0OHzRU1Wy6mY8rCfsY1Q6UIuPbVgjJndaG8XkbKYLAFjCxgC31ESIQPCZbWeg3WJJM7NU+ltStXMiAMODgySTOeacvyiUwuZkz9WJkxWDC0+SiXVftf6pTDpspnAC4y7V89EdAfz7ItGbsODQr+/i1qjKPXwes+U6hg6SnP4hVlR2mxzHia7fRTt30q6InGEV44ycbCjtfjrYCkmntMMZxhGSKjutbcjrzcT205ZA/ScLR59IJl0qAmLpd2yAhTQu6LYkgYPJ21m/5NNNbRBrP9zg9Ir2piNkxfx/dqetNmzc5VNurHJ0g0atQkUaGKwIaQdXhHQ0YSbAxCPLhjO9iCEVORRJBr7fGykPLHbQ1dZkbsxu0jxvCx+WZRZWX20zdMPePkkLXGEb9dYMEGp/RhhVpYeHrxfD/ZtjoM9fQBhDxeZYYrttlN41sxMmjfb+O1r3cipKnntdCRdZmFFj2VAXF50PyfxsN4/BhD6nbmSkP5hcTYBI+ZDVQfnucZtYTQk6rI7zAIAZMyqV1Ia65B+TeHTkmn08dhWLgRb1R4nqy25xOxZKhA+K6K9fHpdCv3q3PedTjdiqgyNmqPfKQaLDI3wy/MfrqqsfeqkQCJMt9FP6o8qmGQUIee2mn9rQVgwcfejiv+T0i0gzvoVrjMFB+8MbUNyQ7SprDRDh3CfXDO+srxzcExihpThluXhxXOMof/UsJMNyb9V6wRUBAX3W9Pfd+JSuwsWE08yE+7iA6O3y/AyvaKyyiC0WILCvjquThn7jygOvpd/uS5vmqVJe3wNhQ9H+Km+GUihCUjRWMrZrsjpqrxOpIlp5hcadDHazlaEQi23Qjemj8Iz/HB9g6cR+EJVW+vJOIN+Ql+dDGi8+4gfLLyA4wp+sND/hJbXcPa+gmC1hw0/eZcJSCnWQBmyzgaTqRRqQdoz1DIj/2+n5+fleuRlOoehS3aoknXaalHMgOdWCOsqxhRbhqZA6s1/4VUyPPTcQC8MneplYY0xCAAdymJF6oVtAjFCbgIx6K5RMJQC4CnKLIvGT0mv19+/Yk64UFb31bi3h0L1mmbfBuAncdwvRN9os5yvWPZfcqYCcxoqOToardrBBsIsn/1R/sm9bpQpRbDdZLvng39UP/U7y5ReYdGO5RfnGPKJ3jw14nSW4Lue4xzGpBYA29G/B9bhiMnNpbKMgoXpU7IywTE5Yo5+81akyiHa6WdP8pqMGa19JDPnqj220jeAEik6dS6flAdLHqTUe4cbBI6+JRomjaqwxJ6SqrO+tDXBv69I96CmW0GOm5s3AtsPeoB2UoCltpOqZOk773UijHf9TjIEkAGkAxmkyveE0RjjOQqwMPBYwkt2s+YYGQWJWwyVzwq94sIVPMwHUfATmGcmjot218Qe1ugmwVZJHLjDcqGBWDhPoM+wNZfZwz1JyVrIV38bLRYN+LlFoxrjfEKD1R86pk+lxAp9eEbdp/NVV7s42DZISFCq9ZwFEQKToVcTzqJ//cFveKnYtF9Ge6cszagztCgdS6pMYgBjxT3Y5UzZKfTQQ92L9lPzyuniafPI0x9onXUrxEQ9NyjMl24IEiBIvijq6MwBgdgvb75Ph0DxdNnv0IZZSeyIEERXtQ2XX6Iw8PG2OuQhahTmMYYeR0gWJHqByq1aNd6X56ZMtM5YfBZXEEgvHz02sB6X9Qp3idyNJarjcHbbUY1LvSufLDlVNGM+we2A+VxmqLZnRo8gi1QzUoVOzBwK6TTcX754B2h/UsKamgDedECQ7vAjopxzggie/qDq9eck9YrAszN1I6e0TTCcIAA41Elq1fjzp0QSCgy2aa8a60acKJlRnUa2nrCRG/7ZafLls/8jiK5Eu+ZTzOwSNN/a26o1jZjIjQIFL2aZL4LCs5OtyZEwKN95xXmOiSljyAH/SF7OdznFl3QUMMmg7VF/8KhVDUX+/WZkDiAjpJQo9r3/nVVe+yW/pomx4/vD3kwbYWZ8scG2ggYEFTm9MySCo0kq2xWz3qwwBMw50eZ6wYuxjcvYWIoJOtacJ7UTXUB9OX8whbRriLac/T1O4uKLxi2pIB5cjRY5vg/Y8cL0f3j1B0L3NvGZmdSYEKVR4m6E3XDzaj7n+hnjnSDwAAAJ/0FAedFNSbAAGOEJkfAACUfD1QscRn+wIAAAAABFla'
+          data=base64.b64decode(encoded,validate=True)
+          assert hashlib.sha256(data).hexdigest()=='511919072ece5902102944d43dbb914c613e21e23b2691f783a7405f9d190f59'
+          decoder=lzma.LZMADecompressor(memlimit=128*1024*1024)
+          raw=decoder.decompress(data,max_length=3994)
+          assert decoder.eof and not decoder.unused_data and len(raw)==3993
+          assert hashlib.sha256(raw).hexdigest()=='c82436a7b46d477d9ac76b881762221aad029511e6f45ef44413a35481c7d672'
+          changes=json.loads(raw)
+          assert len(changes)==4 and {c['path'] for c in changes}=={'src/shell-launch.js','tests/ui-refinement/browser.py','tests/ui-refinement/models.cjs','docs/ui-refinement.md'}
+          outputs=[]
+          for c in changes:
+              p=Path(c['path']);before=p.read_bytes();assert not p.is_symlink()
+              assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent edit: '+str(p)
+              text=before.decode();last=0
+              for a,b,s in c['ops']:
+                  assert isinstance(a,int) and isinstance(b,int) and last<=a<=b<=len(text) and isinstance(s,str)
+                  last=b
+              for a,b,s in reversed(c['ops']):text=text[:a]+s+text[b:]
+              data=text.encode();assert hashlib.sha256(data).hexdigest()==c['after'],str(p)
+              outputs.append((p,data))
+          for p,data in outputs:p.write_bytes(data)
+          PY
+      - name: Validate and rebuild without changing inherited browser assertions
+        run: |
+          node --check src/shell-launch.js
+          python3 -m py_compile tests/ui-refinement/browser.py
+          python3 build.py
+          node --test tests/ui-refinement/models.cjs tests/shell-launch/models.cjs
+          git diff --check
+      - name: Commit the fixes and regression on the current PR branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/shell-launch.js tests/ui-refinement/browser.py tests/ui-refinement/models.cjs docs/ui-refinement.md Aster.html
+          git commit -m 'Release Run guard on dialog completion and respect restored topmost windows in offline test'
+          git push origin HEAD:fix/theme-controls-original-icons
