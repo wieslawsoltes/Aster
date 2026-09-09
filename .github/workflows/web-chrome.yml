@@ -1,0 +1,57 @@
+name: Compact web apps and Orbit browsing
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths: ['src/**', 'tests/web-chrome/**', 'index.html', 'Aster.html', 'sw.js', '.github/workflows/web-chrome.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: web-chrome-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate addresses, permissions and reproducible standalone
+        run: |
+          for file in src/*.js; do node --check "$file"; done
+          python -m py_compile tests/web-chrome/browser.py
+          node --test tests/web-chrome/models.cjs
+          python build.py
+          git diff --exit-code -- Aster.html
+          git diff --check
+      - name: Install browser verification tools
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Real HTTP navigation, settings, compact controls and CSP denial
+        run: python tests/web-chrome/browser.py
+      - name: Standalone, durable reloads and offline startup
+        run: python tests/web-chrome/browser.py --standalone --output tests/web-chrome/artifacts/standalone
+      - name: Unchanged deployed Forma and NotepadXP in compact windows and Orbit
+        run: python tests/web-chrome/browser.py --live --output tests/web-chrome/artifacts/live
+      - name: Preserve exact tested source
+        if: always()
+        run: |
+          mkdir -p tests/web-chrome/artifacts
+          git archive --format=zip HEAD -o tests/web-chrome/artifacts/source.zip
+          git rev-parse HEAD > tests/web-chrome/artifacts/commit.txt
+          sha256sum Aster.html > tests/web-chrome/artifacts/standalone.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compact-web-apps-evidence
+          path: |
+            tests/web-chrome/artifacts/
+            Aster.html
+          retention-days: 14
