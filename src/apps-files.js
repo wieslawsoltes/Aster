@@ -594,7 +594,8 @@
     });
     OS.register('browser', { title: 'Orbit Browser', description: 'A home for the web and your HTML apps.', category: 'Essentials', width: 1010, height: 670, minWidth: 420,
         mount: async (w, options) => {
-            let tabs = [], active = null;
+            let tabs = [], active = null, alive = true;
+            const addresses = AsterWebNavigation;
             const tabbar = OS.el('div', { class: 'browser-tabs' }), nav = OS.el('div', { class: 'browser-nav' }), holder = OS.el('div', { class: 'browser-content' });
             const back = button('back', 'Back', () => historyMove(-1), 'icon-button'), forward = button('forward', 'Forward', () => historyMove(1), 'icon-button'), reload = button('refresh', 'Reload', () => renderContent(current()), 'icon-button'), home = button('home', 'Home', () => navigate('aster://home'), 'icon-button'), address = OS.el('input', { class: 'browser-address', 'aria-label': 'Address or search', placeholder: 'Search the web or enter an address' }), external = button('external', 'Open page in your real browser', () => openExternal(), 'icon-button');
             nav.append(back, forward, reload, home, address, external);
@@ -605,7 +606,7 @@
                 const tab = OS.el('div', { class: 'browser-tab' + (t.id === active ? ' active' : ''), role: 'tab', tabindex: '0', 'aria-selected': String(t.id === active) });
                 tab.innerHTML = OS.icon(t.url.startsWith('aster:') ? 'spark' : 'globe', 14) + `<span>${esc(t.title || t.url)}</span>`;
                 const close = button('close', 'Close tab', () => { }, 'icon-button');
-                close.onclick = e => { e.stopPropagation(); t.pane.remove(); tabs = tabs.filter(x => x.id !== t.id); if (!tabs.length) {
+                close.onclick = e => { e.stopPropagation(); disposeTab(t); t.pane.remove(); tabs = tabs.filter(x => x.id !== t.id); if (!tabs.length) {
                     addTab();
                     return;
                 } if (active === t.id)
@@ -619,20 +620,13 @@
                 tabbar.append(tab);
             } tabbar.append(button('plus', 'New tab', () => addTab(), 'icon-button')); }
             function activate(id) { active = id; const t = current(); tabs.forEach(x => x.pane.hidden = x.id !== active); address.value = t.url; back.disabled = t.index <= 0; forward.disabled = t.index >= t.history.length - 1; external.disabled = t.url.startsWith('aster:'); w.setTitle((t.title || 'Orbit') + ' — Orbit Browser'); renderTabs(); persist(); }
-            function addTab(url = 'aster://home') { const pane = OS.el('div', { class: 'browser-content' }), t = { id: OS.uid(), url, title: 'New tab', pane, history: [url], index: 0 }; tabs.push(t); holder.append(pane); active = t.id; OS.guard(renderContent)(t); activate(t.id); return t; }
+            function addTab(url = 'aster://home') {
+                if (tabs.length >= 20) throw Error('Close a tab first (20 tabs maximum).');
+                url = addresses.address(url);
+ const pane = OS.el('div', { class: 'browser-content' }), t = { id: OS.uid(), url, title: 'New tab', pane, history: [url], index: 0 }; tabs.push(t); holder.append(pane); active = t.id; OS.guard(renderContent)(t); activate(t.id); return t; }
             async function navigate(input, newTab = false) {
-                let url = input.trim();
-                if (!url)
-                    return;
-                if (!/^(https?:\/\/|aster:\/\/)/i.test(url)) {
-                    if (/^[\w.-]+\.[a-z]{2,}([/:?#]|$)/i.test(url))
-                        url = 'https://' + url;
-                    else {
-                        window.open('https://duckduckgo.com/?q=' + encodeURIComponent(url), '_blank', 'noopener,noreferrer');
-                        OS.notify('Search opened in your browser', 'Web search opens outside the sandbox.');
-                        return;
-                    }
-                }
+                const url = addresses.address(input);
+                if (!alive) return;
                 if (newTab) {
                     addTab(url);
                     return;
@@ -641,18 +635,28 @@
                 t.url = url;
                 t.history = t.history.slice(0, t.index + 1);
                 t.history.push(url);
-                t.index++;
+                t.history = t.history.slice(-100); t.index = t.history.length - 1;
                 await renderContent(t);
-                activate(t.id);
+                if (alive && tabs.includes(t)) activate(t.id);
             }
             async function historyMove(delta) { const t = current(), i = t.index + delta; if (i < 0 || i >= t.history.length)
-                return; t.index = i; t.url = t.history[i]; await renderContent(t); activate(t.id); }
+                return; t.index = i; t.url = t.history[i]; await renderContent(t); if (alive && tabs.includes(t)) activate(t.id); }
             function openExternal() { const t = current(); if (/^https?:\/\//i.test(t.url))
                 window.open(t.url, '_blank', 'noopener,noreferrer'); }
-            async function renderContent(t) {
-                if (!t)
-                    return;
+            function disposeTab(t) {
+                t.renderVersion = (t.renderVersion || 0) + 1;
+                t.detachFrame?.(); t.detachFrame = null;
+                for (const frame of t.pane.querySelectorAll('iframe')) { frame.remove(); frame.removeAttribute('srcdoc'); frame.src = 'about:blank'; }
                 t.pane.replaceChildren();
+            }
+            async function renderContent(t) {
+                if (!t || !alive || !tabs.includes(t)) return;
+                disposeTab(t);
+                const generation = t.renderVersion, target = t.url;
+                const isCurrent = () => alive && tabs.includes(t) && generation === t.renderVersion;
+                try { t.url = addresses.address(target, false); } catch (error) {
+                    t.pane.append(OS.el('div', {class:'empty',text:error.message})); return;
+                }
                 if (t.url === 'aster://home' || t.url === 'aster://apps') {
                     t.title = t.url.endsWith('apps') ? 'Your apps' : 'New tab';
                     const page = OS.el('div', { class: 'browser-home' });
@@ -662,35 +666,50 @@
                     form.onsubmit = e => { e.preventDefault(); navigate(search.value); };
                     page.append(form);
                     const links = OS.el('div', { class: 'browser-links' });
-                    const items = t.url.endsWith('apps') ? Array.from(OS.apps.values()).slice(0, 12).map(a => [a.id, a.title, () => OS.launch(a.id)]) : [['files', 'My files', () => OS.launch('files')], ['code', 'Code Studio', () => OS.launch('code')], ['welcome', 'Get started', () => OS.launch('welcome')], ['store', 'App Center', () => OS.launch('store')], ['browser', 'Wikipedia', () => navigate('https://en.wikipedia.org')]];
+                    const items = t.url.endsWith('apps') ? Array.from(OS.apps.values()).filter(a=>!a.hidden).slice(0, 12).map(a => [a.id, a.title, () => OS.launch(a.id)]) : [['files', 'My files', () => OS.launch('files')], ['code', 'Code Studio', () => OS.launch('code')], ['welcome', 'Get started', () => OS.launch('welcome')], ['store', 'App Center', () => OS.launch('store')], ['browser', 'Wikipedia', () => navigate('https://en.wikipedia.org')], ['store', 'Your web apps', () => navigate('aster://apps')]];
                     for (const [id, title, fn] of items)
                         links.append(OS.el('button', { class: 'browser-link', html: OS.appIcon(id, 39) + `<span>${esc(title)}</span>`, onclick: fn }));
-                    page.append(links, OS.el('small', { text: 'Your files stay local. Web searches open in your real browser.', style: 'font-size:10px;margin-top:34px' }));
+                    if (t.url.endsWith('apps')) {
+                        links.replaceChildren();
+                        for (const app of OS.webCatalog?.apps || []) links.append(OS.el('button',{class:'browser-link',title:app.description,html:OS.appIcon(app.id,32)+'<span>'+esc(app.title)+'</span>',onclick:OS.guard(()=>navigate(app.url))}));
+                    }
+                    page.append(links, OS.el('small', { text: 'Websites and searches open in Aster. Sites that block embedding can be opened in your real browser.', style: 'font-size:10px;margin-top:34px' }));
                     t.pane.append(page);
                 }
                 else if (t.url.startsWith('aster://file/')) {
                     const path = decodeURIComponent(t.url.slice('aster://file'.length)), file = await OS.fs.read(path);
+                    if (!isCurrent()) return;
                     t.title = OS.fs.name(path);
                     const note = OS.el('div', { class: 'browser-note', html: OS.icon('shield', 13) + '<span>Local HTML app · isolated sandbox · no desktop API access</span>' });
                     const edit = OS.el('button', { text: 'Edit source', onclick: () => OS.launch('notepad', { path }) });
                     note.append(edit);
                     const frame = OS.el('iframe', { class: 'browser-iframe', sandbox: 'allow-scripts allow-forms allow-modals allow-downloads', title: t.title });
-                    frame.srcdoc = await OS.fs.text(file);
-                    t.pane.append(note, frame);
+                    const html = await OS.fs.text(file);
+                    if (!isCurrent()) return;
+                    frame.srcdoc = html; t.pane.append(note, frame);
                 }
                 else if (/^https?:\/\//i.test(t.url)) {
                     const u = new URL(t.url);
                     t.title = u.hostname;
-                    const note = OS.el('div', { class: 'browser-note', html: OS.icon('info', 13) + '<span>Some sites block embedding or need cookies unavailable in this sandbox.</span>' });
-                    note.append(OS.el('button', { text: 'Open in browser ↗', onclick: () => window.open(t.url, '_blank', 'noopener,noreferrer') }));
-                    const frame = OS.el('iframe', { class: 'browser-iframe', src: u.href, sandbox: 'allow-scripts allow-forms allow-popups allow-downloads', title: u.hostname, referrerpolicy: 'strict-origin-when-cross-origin' });
-                    t.pane.append(note, frame);
+                    const policy = addresses.framePolicy(u.href, OS.webCatalog?.apps || []);
+                    const note = OS.el('div', { class: 'browser-note', html: OS.icon('info', 13) + '<span>Website opened inside Aster. Blank or blocked? This site may forbid embedding or require a separate tab. The address shows the last address you entered.</span>' });
+                    note.append(OS.el('button', { text: 'Open in browser ↗', onclick: () => window.open(u.href, '_blank', 'noopener,noreferrer') }));
+                    const frame = OS.el('iframe', { class: 'browser-iframe', sandbox:policy.sandbox, allow:policy.allow, allowfullscreen:true, title:u.hostname, referrerpolicy:'no-referrer' });
+                    // Only reviewed catalog roots get their existing trusted-app policy.
+                    // Unknown websites and local HTML remain opaque-origin sandboxes.
+                    frame.dataset.browserPolicy = policy.trusted ? 'reviewed-app' : 'isolated';
+                    frame.src = u.href; t.pane.append(note, frame);
+                    const focusFrame = () => {
+                        if (isCurrent() && active === t.id && document.activeElement === frame && !w.minimized && w.desktop === OS.activeDesktop) { OS.closePanels?.(); w.focus(false); }
+                    };
+                    window.addEventListener('blur', focusFrame);
+                    t.detachFrame = () => window.removeEventListener('blur', focusFrame);
                 }
                 else {
                     t.title = 'Address not supported';
                     t.pane.append(OS.el('div', { class: 'empty', html: OS.icon('shield', 45) + '<strong>Address not supported</strong><span>Use an https:// address or a local Aster page.</span>' }));
                 }
-                if (t.id === active)
+                if (isCurrent() && t.id === active)
                     activate(t.id);
             }
             address.onkeydown = e => { if (e.key === 'Enter') {
@@ -706,13 +725,16 @@
                 e.preventDefault();
                 addTab();
             } };
-            w.addCleanup(() => tabs.forEach(t => t.pane.replaceChildren()));
-            if (options.path)
-                addTab('aster://file' + encodeURI(options.path));
-            else if (w.state.tabs?.length) {
-                for (const t of w.state.tabs)
-                    addTab(t.url);
-                activate(tabs[Math.min(w.state.active || 0, tabs.length - 1)].id);
+            w.addCleanup(() => {alive = false; tabs.forEach(disposeTab);});
+            if (options.path && !options.state?.tabs?.length)
+                addTab(addresses.address('aster://file' + encodeURI(options.path).replace(/#/g,'%23').replace(/\?/g,'%3F'), false));
+            else if (options.url && !options.state?.tabs?.length) addTab(addresses.address(options.url, false));
+            else if (Array.isArray(w.state.tabs) && w.state.tabs.length) {
+                const saved = w.state.tabs.slice(0,20), savedActive = Math.max(0, Number(w.state.active) || 0);
+                for (const t of saved) {
+                    try { addTab(addresses.address(t.url, false)); } catch { addTab('aster://home'); }
+                }
+                activate(tabs[Math.min(savedActive, tabs.length - 1)].id);
             }
             else
                 addTab();

@@ -29,7 +29,14 @@
         const reload = OS.el('button', { class: 'icon-button', title: 'Reload app', 'aria-label': 'Reload app', html: OS.icon('refresh', 17) });
         const address = OS.el('input', { class: 'web-app-address', value: url, readonly: true, 'aria-label': 'App address', title: url });
         const external = link(url, 'Open in browser', 'external'), source = link(app.repository, 'Source', 'code');
-        toolbar.append(reload, address, external, source);
+        const internal = OS.el('button', {class:'web-app-action', 'aria-label':'Open in Aster Browser', title:'Open in Aster Browser', html:OS.icon('globe',16)+'<span>Open in Aster Browser</span>', onclick:OS.guard(()=>OS.openInBrowser(url))});
+        toolbar.append(reload, address, internal, external, source);
+        w.extraTitleMenu = () => [null,
+            {text:'Reload app',icon:'refresh',action:load},
+            {text:'Open in Aster Browser',icon:'globe',action:()=>OS.openInBrowser(url)},
+            {text:'Open in browser',icon:'external',action:()=>window.open(url,'_blank','noopener,noreferrer')},
+            {text:'Source',icon:'code',action:()=>window.open(app.repository,'_blank','noopener,noreferrer')}
+        ];
         const viewport = OS.el('div', { class: 'web-app-viewport' });
         const notice = OS.el('div', { class: 'web-app-notice', role: 'status', hidden: true });
         const noticeText = OS.el('span');
@@ -77,6 +84,10 @@
                         doc.addEventListener('pointerdown', focusWindow, true);
                         doc.addEventListener('focusin', focusWindow, true);
                         const key = event => {
+                            if (event.altKey && event.code === 'Space') {
+                                event.preventDefault(); event.stopPropagation();
+                                w.titleMenu({preventDefault(){},stopPropagation(){},target:w.webChrome?.lastElementChild || w.titleEl});
+                            }
                             if (event.altKey && event.key === 'F4') {
                                 event.preventDefault(); event.stopPropagation(); w.close();
                             }
@@ -125,6 +136,7 @@
             if (frame) { frame.remove(); frame.src = 'about:blank'; }
             w.webFrame = null;
         });
+        OS.applyWebAppChrome?.(w);
         load();
     }
     for (const app of catalog.apps) {
@@ -160,6 +172,7 @@
                     onclick: () => OS.launch(app.id),
                     oncontextmenu: event => OS.context(event, [
                         { text: 'Open', icon: 'play', action: () => OS.launch(app.id) },
+                        { text: 'Open in Aster Browser', icon: 'globe', action: () => OS.openInBrowser(app.url) },
                         { text: OS.pins.includes(app.id) ? 'Unpin from taskbar' : 'Pin to taskbar', icon: 'pin', action: () => OS.togglePin(app.id) },
                         { text: 'Add desktop shortcut', icon: 'desktop', action: () => OS.addDesktopShortcut(app.id) }
                     ]) });

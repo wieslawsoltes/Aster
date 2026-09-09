@@ -16,3 +16,5 @@ tests/file-workflows/artifacts/
 tests/shell-launch/artifacts/
 
 tests/themes/artifacts/
+
+tests/web-chrome/artifacts/

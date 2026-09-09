@@ -130,6 +130,7 @@
             this.constrain();
             this.el = OS.el('section', { class: 'window', 'data-window': this.id, 'data-app': app.id, role: 'region', 'aria-label': app.title, tabindex: '-1' });
             this.bar = OS.el('header', { class: 'titlebar' });
+            this.bar.hidden = !!(app.webApp || app.custom) && OS.settings.webAppTitleBars !== true;
             this.titleEl = OS.el('div', { class: 'window-title', html: OS.appIcon(app.id, 17) + `<span>${OS.esc(this.title)}</span>` });
             const controls = OS.el('div', { class: 'window-controls' });
             const min = OS.el('button', { title: 'Minimize', 'aria-label': 'Minimize', html: OS.icon('min') }), max = OS.el('button', { title: 'Maximize', 'aria-label': 'Maximize', html: OS.icon('max') }), close = OS.el('button', { title: 'Close', 'aria-label': 'Close', html: OS.icon('close') });
@@ -265,13 +266,13 @@
             OS.closePanels?.();
             if(!OS.suppressSnapAssist) OS.showSnapAssist?.(this,zone);
         }
-        beginDrag(e) {
+        beginDrag(e, surface = this.bar) {
             if (e.button !== 0)
                 return;
             e.preventDefault();
             this.focus();
             OS.closePanels?.();
-            const start = { x: e.clientX, y: e.clientY, rect: { ...this.rect } }, bar = this.bar;
+            const start = { x: e.clientX, y: e.clientY, rect: { ...this.rect } }, bar = surface;
             let moved = false, last = e, pending = 0, zone = null;
             bar.setPointerCapture(e.pointerId);
             this.el.classList.add('dragging');
@@ -360,7 +361,7 @@
         }
         titleMenu(e) { OS.context(e, [{ text: 'Restore', icon: 'restore', disabled: !this.maximized && !this.minimized, action: () => { if (this.maximized)
                     this.toggleMaximize(); this.restore(); } }, { text: 'Minimize', icon: 'min', action: () => this.minimize() }, { text: 'Maximize', icon: 'max', action: () => { if (!this.maximized)
-                    this.toggleMaximize(); } }, null, { label: 'Move to desktop' }, ...OS.desktops.map(d => ({ text: d.name, icon: 'desktop', disabled: d.id === this.desktop, action: () => { this.desktop = d.id; this.sync(); OS.emit('windows'); } })), null, { text: 'Close', icon: 'close', key: 'Alt+F4', action: () => this.close() }]); }
+                    this.toggleMaximize(); } }, null, { label: 'Move to desktop' }, ...OS.desktops.map(d => ({ text: d.name, icon: 'desktop', disabled: d.id === this.desktop, action: () => { this.desktop = d.id; this.sync(); OS.emit('windows'); } })), ...(this.extraTitleMenu?.() || []), null, { text: 'Close', icon: 'close', key: 'Alt+F4', action: () => this.close() }]); }
         showSnapLayouts() {
             if (this.closed || this.minimized)
                 return;

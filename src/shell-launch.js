@@ -133,6 +133,12 @@
         act('New window',()=>OS.openApp(appId));act(OS.pins.includes(appId)?'Unpin from taskbar':'Pin to taskbar',()=>OS.togglePin(appId));
         if(appId==='files')for(const path of ['/Documents','/Downloads','/Pictures']){const p=path.startsWith('/')?path:'/'+path;act(OS.fs.name(p),()=>OS.openApp('files',{path:p}));}
         const windows=[...OS.windows.values()].filter(w=>w.appId===appId);if(windows.length)act('Close all windows',async()=>{for(const w of windows)await w.close();});
+        if (app.webApp || app.custom) {
+            for (const win of windows) act('Window controls · '+win.title,()=>{win.restore();win.titleMenu({preventDefault(){},stopPropagation(){},target:document.querySelector('#taskbar [data-app="'+appId+'"]')});});
+            const entry=OS.webCatalog?.apps.find(a=>a.id===appId);
+            if(entry) act('Open in Aster Browser',()=>OS.openInBrowser(entry.url));
+            act('Web app appearance settings',()=>OS.openApp('settings',{section:'webapps'}));
+        }
         act('Recent items settings',()=>OS.openApp('settings',{section:'recentitems'}));
         const r=anchor.getBoundingClientRect();panel.style.left=Math.max(8,Math.min(innerWidth-348,r.left))+'px';panel.style.bottom='58px';
         panel.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();OS.closePanels(true);}else if(['ArrowDown','ArrowUp','Tab'].includes(e.key)){const items=[...panel.querySelectorAll('button:not(:disabled)')],at=items.indexOf(document.activeElement);e.preventDefault();items[(at+((e.key==='ArrowUp'||e.shiftKey)?items.length-1:1))%items.length]?.focus();}};

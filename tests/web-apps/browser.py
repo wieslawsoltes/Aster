@@ -110,6 +110,9 @@ def main(args):
                 return 'Category search returns all matches; app search launches the canonical URL'
             check('Start search indexes app names, descriptions and category',search)
             def chrome():
+                assert page.locator('.window[data-app=web-paintxp] > .titlebar').is_hidden()
+                assert page.locator('.web-app-toolbar').is_hidden()
+                page.evaluate('async()=>{await Aster.setSetting("webAppTitleBars",true);await Aster.setSetting("webAppToolbars",true);}')
                 window=page.locator('.window[data-app="web-paintxp"]')
                 for label in ['Minimize','Maximize','Close']:assert window.get_by_role('button',name=label,exact=True).count()==1
                 assert page.get_by_label('App address').input_value()=='https://wieslawsoltes.github.io/PaintXP/'

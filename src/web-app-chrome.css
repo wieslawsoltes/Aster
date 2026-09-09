@@ -1,0 +1,20 @@
+/* Only the host chrome is hidden; never reach into guest page styles. */
+.window.web-app-host > .titlebar[hidden], .web-app-toolbar[hidden], .web-app-footer[hidden], .web-window-tools[hidden] {display:none!important}
+.web-window-tools {position:absolute;z-index:8;top:2px;right:7px;display:flex;gap:0;opacity:.18;border:1px solid var(--border);border-radius:0 0 7px 7px;background:var(--surface);color:var(--text);box-shadow:0 2px 8px #0002}
+.web-window-tools:hover,.web-window-tools:focus-within {opacity:1}
+.web-window-tools button {width:27px;height:24px;min-height:0;padding:3px;border-radius:4px}
+.web-window-grip {cursor:move;touch-action:none}
+.window.dragging .web-window-tools {opacity:1}
+.web-app-host .window-body {min-height:0}
+.web-app-compact .web-app-toolbar:not([hidden]) {padding-right:68px}
+.browser-tabs {overflow-x:auto;overflow-y:hidden}
+.browser-tabs > .icon-button {flex-shrink:0}
+.browser-content[hidden] {display:none!important}
+.browser-note > span {flex:1;min-width:0}
+.browser-note button {white-space:nowrap}
+.browser-nav {flex-shrink:0}
+@media(pointer:coarse) {.web-window-tools{opacity:.8}.web-window-tools button{width:34px;height:30px}}
+@media(max-width:500px) {.browser-note{align-items:flex-start}.browser-nav{padding:6px 4px;gap:1px}.browser-nav .icon-button{width:27px;min-width:27px;padding:3px}.web-app-toolbar{flex-wrap:wrap}}
+
+.theme-managed .window.web-app-compact > .window-body {border-radius:var(--theme-radius)}
+.theme-managed .window.web-app-compact.maximized > .window-body {border-radius:0}

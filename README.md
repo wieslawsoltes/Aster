@@ -1,5 +1,16 @@
 # Aster Desktop
 
+## Aster 1.9.1 — compact web apps
+
+Web apps now hide the host title bar and address toolbar by default. Restore either
+under **Settings → Apps → Web apps** without reloading an open page. Small window
+controls and taskbar menus keep move/resize/minimize/maximize/close accessible.
+**Open in Aster Browser** launches the site inside Orbit; URL launches, address
+search, tab restoration and frame cleanup are improved. Sites may still block
+embedding; the explicit external-browser fallback remains. See
+[usage, tests and browser boundaries](docs/compact-web-apps.md).
+
+
 **Your space. Your pace.** An independent, Windows 11–inspired browser desktop built with plain HTML, CSS, JavaScript, and WGSL. Built-in apps and integrated system surfaces, a shared file system, a window manager, and an implemented WebGPU graphics path. No runtime framework, package manager, external font, CDN, account, or backend is required.
 
 Aster is a browser desktop, **not a bootable operating system or a general Windows replacement**. The experimental **Win32 Lab** runs a limited subset of real **32-bit x86 PE executables entirely in the browser**, using an original WebAssembly CPU interpreter, a JavaScript Windows API facade and WebGPU GDI rendering. No Wine, Docker, companion, OS image, native executable launch or streamed desktop is involved. Most existing Windows software is not yet compatible. Included applications are the original reduced 7-Zip console and legacy TinyCC binaries, plus a source-built Windows version of WineMine with unchanged upstream gameplay. TinyCC can compile a Windows EXE that Aster then runs. WineMine exercises PE resources, bitmap drawing, menus, modal dialogs and a private registry. Its game code runs as x86, not as a JavaScript port. See [the tested scope and instructions](docs/browser-win32.md) and [third-party licenses/source](third-party/README.md). Imported HTML/JavaScript apps continue to use isolated browser frames.

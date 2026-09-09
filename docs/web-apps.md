@@ -6,9 +6,12 @@ from the normal Start search field. Category submenus have Back navigation,
 keyboard controls and a single-column touch layout on narrow screens.
 
 Each entry launches the real deployed site in an ordinary Aster desktop window:
-its titlebar supports dragging, minimizing, maximizing, snapping, resizing,
-virtual desktops and taskbar activation. Inside the window are a read-only app
-address, **Reload app**, **Open in browser**, and **Source**. Right-click a Start
+its optional titlebar and compact window menu support dragging, minimizing, maximizing, snapping, resizing,
+virtual desktops and taskbar activation. The titlebar, address toolbar and category footer are hidden by default. Enable
+either titlebar or toolbar in **Settings → Apps → Web apps**. The small upper-right
+window controls and taskbar menu stay available. The optional toolbar contains a
+read-only app address, **Reload app**, **Open in Aster Browser**, **Open in browser**,
+and **Source**; these actions are also in the window menu. Right-click a Start
 app to pin it to the taskbar or create a desktop shortcut. Multiple instances
 are allowed; closing a window asks you to save first because the host cannot
 reliably detect an embedded app's dirty documents.

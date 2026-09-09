@@ -2,11 +2,12 @@
 'use strict';
 (() => {
     const OS = window.Aster = {
-        version: '1.9.0', apps: new Map(), windows: new Map(), mounts: new Map(),
+        version: '1.9.1', apps: new Map(), windows: new Map(), mounts: new Map(),
         events: new EventTarget(), clipboard: null, started: performance.now(),
         metrics: { fps: 0, frameMs: 0, drawCalls: 0, mode: 'Starting', frames: [] },
         settings: { theme: 'light', accent: '#176ae6', wallpaper: 'bloom', transparency: true, motion: true,
             highContrast: false, quality: 1, brightness: 100, volume: 65, muted: false, dnd: false, align: 'center', clock24: true,
+            webAppTitleBars: false, webAppToolbars: false,
             username: 'Aster User', restore: true, desktopIcons: true, fontSize: 13 },
         desktops: [{ id: 'desk-1', name: 'Desktop 1' }, { id: 'desk-2', name: 'Desktop 2' }],
         activeDesktop: 'desk-1', notifications: [], recent: [], customApps: [],
@@ -103,6 +104,7 @@
         bug: '<circle cx="12" cy="13" r="6"/><path d="M8 7 6 3m10 4 2-4M2 10h4m12 0h4M2 16h4m12 0h4M7 19l-3 3m13-3 3 3M12 7v12"/>',
         flag: '<path d="M5 22V3c6-5 8 5 16 0v10c-8 5-10-5-16 0"/>', spark: '<path d="m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/>',
         cloud: '<path d="M6 18a5 5 0 0 1-1-10 7 7 0 0 1 13-1 6 6 0 0 1 1 11z"/>', disconnect: '<path d="M2 2 22 22M3 8q9-7 18-1M6 12q4-4 9-2m-6 6q3-3 6 0m-3 4h.01"/>',
+        move: '<path d="M12 2v20M2 12h20M8 6l4-4 4 4M8 18l4 4 4-4M6 8l-4 4 4 4M18 8l4 4-4 4"/>',
         mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 5 10 8L22 5"/>',
     };
     OS.icon = (name, size = 20, cls = '') => `<svg class="icon ${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.file}</svg>`;
