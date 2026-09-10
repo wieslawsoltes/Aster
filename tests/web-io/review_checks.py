@@ -121,7 +121,7 @@ def run(page, ctx, js, picker, frame, done, check, args, root, origin):
         server=ThreadingHTTPServer(('127.0.0.1',0),partial(Cooperative,directory=str(root)));threading.Thread(target=server.serve_forever,daemon=True).start()
         def cooperative():
             url='http://127.0.0.1:'+str(server.server_port)+'/cooperative'
-            js("window.coop=OS.openApp('browser',{url:arg});await coop.ready;",url)
+            js("window.coop=OS.openApp('browser',{url:arg,mode:'webview'});await coop.ready;",url)
             w=page.locator('.window[data-app="browser"]');w.get_by_role('button',name='Connect Aster files',exact=True).click()
             page.wait_for_function('Aster.webIO.sessions.some(s=>s.app.startsWith("site-")&&s.state==="connected")')
             f=w.locator('iframe').element_handle().content_frame();f.wait_for_function('AsterFiles?.connected');assert f.evaluate('(()=>{try{return !parent.Aster}catch(e){return e.name==="SecurityError"}})()')

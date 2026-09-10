@@ -1,3 +1,17 @@
+## Aster 2.3 — Orbit Browser and webviews
+
+Ordinary websites and searches now open through the real browser instead of
+attempting prohibited iframes. API launches and restored addresses show an
+explicit handoff. Compatible sites and reviewed catalog apps retain embedded
+webviews; browser security policies are not bypassed.
+
+Orbit adds bookmarks, optional history, search provider/settings, preserved tabs,
+reopen, guarded navigation, compact app webviews, Files shortcuts, App Center
+installation and shared `Aster.openURL` / `Aster.openWebview` APIs. Saved website
+apps use the same routing engine without gaining catalog privileges. See
+[Orbit usage, APIs and boundaries](docs/orbit.md) and
+[reproducible verification](tests/orbit/README.md).
+
 ## Aster 2.2 — your local app library
 
 **App Center** now has Discover, Installed, Favorites and Built-in views. Install

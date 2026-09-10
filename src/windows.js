@@ -50,7 +50,8 @@
     };
     document.addEventListener('pointerdown', e => { if (!e.target.closest('#context-menu'))
         $('#context-menu').hidden = true; });
-    OS.dialog = ({ title, message = '', value = null, placeholder = '', confirm = 'OK', cancel = 'Cancel', danger = false, extra = null }) => new Promise(resolve => {
+    OS.dialog = ({ title, message = '', value = null, placeholder = '', confirm = 'OK', cancel = 'Cancel', danger = false, extra = null, signal = null }) => new Promise(resolve => {
+        if (signal?.aborted) { resolve(null); return; }
         const previous = document.activeElement;
         const cover = OS.el('div', { class: 'dialog-backdrop' }), dialog = OS.el('section', { class: 'dialog', role: 'dialog', 'aria-modal': 'true', 'aria-label': title });
         const content = OS.el('div', { class: 'dialog-content' }, OS.el('h2', { text: title }), OS.el('p', { text: message }));
@@ -65,8 +66,10 @@
         const no = OS.el('button', { class: 'secondary', text: cancel }), yes = OS.el('button', { class: danger ? 'primary danger' : 'primary', text: confirm });
         let done = false;
         const finish = result => { if (done)
-            return; done = true; cover.remove(); if (previous?.isConnected)
+            return; done = true; signal?.removeEventListener('abort', abort); cover.remove(); if (previous?.isConnected)
             previous.focus(); resolve(result); };
+        const abort = () => finish(null);
+        signal?.addEventListener('abort', abort, { once: true });
         no.onclick = () => finish(null);
         yes.onclick = () => finish(input ? input.value : true);
         actions.append(no, yes);

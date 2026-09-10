@@ -1,0 +1,96 @@
+name: Orbit browser — real handoff, webviews and OS integration
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths: ['src/**', 'sdk/**', 'tests/orbit/**', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/orbit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: orbit-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Models and reproducible standalone
+        run: |
+          for f in src/*.js sdk/*.js sw.js; do node --check "$f"; done
+          node --test tests/*/models.cjs tests/integrated-shell/contracts.cjs tests/web-apps/catalog.cjs
+          python -m py_compile tests/orbit/browser.py tests/web-chrome/browser.py tests/app-library/browser.py tests/web-io/review_checks.py
+          python build.py
+          git diff --exit-code -- Aster.html sdk/aster-files.js
+          git diff --check
+      - name: Install test browser
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Actual HTTP, popup, frame denial and durable storage
+        run: timeout --signal=TERM --kill-after=10s 180s python -u tests/orbit/browser.py
+      - name: Standalone and offline local webviews
+        run: timeout --signal=TERM --kill-after=10s 180s python -u tests/orbit/browser.py --standalone --output tests/orbit/artifacts/standalone
+      - name: Preserve exact tested source
+        if: always()
+        run: |
+          mkdir -p tests/orbit/artifacts
+          git archive --format=zip HEAD -o tests/orbit/artifacts/source.zip
+          git rev-parse HEAD > tests/orbit/artifacts/checkout.txt
+          sha256sum Aster.html > tests/orbit/artifacts/standalone.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: orbit-chromium-evidence
+          path: tests/orbit/artifacts/
+          retention-days: 14
+  firefox:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install independent test browser
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps firefox
+      - name: Independent browser with bounded process and retained driver log
+        run: |
+          mkdir -p tests/orbit/artifacts/firefox
+          set -o pipefail
+          DEBUG=pw:api timeout --signal=TERM --kill-after=10s 180s python -u tests/orbit/browser.py --engine firefox --output tests/orbit/artifacts/firefox 2>&1 | tee tests/orbit/artifacts/firefox/driver.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: orbit-firefox-evidence
+          path: tests/orbit/artifacts/firefox/
+          retention-days: 14
+  live-google:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install browser
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Unchanged Google document through the actual Aster handoff
+        run: timeout --signal=TERM --kill-after=10s 180s python -u tests/orbit/browser.py --live --output tests/orbit/artifacts/live
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: orbit-live-google-evidence
+          path: tests/orbit/artifacts/live/
+          retention-days: 14

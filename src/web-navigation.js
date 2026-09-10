@@ -7,7 +7,7 @@
         if (typeof input !== 'string' || input.length > 4096 || /[\x00-\x1f\x7f]/.test(input)) throw Error('Enter an address of at most 4,096 characters without control characters.');
         let value = input.trim();
         if (!value) return 'aster://home';
-        if (/^aster:\/\/(home|apps)$/.test(value)) return value;
+        if (/^aster:\/\/(home|apps|bookmarks|history|settings)$/.test(value)) return value;
         if (value.startsWith('aster://file/')) {
             const path = decodeURIComponent(value.slice('aster://file'.length));
             if (/[\x00-\x1f\x7f\\]/.test(path) || path.includes('//') || path.split('/').some(s => s === '..' || s === '.')) throw Error('Invalid local Aster file path.');

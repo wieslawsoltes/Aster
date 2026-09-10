@@ -5,21 +5,21 @@
     const MEDIA = 'mp3 wav ogg mp4 webm m4a flac aac opus mov'.split(' ');
     const TEXT = 'txt md json js css csv log xml yaml yml ini conf c h cpp cs py sh bat sql'.split(' ');
     const STARTUP = Object.freeze(['files','notepad','calculator','calendar','clock','tasks','terminal','settings']);
-    const SECTIONS = Object.freeze({'':'home',webapps:'webapps',defaultapps:'defaultapps',startupapps:'startupapps',display:'display',sound:'sound',notifications:'notifications',focus:'focus',clipboard:'clipboard',storagesense:'storage',multitasking:'multitasking',recovery:'recovery',personalization:'personalization',themes:'themes','personalization-background':'background','personalization-colors':'colors',taskbar:'taskbar-theme','easeofaccess-highcontrast':'contrast-themes','easeofaccess-display':'accessibility',privacy:'privacy',about:'about','dateandtime':'time'});
-    const ALIASES = Object.freeze({notepad:'notepad',calc:'calculator',calculator:'calculator',explorer:'files',mspaint:'paint',paint:'paint',taskmgr:'taskmanager',control:'settings',settings:'settings',winver:'settings',snippingtool:'snips',clock:'clock',calendar:'calendar',terminal:'terminal'});
+    const SECTIONS = Object.freeze({'':'home',webapps:'webapps',orbit:'orbit',defaultapps:'defaultapps',startupapps:'startupapps',display:'display',sound:'sound',notifications:'notifications',focus:'focus',clipboard:'clipboard',storagesense:'storage',multitasking:'multitasking',recovery:'recovery',personalization:'personalization',themes:'themes','personalization-background':'background','personalization-colors':'colors',taskbar:'taskbar-theme','easeofaccess-highcontrast':'contrast-themes','easeofaccess-display':'accessibility',privacy:'privacy',about:'about','dateandtime':'time'});
+    const ALIASES = Object.freeze({orbit:'browser',browser:'browser',notepad:'notepad',calc:'calculator',calculator:'calculator',explorer:'files',mspaint:'paint',paint:'paint',taskmgr:'taskmanager',control:'settings',settings:'settings',winver:'settings',snippingtool:'snips',clock:'clock',calendar:'calendar',terminal:'terminal'});
     const FOLDERS = Object.freeze({desktop:'/Desktop',personal:'/Documents',documents:'/Documents',downloads:'/Downloads',pictures:'/Pictures',music:'/Music',videos:'/Videos',recyclebinfolder:'/.Trash'});
     const extension = path => { const n=String(path).split('/').pop(),i=n.lastIndexOf('.');return i>0&&/^[a-z0-9_-]{1,20}$/i.test(n.slice(i+1))?n.slice(i+1).toLowerCase():''; };
     function candidates(path,mime='') {
         const ext=extension(path);
         if(ext==='exe')return ['win32'];
         if(ext==='zip')return ['files'];
-        if(['html','htm'].includes(ext))return ['browser','notepad'];
+        if(['html','htm','url','asterlink'].includes(ext))return ['browser','notepad'];
         if(IMAGE.includes(ext)||mime.startsWith('image/'))return ext==='svg'?['photos','paint','notepad']:['photos','paint'];
         if(MEDIA.includes(ext)||/^(audio|video)\//.test(mime))return ['media'];
         return ['notepad'];
     }
     const defaultHandler=(path,mime='',defaults={})=>{const available=candidates(path,mime),chosen=Object.hasOwn(defaults,extension(path))?defaults[extension(path)]:null;return available.includes(chosen)?chosen:available[0];};
-    const knownExtensions=Object.freeze([...new Set([...IMAGE,...MEDIA,...TEXT,'html','htm','zip','exe'])].sort());
+    const knownExtensions=Object.freeze([...new Set([...IMAGE,...MEDIA,...TEXT,'html','htm','url','asterlink','zip','exe'])].sort());
     const validPath=path=>typeof path==='string'&&path.length<=1024&&path.startsWith('/')&&!path.includes('\\')&&!/[\x00-\x1f\x7f:]/.test(path)&&!path.includes('//')&&!path.split('/').some(s=>s==='..'||s==='.')&&path!=='/.Trash'&&!path.startsWith('/.Trash/')&&path!=='/Local'&&!path.startsWith('/Local/')&&!path.startsWith('/.');
     function normalizeState(raw) {
         const state={defaults:{},recent:[],pins:[],runHistory:[],startup:[],trackRecent:true};
@@ -58,6 +58,7 @@
         const app=Object.hasOwn(ALIASES,command)?ALIASES[command]:visibleApps.find(a=>a.id===command)?.id;
         if(!app)throw Error('Aster cannot find that command. Use a listed app or a supported shell: / ms-settings: destination.');
         if(tail&&!['notepad','files','paint','photos','media','browser'].includes(app))throw Error('Arguments are not supported for this app.');
+        if(app==='browser' && /^https?:\/\//i.test(tail)){const url=new URL(tail);if(!url.hostname||url.username||url.password)throw Error('Website addresses must not contain credentials.');return {kind:'app',app,options:{url:url.href}};}
         return {kind:'app',app,options:tail?{path:localPath(tail)}:command==='winver'?{section:'about'}:{}};
     }
     const api=Object.freeze({extension,candidates,defaultHandler,knownExtensions,STARTUP,SECTIONS,ALIASES,validPath,localPath,parseRun,normalizeState});

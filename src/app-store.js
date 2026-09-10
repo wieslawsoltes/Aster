@@ -57,7 +57,7 @@
         if(result)OS.notify('App installed in Aster',result.title,'info',{label:'Open app',fn:()=>OS.launch(result.id)});
         return result;
     };
-    OS.installWebLink=()=>editDialog({kind:'url',title:'',description:'',url:'https://',category:'Your apps',icon:'globe',color:'teal'},'Add web app','Add app',v=>lib.install({...v,url:v.url.trim()}),'Save an HTTPS web shortcut in your local library.');
+    OS.installWebLink=(initial={})=>editDialog({kind:'url',title:typeof initial.title==='string'?initial.title.slice(0,60):'',description:typeof initial.description==='string'?initial.description.slice(0,500):'',url:typeof initial.url==='string'?initial.url:'https://',category:'Your apps',icon:'globe',color:'teal'},'Add web app','Add app',v=>lib.install({...v,url:v.url.trim()}),'Save an HTTPS web shortcut in your local library.');
     OS.editInstalledApp=async id=>{const r=lib.get(id);if(!r)throw Error('App not installed.');return editDialog(structuredClone(r),'Edit app details','Save changes',v=>lib.save({...v,url:v.url?.trim()},r.revision));};
     // Code Studio's saved source goes through exactly the same metadata dialog and transaction.
     OS.installProjectApp=async(path,title)=>{

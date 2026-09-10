@@ -34,6 +34,7 @@
         w.extraTitleMenu = () => [null,
             {text:'Reload app',icon:'refresh',action:load},
             {text:'Open in Aster Browser',icon:'globe',action:()=>OS.openInBrowser(url)},
+            {text:'Open address as webview',icon:'max',action:()=>OS.openWebview(url)},
             {text:'Open in browser',icon:'external',action:()=>window.open(url,'_blank','noopener,noreferrer')},
             {text:'Source',icon:'code',action:()=>window.open(app.repository,'_blank','noopener,noreferrer')}
         ];

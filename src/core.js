@@ -2,7 +2,7 @@
 'use strict';
 (() => {
     const OS = window.Aster = {
-        version: '2.2', apps: new Map(), windows: new Map(), mounts: new Map(),
+        version: '2.3', apps: new Map(), windows: new Map(), mounts: new Map(),
         events: new EventTarget(), clipboard: null, started: performance.now(),
         metrics: { fps: 0, frameMs: 0, drawCalls: 0, mode: 'Starting', frames: [] },
         settings: { theme: 'light', accent: '#176ae6', wallpaper: 'bloom', transparency: true, motion: true,
@@ -129,7 +129,7 @@
             return 'photos';
         if (mime.startsWith('audio/') || mime.startsWith('video/') || ['mp3', 'wav', 'ogg', 'mp4', 'webm', 'm4a', 'flac'].includes(ext))
             return 'media';
-        if (['html', 'htm'].includes(ext))
+        if (['html', 'htm', 'url', 'asterlink'].includes(ext))
             return 'browser';
         return 'notepad';
     };
