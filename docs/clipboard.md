@@ -168,3 +168,10 @@ new frame loads, and reconnecting never grants clipboard contents automatically.
 Lock-triggered editor blur cannot re-acquire an insertion target. Captures and
 late history additions are ignored while the visual desktop is locked. This is
 clipboard lifecycle protection, not host-OS authentication or clipboard erasure.
+
+## Orbit address editing
+
+Orbit retains typed or pasted address drafts per live tab while asynchronous page
+status or bookmark updates arrive. Enter submits the draft, Escape cancels it, and
+composition input is not mistaken for submission. Draft addresses are not included
+in persisted tab sessions.

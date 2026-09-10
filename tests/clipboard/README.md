@@ -110,3 +110,16 @@ path external text copy must not authorize a stale file operation. Multiple live
 Files windows must not intercept paste into the focused search field. Unit tests
 cover missing/stale markers, changed text and escaped markup. No test clipboard
 object, forced permission, or weakened assertion is used for these checks.
+
+The supplied-file importer check is explicitly synthetic. A retained Firefox
+trace showed that its ClipboardEvent constructor drops the supplied File despite
+the DataTransfer containing it. The fixture now transports that real DataTransfer
+on an explicitly synthetic Event and records the constructor's file count. It
+requires a focused Files list, cancellation by the actual paste handler and the
+exact imported bytes after commit. Native clipboard scenarios remain separate
+and unchanged. No navigator.clipboard mock or browser permission bypass is used.
+
+Orbit's actual status refresh could overwrite a pasted address before submission.
+The native-paste regression now exercises that refresh, Escape and navigation.
+The inherited Win32 startup check waits for the actual visible menu before keeping
+its exact menu-count assertions; a presented canvas can precede native menu creation.
