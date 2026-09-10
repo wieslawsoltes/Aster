@@ -1,0 +1,92 @@
+name: Recover reviewed Orbit source
+on:
+  push:
+    branches: [fix/orbit-webviews]
+    paths: ['.github/workflows/recover-orbit-source.yml']
+permissions:
+  contents: write
+concurrency:
+  group: recover-orbit-source
+  cancel-in-progress: false
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate complete payload and every input and output before writing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import base64, hashlib, json, lzma
+          encoded=''.join(Path(f'.transfer/orbit-{i}.b64').read_text().strip() for i in range(8))
+          assert len(encoded)==45952
+          data=base64.b64decode(encoded,validate=True)
+          assert len(data)==34464 and hashlib.sha256(data).hexdigest()=='965d8dd27bd14c357756e93b8f5238b263c13f2e71d967f2eff933c362101fd3'
+          decoder=lzma.LZMADecompressor(memlimit=256*1024*1024)
+          raw=decoder.decompress(data,max_length=123980)
+          assert decoder.eof and not decoder.unused_data and len(raw)==123979
+          assert hashlib.sha256(raw).hexdigest()=='073faf94f8718acfa61712fb5eb746275971be3818618f9ad48d7b2c64da23b9'
+          changes=json.loads(raw)
+          allowed={'.gitignore','README.md','index.html','src/app-library.js','src/app-store.js','src/apps-files.js','src/apps-system.js','src/apps-web.js','src/core.js','src/shell-command-models.js','src/web-app-settings.js','src/web-navigation.js','src/windows.js','sw.js','tests/app-library/browser.py','tests/web-chrome/browser.py','tests/web-io/review_checks.py','src/orbit-models.js','src/orbit-service.js','src/webviews.js','src/apps-browser.js','src/orbit.css','sdk/aster-webview.js','docs/orbit.md','tests/orbit/models.cjs','tests/orbit/browser.py','tests/orbit/README.md'}
+          assert len(changes)==27 and {c['path'] for c in changes}==allowed
+          outputs=[]
+          for c in changes:
+              path=PurePosixPath(c['path']);p=Path(path)
+              assert not path.is_absolute() and '..' not in path.parts and not p.is_symlink()
+              if c['before'] is None:
+                  assert not p.exists(),str(p)
+                  result=c['content'].encode('utf-8')
+              else:
+                  before=p.read_bytes()
+                  assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent change: '+str(p)
+                  text=before.decode('utf-8');last=0
+                  for a,b,value in c['ops']:
+                      assert isinstance(a,int) and isinstance(b,int) and last<=a<=b<=len(text) and isinstance(value,str)
+                      last=b
+                  for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+                  result=text.encode('utf-8')
+              assert hashlib.sha256(result).hexdigest()==c['after'],'Output mismatch: '+str(p)
+              outputs.append((p,result))
+          for p,result in outputs:
+              p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(result)
+          print('All 27 editable source, SDK, documentation and test paths verified.')
+          PY
+      - name: Validate actual source, regressions and reproducible standalone
+        run: |
+          for f in src/*.js sdk/*.js sw.js; do node --check "$f"; done
+          python3 -m py_compile tests/orbit/browser.py tests/web-chrome/browser.py tests/app-library/browser.py tests/web-io/review_checks.py
+          node --test tests/*/models.cjs tests/integrated-shell/contracts.cjs tests/web-apps/catalog.cjs
+          python3 build.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          data=Path('Aster.html').read_bytes()
+          assert len(data)==6038640
+          assert hashlib.sha256(data).hexdigest()=='e66ee42f0a4c63ebfd67bbb03f50b8d7999c800a534a9549184745c0be71344e'
+          PY
+          git diff --exit-code -- sdk/aster-files.js tests/results.json
+          git diff --check
+      - name: Commit recovered source without rewriting workflow files
+        run: |
+          rm .transfer/orbit-{0,1,2,3,4,5,6,7}.b64
+          rmdir .transfer
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m 'Recover and integrate Orbit website handoff, reusable webviews and OS browser features'
+          git push origin HEAD:fix/orbit-webviews
+      - name: Preserve recoverable source on failure
+        if: failure()
+        run: |
+          mkdir -p /tmp/orbit-recovery
+          tar --exclude=.git -czf /tmp/orbit-recovery/source.tar.gz .
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: orbit-recovery-diagnostics
+          path: /tmp/orbit-recovery/
+          retention-days: 14
