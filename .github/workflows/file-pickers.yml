@@ -1,0 +1,76 @@
+name: Profile file pickers — themed UI and real file workflows
+on:
+  pull_request:
+    paths: ['src/**', 'tests/**', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/file-pickers.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'tests/file-pickers/**', 'index.html', 'Aster.html', 'sw.js', '.github/workflows/file-pickers.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: profile-file-pickers-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate source and reproducible standalone
+        run: |
+          for f in src/*.js; do node --check "$f"; done
+          node --test tests/file-pickers/models.cjs
+          python -m py_compile tests/file-pickers/browser.py
+          python build.py
+          git diff --exit-code -- Aster.html sdk/aster-files.js
+          git diff --check
+      - name: Install verification browser
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Real HTTP dialogs, theme matrix, gestures and durable preferences
+        run: python tests/file-pickers/browser.py
+      - name: Standalone and offline workflows
+        run: python tests/file-pickers/browser.py --standalone --output tests/file-pickers/artifacts/standalone
+      - name: Preserve exact tested source
+        if: always()
+        run: |
+          mkdir -p tests/file-pickers/artifacts
+          git archive --format=zip HEAD -o tests/file-pickers/artifacts/source.zip
+          git rev-parse HEAD > tests/file-pickers/artifacts/checkout.txt
+          sha256sum Aster.html > tests/file-pickers/artifacts/standalone.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: profile-picker-chromium-evidence
+          path: |
+            tests/file-pickers/artifacts/
+            Aster.html
+          retention-days: 14
+  firefox:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install independent browser engine
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps firefox
+      - name: Real dialogs and profile matrix in Firefox
+        run: python tests/file-pickers/browser.py --engine firefox --output tests/file-pickers/artifacts/firefox
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: profile-picker-firefox-evidence
+          path: tests/file-pickers/artifacts/firefox/
+          retention-days: 14

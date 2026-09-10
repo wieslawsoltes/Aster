@@ -26,3 +26,5 @@ tests/ui-refinement/artifacts/
 tests/desktop-refinement/artifacts/
 
 tests/web-io/artifacts/
+
+tests/file-pickers/artifacts/
