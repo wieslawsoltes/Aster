@@ -1,0 +1,41 @@
+name: Repair Orbit verification synchronization
+on:
+  push:
+    branches: [fix/orbit-webviews]
+    paths: ['.github/workflows/repair-orbit-verification.yml']
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate all three test edits before writing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json
+          changes=json.loads(r'''[{"path":"tests/web-chrome/browser.py","before":"b6a598fe46a4507f12646a5656fe30df518f99033a7d2efdcbf15c5fa9dafbd5","after":"29accd7ffa1b4f3e2334d4bf1a61187f91cb239888b125d502f65b2a92b53479","ops":[[12005,12005,"page.wait_for_function('(url)=>document.querySelector(\".orbit-pane:not([hidden]) .browser-iframe\")?.getAttribute(\"src\")===url',arg=origin+'/fixture/one');"]]},{"path":"tests/orbit/browser.py","before":"f64e3a5fe69f94d4b984791431e055bdad9ad0a7c6276ed761e56d178cb332c5","after":"bec0e9b418e66f8681b793aabbdf2893c6226ea3f94b4a9306fd4d255f100b6e","ops":[[2329,2329,"\n            # Playwright's default timeout does not bound a pending evaluate promise.\n            "],[2352,2352,"rg=>{let timer;return Promise.race([(a"],[2356,2360,"()"],[2449,2449,")(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error(\"Browser test operation exceeded 30 seconds\")),30000)})]).finally(()=>clearTimeout(timer));}"],[2517,2517,");report['currentCheck']=name\n            (out/'progress.json').write_text(json.dumps(report,indent=2));print('START',name,flush=True"],[2827,2828,"\n                (out/'failure-dom.html').write_text(page.content())\n                "]]},{"path":"tests/orbit/README.md","before":"50795015e6773c468cf4e122a91b0007d3784821674630605cd85401104cd3e1","after":"f8dc94acc64fccf6ad56324963b68aacaaef58adf03b4cb848ef8c0235342fc3","ops":[[2818,2818,"\nThe compact regression waits for the exact requested iframe URL before testing its\nunchanged isolated policy. All controlled fixture documents share a heading; that\nheading alone could match the previous catalog frame during asynchronous navigation.\nThe Orbit harness also bounds JavaScript test operations to 30 seconds (Playwright\nevaluate promises otherwise have no deadline) and preserves the current scenario\nand failure DOM. A timeout is a failure, never a passing or skipped scenario.\n"]]}]''')
+          assert {c['path'] for c in changes}=={'tests/web-chrome/browser.py','tests/orbit/browser.py','tests/orbit/README.md'}
+          outputs=[]
+          for c in changes:
+              p=Path(c['path']);before=p.read_bytes()
+              assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent change: '+str(p)
+              text=before.decode();last=0
+              for a,b,value in c['ops']:
+                  assert last<=a<=b<=len(text);last=b
+              for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+              result=text.encode();assert hashlib.sha256(result).hexdigest()==c['after'],'Output mismatch: '+str(p)
+              outputs.append((p,result))
+          for p,result in outputs:p.write_bytes(result)
+          PY
+          python3 -m py_compile tests/orbit/browser.py tests/web-chrome/browser.py
+          git diff --check
+      - name: Commit only verified tests and documentation
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/orbit/browser.py tests/web-chrome/browser.py tests/orbit/README.md
+          git commit -m 'Wait for requested webview before policy checks and bound test promise waits'
+          git push origin HEAD:fix/orbit-webviews
