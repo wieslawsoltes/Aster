@@ -1,0 +1,63 @@
+name: Finish recovered profile picker source
+on:
+  push:
+    branches: [feat/profile-file-pickers]
+    paths: ['.github/workflows/finish-profile-pickers.yml']
+permissions:
+  contents: write
+concurrency:
+  group: finish-profile-picker-source
+  cancel-in-progress: false
+jobs:
+  finish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply all hash-checked source changes before rebuilding
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import base64, hashlib, json, zlib
+          encoded='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'
+          data=base64.b64decode(encoded,validate=True)
+          assert len(data)==2674 and hashlib.sha256(data).hexdigest()=='089a0a7deeb54e43b4997c245cd399dff2382d171844ee7fe417c3c8d2e71fd0'
+          decoder=zlib.decompressobj(31);raw=decoder.decompress(data,65537)
+          assert decoder.eof and not decoder.unused_data and len(raw)==5928
+          assert hashlib.sha256(raw).hexdigest()=='b985baaedeac0ad9077252ec41b76ef81b340d414bd65915dbdc0d89935051dd'
+          changes=json.loads(raw)
+          allowed={'docs/file-pickers.md','src/file-picker.js','sw.js','tests/file-pickers/README.md','tests/file-pickers/browser.py','tests/file-pickers/models.cjs'}
+          assert len(changes)==6 and {c['path'] for c in changes}==allowed
+          outputs=[]
+          for c in changes:
+              path=PurePosixPath(c['path']);p=Path(path)
+              assert not path.is_absolute() and '..' not in path.parts and not p.is_symlink()
+              before=p.read_bytes();assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent source change: '+str(p)
+              text=before.decode('utf-8');last=0
+              for a,b,value in c['ops']:
+                  assert isinstance(a,int) and isinstance(b,int) and last<=a<=b<=len(text) and isinstance(value,str)
+                  last=b
+              for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+              result=text.encode('utf-8');assert hashlib.sha256(result).hexdigest()==c['after'],str(p)
+              outputs.append((p,result))
+          for p,result in outputs:p.write_bytes(result)
+          print('All six source updates match reviewed local hashes.')
+          PY
+      - name: Validate source, regressions and reproducible build
+        run: |
+          for f in src/*.js sw.js; do node --check "$f"; done
+          python3 -m py_compile tests/file-pickers/browser.py
+          node --test tests/*/models.cjs tests/integrated-shell/contracts.cjs tests/web-apps/catalog.cjs
+          python3 build.py
+          git diff --exit-code -- sdk/aster-files.js
+          git diff --check
+      - name: Commit verified changes without editing workflows
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Aster.html docs/file-pickers.md src/file-picker.js sw.js tests/file-pickers/README.md tests/file-pickers/browser.py tests/file-pickers/models.cjs
+          git commit -m 'Fix exact picker selection, preserve Save As names, and repair durable reload verification'
+          git push origin HEAD:feat/profile-file-pickers
