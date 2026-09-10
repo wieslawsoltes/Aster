@@ -1661,7 +1661,132 @@
           "title": "Wayline — Your world, a little closer"
         }
       ]
+    },
+    {
+      "name": "VoltWeaveCircuitStudio",
+      "createdAt": "2026-09-09T09:50:38Z",
+      "createdLocal": "2026-09-09T11:50:38+02:00",
+      "repository": "https://github.com/wieslawsoltes/VoltWeaveCircuitStudio",
+      "readmeSHA": "5c8e8031fb62c755f0e31b0e9cf326c9322d9dc0",
+      "included": true,
+      "selection": "explicit-request",
+      "addedAt": "2026-09-10T09:52:21.024534+00:00",
+      "reason": "Explicit user request on September 10, 2026; not part of the original Sunday–Tuesday date selection.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/VoltWeaveCircuitStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/VoltWeaveCircuitStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 304516,
+          "sha256": "94b80739439dbaf9637635d51e9c27b8f76d80f592d7c1a5beedf32c98eacc3b",
+          "title": "VoltWeave · Circuit design & simulation",
+          "checkedAt": "2026-09-10T09:52:21.024534+00:00"
+        }
+      ]
+    },
+    {
+      "name": "StratumIntelligence",
+      "createdAt": "2026-09-10T08:24:45Z",
+      "createdLocal": "2026-09-10T10:24:45+02:00",
+      "repository": "https://github.com/wieslawsoltes/StratumIntelligence",
+      "readmeSHA": "28cca03dd524c2590c7d7970e24b580841ea9d6f",
+      "included": true,
+      "selection": "explicit-request",
+      "addedAt": "2026-09-10T09:52:21.024534+00:00",
+      "reason": "Explicit user request on September 10, 2026; not part of the original Sunday–Tuesday date selection.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/StratumIntelligence/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/StratumIntelligence/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 1061,
+          "sha256": "132e9734b2e83c07852069fcb4cefb48042766612a97db6869f0e2965476fa36",
+          "title": "Stratum Intelligence · P&ID Studio",
+          "checkedAt": "2026-09-10T09:52:21.024534+00:00"
+        }
+      ]
+    },
+    {
+      "name": "Veldra3D",
+      "createdAt": "2026-09-09T09:49:24Z",
+      "createdLocal": "2026-09-09T11:49:24+02:00",
+      "repository": "https://github.com/wieslawsoltes/Veldra3D",
+      "readmeSHA": "c0a17ba130c0f3e47e9e86a74baf47751f4c1284",
+      "included": true,
+      "selection": "explicit-request",
+      "addedAt": "2026-09-10T09:52:21.024534+00:00",
+      "reason": "Explicit user request on September 10, 2026; not part of the original Sunday–Tuesday date selection.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Veldra3D/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Veldra3D/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 7900,
+          "sha256": "8e9bd25d7cb05bd6617c74a288cb948bf3f74289157698787da1eeca93aa84a8",
+          "title": "Veldra 3D — Canopy study",
+          "checkedAt": "2026-09-10T09:52:21.024534+00:00"
+        }
+      ]
+    },
+    {
+      "name": "AvolithStudio",
+      "createdAt": "2026-09-09T21:11:00Z",
+      "createdLocal": "2026-09-09T23:11:00+02:00",
+      "repository": "https://github.com/wieslawsoltes/AvolithStudio",
+      "readmeSHA": "58d16e8618347e991d7f1ea38b1fbaf6c89ac950",
+      "included": true,
+      "selection": "explicit-request",
+      "addedAt": "2026-09-10T09:52:21.024534+00:00",
+      "reason": "Explicit user request on September 10, 2026; not part of the original Sunday–Tuesday date selection.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AvolithStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AvolithStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 8564,
+          "sha256": "de7c93300b5cccef8a0b3b6bb43e362909c543e41b153c0b7b21109fddd04d33",
+          "title": "Avolith Studio — Direct Modeling",
+          "checkedAt": "2026-09-10T09:52:21.024534+00:00"
+        }
+      ]
+    },
+    {
+      "name": "AureonStudio",
+      "createdAt": "2026-09-09T08:40:05Z",
+      "createdLocal": "2026-09-09T10:40:05+02:00",
+      "repository": "https://github.com/wieslawsoltes/AureonStudio",
+      "readmeSHA": "f7446e4db79f16b37cf10b076f64ec4cb652ce5a",
+      "included": true,
+      "selection": "explicit-request",
+      "addedAt": "2026-09-10T09:52:21.024534+00:00",
+      "reason": "Explicit user request on September 10, 2026; not part of the original Sunday–Tuesday date selection.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/AureonStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/AureonStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 10764,
+          "sha256": "aeb3d6f03b7eb5d26a930ff6c0e3481ddc14f911bc561decfc1268a1793db029",
+          "title": "Aureon Studio — Orbit study",
+          "checkedAt": "2026-09-10T09:52:21.024534+00:00"
+        }
+      ]
     }
   ],
-  "updatedAt": "2026-09-08T20:16:49.948538+00:00"
+  "updatedAt": "2026-09-10T09:52:21.024534+00:00"
 }

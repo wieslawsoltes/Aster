@@ -48,7 +48,7 @@ def main(args):
                 report['tests'].append({'name':name,'status':'FAIL','error':str(e)});print('FAIL',name,str(e),flush=True)
                 page.screenshot(path=str(out/'failure.png'));raise
         def start():page.evaluate('Aster.closePanels(); Aster.toggleStart();')
-        def web_index():start();page.get_by_role('button',name='Web apps, 74 projects',exact=True).click()
+        def web_index():start();page.get_by_role('button',name='Web apps, 79 projects',exact=True).click()
         def current_frame():return page.frame_locator('.web-app-frame')
         def close_all():page.evaluate('async()=>{for(const w of [...Aster.windows.values()])await w.close(true);}')
         try:
@@ -67,7 +67,7 @@ def main(args):
                         info=embedded.evaluate('({title:document.title,url:location.href,elements:document.body.querySelectorAll("*").length,textLength:document.body.innerText.trim().length,canvases:document.querySelectorAll("canvas").length,controls:document.querySelectorAll("button,input,textarea,select").length})')
                         assert not info['title'].startswith('Site not found'),info
                         row.update(status='PASS',ms=round((time.perf_counter()-begin)*1000),document=info)
-                        if app['repo'] in ['PaintXP','Vellum','Gridline','AxiomCAD','VeyraWorkspace','AsterionEDA','TwinForge','Branchglass','NotepadXP','Formalyth','Jailbreak']:page.screenshot(path=str(out/(app['repo']+'-live.png')))
+                        if app['repo'] in ['PaintXP','Vellum','Gridline','AxiomCAD','VeyraWorkspace','AsterionEDA','TwinForge','Branchglass','NotepadXP','Formalyth','Jailbreak','VoltWeaveCircuitStudio','StratumIntelligence','Veldra3D','AvolithStudio','AureonStudio']:page.screenshot(path=str(out/(app['repo']+'-live.png')))
                     except Exception as e:row.update(status='FAIL',error=str(e))
                     finally:close_all()
                     results.append(row);print(row['status'],app['repo'],row.get('error',''),flush=True)
@@ -75,10 +75,10 @@ def main(args):
                 assert report['passed']==len(apps),[r for r in results if r['status']!='PASS']
                 return
             def registration():
-                assert len(apps)==74 and len(categories)==10
+                assert len(apps)==79 and len(categories)==10
                 assert page.locator('.web-app-frame').count()==0
                 assert not any(u.startswith('https://wieslawsoltes.github.io/') for u in requests)
-                return '74 registrations; no external app requested at boot'
+                return '79 registrations; no external app requested at boot'
             check('Catalog registration is lazy and complete',registration)
             def folders():
                 web_index();assert page.locator('[data-web-category]').count()==10
@@ -88,10 +88,10 @@ def main(args):
                     members=page.locator('[data-web-app]').evaluate_all('(nodes)=>nodes.map(n=>n.dataset.webApp)')
                     assert sorted(members)==sorted(a['id'] for a in apps if a['category']==cat['id']);seen+=members
                     page.get_by_role('button',name='Back to web app categories').click()
-                assert len(set(seen))==74
+                assert len(set(seen))==79
                 page.screenshot(path=str(out/'start-categories.png'))
                 return 'Every project reached through its category submenu'
-            check('Ten category submenus contain all 74 projects exactly once',folders)
+            check('Ten category submenus contain all 79 projects exactly once',folders)
             def keys():
                 first=page.locator('[data-web-category]').first;first.focus();first.press('ArrowRight');assert page.get_by_role('button',name='Back to web app categories').count()==1
                 page.locator('[data-web-app]').first.press('Escape');assert page.locator('[data-web-category]').count()==10
@@ -101,8 +101,8 @@ def main(args):
             check('Submenu navigation works with keyboard and back controls',keys)
             def search():
                 query=page.get_by_role('textbox',name='Search apps and files');query.fill('CAD & Manufacturing')
-                page.wait_for_function('document.querySelectorAll(".start-main .search-result").length===9')
-                assert page.locator('.start-main').inner_text().count('CAD & Manufacturing')==9
+                page.wait_for_function('document.querySelectorAll(".start-main .search-result").length===11')
+                assert page.locator('.start-main').inner_text().count('CAD & Manufacturing')==11
                 query.fill('PaintXP');page.get_by_role('button',name='PaintXP App · Design & Graphics',exact=False).click()
                 page.wait_for_selector('.web-app-frame');current_frame().get_by_role('heading',name='Window behavior fixture').wait_for()
                 assert page.locator('.window-title').inner_text()=='PaintXP'
@@ -183,7 +183,7 @@ def main(args):
                 close_all();return 'All seven requested apps have categorized/searchable entries, canonical frames, titlebars and scoped media delegation'
             check('Requested apps launch from Start with correct chrome and permissions',requested_apps)
             def standalone():
-                boot(True);assert page.evaluate('Aster.webCatalog.apps.length')==74
+                boot(True);assert page.evaluate('Aster.webCatalog.apps.length')==79
                 page.evaluate('async()=>{window.web=Aster.launch("web-gridline");await web.ready;}');current_frame().get_by_role('heading').wait_for()
                 page.evaluate('web.close(true)');assert page.locator('.web-app-frame').count()==0
                 return 'Single-file edition includes catalog and host; close removes its iframe'

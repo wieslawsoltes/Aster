@@ -15,9 +15,9 @@ function register(c = catalog) {
     return {apps, OS};
 }
 test('Every audited web project appears exactly once; only Aster itself is excluded', () => {
-    assert.equal(inventory.repositories.length, 75);
-    assert.equal(catalog.apps.length, 74);
-    assert.equal(new Set(catalog.apps.map(a => a.id)).size, 74);
+    assert.equal(inventory.repositories.length, 80);
+    assert.equal(catalog.apps.length, 79);
+    assert.equal(new Set(catalog.apps.map(a => a.id)).size, 79);
     assert.deepEqual(catalog.apps.map(a => a.repo).sort(), inventory.repositories.filter(r => r.included).map(r => r.name).sort());
     assert.deepEqual(inventory.repositories.filter(r => !r.included).map(r => r.name), ['Aster']);
 });
@@ -25,6 +25,12 @@ test('The inclusive Sunday–Tuesday window uses Warsaw time, not UTC midnight',
     assert.equal(catalog.startInclusive, '2026-09-06T00:00:00+02:00');
     assert.equal(catalog.endExclusive, '2026-09-09T00:00:00+02:00');
     for (const app of catalog.apps) {
+        if (app.selection === 'explicit-request') {
+            assert(Number.isFinite(Date.parse(app.createdAt)));
+            assert(Date.parse(app.addedAt) >= Date.parse('2026-09-10T00:00:00+02:00'));
+            assert.equal(inventory.repositories.find(r => r.name === app.repo).selection, 'explicit-request');
+            continue;
+        }
         assert(Date.parse(app.createdAt) >= Date.parse(catalog.startInclusive));
         assert(Date.parse(app.createdAt) < Date.parse(catalog.endExclusive));
     }
@@ -54,7 +60,7 @@ test('Catalog objects and collections are immutable', () => {
 });
 test('All projects register real mounts without DOM, network or eager iframe creation', () => {
     const {apps} = register();
-    assert.equal(apps.size, 74);
+    assert.equal(apps.size, 79);
     for (const [id, app] of apps) {
         assert.equal(app.webApp, true); assert.equal(typeof app.mount, 'function');
         assert(app.category && app.keywords && app.icon && app.color);
@@ -116,5 +122,18 @@ test('The five requested tools are unique, categorized and searchable without ad
         assert.equal(registered.webApp, true);
         assert(registered.keywords.includes(repo));
         assert(!permitted.includes("'" + repo + "'"));
+    }
+});
+
+test('September 10 requested additions remain unique, searchable, scoped and explicitly audited', () => {
+    const {apps} = register();
+    const expected = [["VoltWeaveCircuitStudio", "VoltWeave Circuit Studio", "simulation"], ["StratumIntelligence", "Stratum Intelligence", "industrial"], ["Veldra3D", "Veldra 3D + Weave", "cad"], ["AvolithStudio", "Avolith Studio", "cad"], ["AureonStudio", "Aureon Studio", "animation"]];
+    assert.equal(catalog.apps.filter(a => a.selection === "explicit-request").length, 5);
+    for (const [repo,title,category] of expected) {
+        const matches=catalog.apps.filter(a=>a.repo===repo);assert.equal(matches.length,1);
+        const app=matches[0];assert.equal(app.title,title);assert.equal(app.category,category);
+        assert.equal(app.selection,"explicit-request");assert.equal(apps.get(app.id).webApp,true);
+        assert(apps.get(app.id).keywords.includes(repo));
+        assert(!launcher.match(/const recordingApps = new Set\(\[([^\]]+)\]\)/)[1].includes("\'"+repo+"\'"));
     }
 });

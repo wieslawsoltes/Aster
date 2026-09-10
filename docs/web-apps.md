@@ -1,6 +1,6 @@
 # Your web apps in Aster
 
-Open **Start → Your web apps → a category → an app**. All 74 reviewed external
+Open **Start → Your web apps → a category → an app**. All 79 reviewed external
 projects have an entry. Search by app name, repository name, purpose or category
 from the normal Start search field. Category submenus have Back navigation,
 keyboard controls and a single-column touch layout on narrow screens.
@@ -28,7 +28,7 @@ future repositories will be discovered automatically.
 The original audit found 68 candidate repositories and included 67 external apps.
 Veyra Workspace and Asterion EDA were subsequently added at the owner's request,
 followed by TwinForge, Branchglass, Notepad XP, Formalyth and Jailbreak.
-The reviewed inventory now contains 75 repositories and the collection 74 apps.
+The reviewed inventory now contains 75 repositories and the collection 79 apps.
 Their individual audit timestamps and live response evidence are retained. **Aster
 itself is intentionally excluded**, rather than recursively embedding the host
 desktop. No other candidate was dropped. Every app's deployed entry point returned
@@ -87,7 +87,7 @@ browser actions. Launching an app does not preload the other sites.
 These are independently hosted applications, not copies bundled with Aster and
 not Windows EXEs. The existing browser-only Win32 runtime remains separate.
 Loading an app needs its live site or that app's own offline cache. The standalone
-Aster HTML embeds the catalog and window host, **not all 74 application payloads**.
+Aster HTML embeds the catalog and window host, **not all 79 application payloads**.
 
 All catalog entries are fixed HTTPS URLs on `wieslawsoltes.github.io`. The host
 rejects arbitrary schemes, origins, credentials, query strings and altered launch

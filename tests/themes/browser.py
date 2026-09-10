@@ -48,7 +48,7 @@ def main(args):
             def gallery():
                 w=settings('themes');assert w.locator('[data-theme-id]').count()==12
                 for mini in w.locator('.theme-card .theme-miniature').all():assert mini.bounding_box()['width']>100
-                js('assert([...OS.apps.values()].filter(a=>a.webApp).length===74);assert(OS.themes.saved.length===0);')
+                js('assert([...OS.apps.values()].filter(a=>a.webApp).length===79);assert(OS.themes.saved.length===0);')
                 page.screenshot(path=str(out/'windows-light.png'))
             check('Twelve theme presets are integrated in Settings with full-width previews',gallery)
             def legacy_flyout():

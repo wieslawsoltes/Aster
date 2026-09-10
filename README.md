@@ -1,3 +1,10 @@
+## September 10 catalog update — 79 web apps
+
+Added VoltWeave Circuit Studio, Stratum Intelligence (including P&ID analysis),
+Veldra 3D + Weave, Avolith Studio and Aureon Studio to **Start → Your web apps**.
+These five explicit additions are audited separately from the original date-window selection.
+The catalog remains lazy: no application payload is loaded until launch.
+
 ## Aster 2.1 — profile-aware file pickers
 
 Integrated web-file Open, Save As and Choose Folder now use genuine profile-specific

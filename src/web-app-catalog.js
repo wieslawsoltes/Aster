@@ -2,7 +2,7 @@
 'use strict';
 (() => {
     const data = {
-  "version": 2,
+  "version": 3,
   "owner": "wieslawsoltes",
   "timezone": "Europe/Warsaw",
   "startInclusive": "2026-09-06T00:00:00+02:00",
@@ -736,9 +736,64 @@
       "createdAt": "2026-09-06T20:43:24Z",
       "url": "https://wieslawsoltes.github.io/VantaForge/",
       "documentTitle": "Vanta Forge — Aether Relay"
+    },
+    {
+      "repo": "VoltWeaveCircuitStudio",
+      "title": "VoltWeave Circuit Studio",
+      "description": "Schematic editing, analog circuit simulation and waveform analysis",
+      "category": "simulation",
+      "createdAt": "2026-09-09T09:50:38Z",
+      "url": "https://wieslawsoltes.github.io/VoltWeaveCircuitStudio/",
+      "documentTitle": "VoltWeave · Circuit design & simulation",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-10T09:52:21.024534+00:00"
+    },
+    {
+      "repo": "StratumIntelligence",
+      "title": "Stratum Intelligence",
+      "description": "Operational intelligence, data workflows and P&ID diagram analysis",
+      "category": "industrial",
+      "createdAt": "2026-09-10T08:24:45Z",
+      "url": "https://wieslawsoltes.github.io/StratumIntelligence/",
+      "documentTitle": "Stratum Intelligence · P&ID Studio",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-10T09:52:21.024534+00:00"
+    },
+    {
+      "repo": "Veldra3D",
+      "title": "Veldra 3D + Weave",
+      "description": "NURBS modeling, visual parametric design and final rendering",
+      "category": "cad",
+      "createdAt": "2026-09-09T09:49:24Z",
+      "url": "https://wieslawsoltes.github.io/Veldra3D/",
+      "documentTitle": "Veldra 3D — Canopy study",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-10T09:52:21.024534+00:00"
+    },
+    {
+      "repo": "AvolithStudio",
+      "title": "Avolith Studio",
+      "description": "Direct and analytic 3D modeling, sheet metal and CAD exchange",
+      "category": "cad",
+      "createdAt": "2026-09-09T21:11:00Z",
+      "url": "https://wieslawsoltes.github.io/AvolithStudio/",
+      "documentTitle": "Avolith Studio — Direct Modeling",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-10T09:52:21.024534+00:00"
+    },
+    {
+      "repo": "AureonStudio",
+      "title": "Aureon Studio",
+      "description": "3D modeling, animation and WebGPU rendering",
+      "category": "animation",
+      "createdAt": "2026-09-09T08:40:05Z",
+      "url": "https://wieslawsoltes.github.io/AureonStudio/",
+      "documentTitle": "Aureon Studio — Orbit study",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-10T09:52:21.024534+00:00"
     }
   ],
-  "updatedAt": "2026-09-08T20:16:49.948538+00:00"
+  "updatedAt": "2026-09-10T09:52:21.024534+00:00"
 };
     for (const app of data.apps) {
         app.id = 'web-' + app.repo.toLowerCase();
