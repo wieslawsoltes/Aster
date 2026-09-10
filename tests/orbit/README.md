@@ -45,3 +45,10 @@ The workflow retains reports, real screenshots, exact tracked source and
 standalone digest, and uses an independent Firefox engine. GPU/native/desktop
 checks remain in inherited workflows; Orbit tests do not constitute physical GPU
 benchmarks, native-browser parity or exhaustive external-site certification.
+
+The compact regression waits for the exact requested iframe URL before testing its
+unchanged isolated policy. All controlled fixture documents share a heading; that
+heading alone could match the previous catalog frame during asynchronous navigation.
+The Orbit harness also bounds JavaScript test operations to 30 seconds (Playwright
+evaluate promises otherwise have no deadline) and preserves the current scenario
+and failure DOM. A timeout is a failure, never a passing or skipped scenario.

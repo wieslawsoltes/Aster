@@ -30,13 +30,18 @@ def main(args):
         ctx=browser.new_context(viewport={'width':1440,'height':1000},has_touch=True,accept_downloads=True)
         page=ctx.new_page();page.set_default_timeout(15000);page.on('pageerror',lambda e:report['errors'].append(str(e)))
         requests=[];ctx.on('request',lambda req:requests.append(req.url))
-        def js(code,arg=None):return page.evaluate('async arg=>{const OS=Aster;const assert=(v,m="Assertion failed")=>{if(!v)throw Error(m)};'+code+'}',arg)
+        def js(code,arg=None):
+            # Playwright's default timeout does not bound a pending evaluate promise.
+            return page.evaluate('arg=>{let timer;return Promise.race([(async()=>{const OS=Aster;const assert=(v,m="Assertion failed")=>{if(!v)throw Error(m)};'+code+'})(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error("Browser test operation exceeded 30 seconds")),30000)})]).finally(()=>clearTimeout(timer));}',arg)
         def check(name,fn):
-            start=time.monotonic()
+            start=time.monotonic();report['currentCheck']=name
+            (out/'progress.json').write_text(json.dumps(report,indent=2));print('START',name,flush=True)
             try:
                 detail=fn();report['checks'].append({'name':name,'status':'PASS','detail':detail,'ms':round(1000*(time.monotonic()-start))});print('PASS',name,flush=True)
             except Exception as e:
-                report['checks'].append({'name':name,'status':'FAIL','error':str(e)});page.screenshot(path=str(out/'failure.png'));raise
+                report['checks'].append({'name':name,'status':'FAIL','error':str(e)})
+                (out/'failure-dom.html').write_text(page.content())
+                page.screenshot(path=str(out/'failure.png'));raise
         def boot():page.wait_for_function('window.Aster?.booted');page.locator('#boot').wait_for(state='detached');js('await OS.ready;await OS.orbit.initialize();')
         def clean():
             js('OS.closePanels();for(const w of [...OS.windows.values()])await w.close(true);await OS.orbit.preferences({confirmLeave:false});document.querySelectorAll(".toast").forEach(n=>n.remove());assert(OS.webviews.activeCount===0);')
