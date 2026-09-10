@@ -8518,6 +8518,7 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
             }});
         // Editing metadata never remounts a document or changes its stored window state.
         for(const w of OS.windows.values())if(w.appId===r.id&&!w.closed){w.setTitle(r.title);const f=w.body.querySelector('.app-frame');if(f)f.title=r.title;}
+        OS.refreshIconArtwork?.(r.id);
         return r;
     };
 })();
@@ -11345,10 +11346,10 @@ struct Params { size:vec2f, radius:f32, rim:f32, grid:vec2u, pad:vec2u };
     };
     // Update artwork, not its enclosing buttons/windows: keyboard focus, pointer
     // capture, open panels and application state survive an icon-family change.
-    OS.refreshIconArtwork=()=>{
+    OS.refreshIconArtwork=(appId=null)=>{
         const which=family();if(typeof document==='undefined')return;
         for(const node of document.querySelectorAll('.aster-adaptive-icon')){
-            if(node.dataset.iconFamily===which)continue;
+            if(appId ? node.dataset.iconId!==appId : node.dataset.iconFamily===which)continue;
             const size=parseFloat(node.style.getPropertyValue('--icon-size'))||32,template=document.createElement('template');
             template.innerHTML=OS.visualIcon(node.dataset.iconId,size);
             const next=template.content.firstElementChild;

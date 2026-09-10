@@ -123,6 +123,7 @@
             }});
         // Editing metadata never remounts a document or changes its stored window state.
         for(const w of OS.windows.values())if(w.appId===r.id&&!w.closed){w.setTitle(r.title);const f=w.body.querySelector('.app-frame');if(f)f.title=r.title;}
+        OS.refreshIconArtwork?.(r.id);
         return r;
     };
 })();

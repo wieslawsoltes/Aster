@@ -142,10 +142,10 @@
     };
     // Update artwork, not its enclosing buttons/windows: keyboard focus, pointer
     // capture, open panels and application state survive an icon-family change.
-    OS.refreshIconArtwork=()=>{
+    OS.refreshIconArtwork=(appId=null)=>{
         const which=family();if(typeof document==='undefined')return;
         for(const node of document.querySelectorAll('.aster-adaptive-icon')){
-            if(node.dataset.iconFamily===which)continue;
+            if(appId ? node.dataset.iconId!==appId : node.dataset.iconFamily===which)continue;
             const size=parseFloat(node.style.getPropertyValue('--icon-size'))||32,template=document.createElement('template');
             template.innerHTML=OS.visualIcon(node.dataset.iconId,size);
             const next=template.content.firstElementChild;

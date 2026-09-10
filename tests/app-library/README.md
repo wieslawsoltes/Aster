@@ -47,3 +47,9 @@ Desktop backup checks operate real Settings export/restore controls and native
 file choosers. They restore descriptions, favorite and artwork metadata and actual
 HTML contents after changing them. A malformed legacy record remains inert but
 is retained in the exported recovery backup before an explicit normalized edit.
+
+The inherited desktop smoke suite now opens the real installer form through App
+Center and the browser file chooser, rather than waiting on an obsolete mocked
+single-name prompt. Its sandbox assertions remain, and it also checks the saved
+description. Editing artwork refreshes vector children in the original running
+caption icon node; a browser regression checks both its identity and new color.

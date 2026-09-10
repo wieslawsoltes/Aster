@@ -207,10 +207,17 @@ async def main(args):
             """)
         await check('Backup JSON text and binary round-trip',backup)
         async def install():
-            return await js("""
-                const read=OS.readFile,prompt=OS.prompt;
-                try{OS.readFile=async()=>[new File(['<!doctype html><button onclick="this.textContent=42">Run</button>'],'Test App.html',{type:'text/html'})];OS.prompt=async()=> 'Test App';await OS.installHTML();const app=OS.customApps.find(a=>a.title==='Test App');assert(app);const w=OS.launch(app.id);await w.ready;window.testWindow=w;assert(w.body.querySelector('iframe').sandbox.contains('allow-scripts'));assert(!w.body.querySelector('iframe').sandbox.contains('allow-same-origin'));return app.id;}finally{OS.readFile=read;OS.prompt=prompt;}
-            """)
+            await launch('store')
+            source='<!doctype html><button onclick="this.textContent=42">Run</button>'
+            async with page.expect_file_chooser() as chooser:
+                await page.get_by_role('button',name='Install HTML app',exact=True).click()
+            await (await chooser.value).set_files({'name':'Test App.html','mimeType':'text/html','buffer':source.encode()})
+            dialog=page.get_by_role('dialog',name='Install HTML app',exact=True)
+            await dialog.get_by_label('App name',exact=True).fill('Test App')
+            await dialog.get_by_label('Description',exact=True).fill('Smoke-installed app description')
+            await dialog.get_by_role('button',name='Install',exact=True).click()
+            await dialog.wait_for(state='detached')
+            return await js("const app=OS.customApps.find(a=>a.title==='Test App');assert(app);assert(app.description==='Smoke-installed app description');const w=OS.launch(app.id);await w.ready;window.testWindow=w;assert(w.body.querySelector('iframe').sandbox.contains('allow-scripts'));assert(!w.body.querySelector('iframe').sandbox.contains('allow-same-origin'));return app.id;")
         await check('HTML app installation and sandbox registration',install)
         async def notificationtimer():
             return await js("OS.timer.endAt=Date.now()-1;OS.timer.notified=false;await new Promise(r=>setTimeout(r,1400));assert(OS.timer.endAt===null&&OS.timer.notified);assert(OS.notifications.some(n=>n.message.includes('timer has finished')));return 'Expired timer triggers a real desktop notification';")
