@@ -3700,7 +3700,7 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                 const hasName = filename.value.trim().length > 0;
                 let validFolder = true;
                 try { if (kind === 'folder') validate(first?.kind === 'directory' ? first.path : dir); } catch { validFolder = false; }
-                confirm.disabled = busy || navigating || navigationFailed || (kind === 'folder' ? !validFolder : kind === 'save' ? !hasName : !first && !hasName);
+                confirm.disabled = busy || navigating || navigationFailed || (kind === 'folder' ? !validFolder : kind === 'save' ? !hasName && first?.kind !== 'directory' : !first && !hasName);
                 scope.lastElementChild.textContent = kind === 'folder' && !validFolder ? 'Choose one user folder; the filesystem root cannot be shared.' : scopeText;
                 newFolder.disabled = busy || navigating || navigationFailed || dir === '/' || !onNewFolder || (config.canCreate && !config.canCreate());
                 back.disabled = busy || !history.back; forward.disabled = busy || !history.forward; up.disabled = busy || dir === '/';
@@ -3739,8 +3739,11 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                 const next = M.select(shown, selection, path, anchor, { multiple: o.multiple && kind === 'open', toggle: event.ctrlKey || event.metaKey, range: event.shiftKey });
                 if (next.size > 256) { setStatus('Select no more than 256 files.', true); return; }
                 selection = next; if (!event.shiftKey) anchor = path; focusPath = path;
-                const r = shown.find(row => row.path === path);
-                if (kind !== 'folder') filename.value = selection.size === 1 && r?.kind === 'file' ? M.name(path) : '';
+                // The name follows the remaining selection, not the last clicked row.
+                // A folder in Save As is navigation; keep the user's draft name.
+                const r = selection.size === 1 ? shown.find(row => selection.has(row.path)) : null;
+                if (r?.kind === 'file' && kind !== 'folder') filename.value = M.name(r.path);
+                else if (kind === 'open') filename.value = '';
                 updateSelection(focus); if (!navigationFailed) setStatus();
             }
             function updateSelection(focus = false) {
@@ -3836,8 +3839,8 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                 try {
                     const selected = shown.filter(r => selection.has(r.path)); let folder = dir, paths = selected.filter(r => r.kind === 'file').map(r => r.path), name = filename.value;
                     if (kind === 'folder') { if (selected[0]?.kind === 'directory') folder = selected[0].path; }
-                    else if (selected.length === 1 && selected[0].kind === 'directory' && !name.trim()) { busy = false; await navigate(selected[0].path); return; }
-                    else if (kind === 'open' && name.trim() && selected.length <= 1) {
+                    else if (selected.length === 1 && selected[0].kind === 'directory') { busy = false; await navigate(selected[0].path); return; }
+                    else if (kind === 'open' && name.trim() && !selected.length) {
                         const path = validate(OS.fs.join(dir, AsterIOModels.name(name)));
                         const live = await stat(path); if (done) return;
                         if (live?.kind === 'directory') { busy = false; await navigate(path); return; }

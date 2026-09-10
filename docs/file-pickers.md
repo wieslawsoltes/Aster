@@ -36,6 +36,11 @@ Single-click selects a folder; double-click or Enter enters it. In a folder
 picker, Select folder confirms the selected child, or the current directory when
 no child is selected. The filesystem root is navigable but is never grantable.
 Open and Save As also accept a typed filename within the current directory.
+Save As retains a suggested or typed name when a folder is selected, entered with
+a double-click, or opened with the primary button. The first action navigates;
+only confirmation in the destination selects a save target. Ctrl/Command-deselect
+updates the name from the remaining selected file; a selected path takes precedence
+over a stale display name. No deselected file is silently substituted.
 
 Search filters the current folder; it is not a recursive filesystem search.
 Sorting supports name, modified date, kind and size; names use locale-aware,

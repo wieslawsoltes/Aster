@@ -17,3 +17,5 @@ test('Ctrl toggles files and Shift selects only files in the range',()=>{const r
 test('history truncates forward entries after new navigation',()=>{const h=new M.History('/');h.commit('/a');h.commit('/b');h.commit('/a',1);assert.equal(h.forward,true);h.commit('/c');assert.deepEqual(h.paths,['/','/a','/c']);});
 test('history is bounded to 50 committed locations',()=>{const h=new M.History('/');for(let i=0;i<70;i++)h.commit('/'+i);assert.equal(h.paths.length,50);assert.equal(h.index,49);assert.equal(h.target(-1),'/68');assert.equal(h.target(1),undefined);});
 test('unknown selection cannot retain a stale path',()=>assert.equal(M.select([file('a')],new Set(['/Documents/old']),'/Documents/nope',null,{multiple:true}).size,0));
+
+test('deselecting one of two files retains the other exact path',()=>{const rows=[file('a'),file('b')];assert.deepEqual([...M.select(rows,new Set(['/Documents/a','/Documents/b']),'/Documents/a','/Documents/b',{multiple:true,toggle:true})],['/Documents/b']);});

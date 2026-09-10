@@ -36,3 +36,18 @@ transfer assertions remain intact. No browser isolation flags are relaxed.
 
 No pixel-identical native OS claim, screen-reader certification, native-picker
 restyling claim or physical-GPU speed measurement is made by these tests.
+
+## Continuation regressions
+
+The recovered head `6ce70f562c15655896d6a1c734bee02ad0fc3f3f` passed
+21 Chromium picker scenarios, but its reload test tried to open an unregistered
+in-memory fixture. The suite now re-registers only that descriptor after the
+full reload. It does not reseed files, preferences, grants or application bytes.
+All IndexedDB, expired-grant, reopen and offline assertions are retained.
+
+Two additional browser regressions failed on the recovered production code:
+Ctrl-deselecting from two files to one left the deselected filename in the input,
+and Save As discarded a draft filename on folder selection. The fixed suite
+checks the exact remaining returned path and saves actual bytes through nested
+folder navigation in all three desktop profiles. No forced clicks or replacement
+picker implementations are used.

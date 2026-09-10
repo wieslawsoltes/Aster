@@ -47,6 +47,27 @@ def main(args):
             js('await OS.ready;OS.settings.restore=false;OS.settings.motion=false;OS.settings.dnd=true;OS.applySettings();for(const w of [...OS.windows.values()])await w.close(true);OS.closePanels();document.querySelectorAll(".toast").forEach(n=>n.remove());')
             js("await OS.fs.mkdir('/Documents/Picker review');await OS.fs.mkdir('/Documents/Picker review/Projects');await OS.fs.mkdir('/Documents/Picker review/Projects/Empty');for(const [name,body]of [['Brief.txt','Aster design review — żółć 日本語'],['Notes2.txt','Two'],['Notes10.txt','Ten'],['.hidden.txt','Hidden by choice'],['Preview.svg','<svg xmlns=\"http://www.w3.org/2000/svg\"><script>parent.PREVIEW_EXECUTED=true</script></svg>']])await OS.fs.write('/Documents/Picker review/'+name,body);await OS.fs.write('/Documents/Picker review/bytes.bin',new Blob([new Uint8Array([0,255,4,8])]),'application/octet-stream');const c=document.createElement('canvas');c.width=160;c.height=100;const ctx=c.getContext('2d');ctx.fillStyle='#2b6898';ctx.fillRect(0,0,160,100);ctx.fillStyle='#98d8c3';ctx.fillRect(20,20,90,60);await OS.fs.write('/Documents/Picker review/Sketch.png',await new Promise(r=>c.toBlob(r)),'image/png');await OS.fs.write('/Documents/picker-review.html',arg,'text/html');OS.registerCustom({id:'picker-review',title:'Design workspace',path:'/Documents/picker-review.html'});window.reviewWindow=OS.openApp('picker-review');await reviewWindow.ready;",(ROOT/'tests/web-io/fixture.html').read_text())
             page.wait_for_function('Aster.webIO.sessions.some(s=>s.app==="picker-review"&&s.state==="connected")');frame=page.locator('.app-frame').element_handle().content_frame();frame.wait_for_function('AsterFiles?.connected')
+            def deselect_to_one():
+                d=launch('multi');row(d,'Brief.txt').click();row(d,'bytes.bin').click(modifiers=['Control']);row(d,'Brief.txt').click(modifiers=['Control'])
+                assert row(d,'bytes.bin').get_attribute('aria-selected')=='true'
+                assert row(d,'Brief.txt').get_attribute('aria-selected')=='false'
+                assert d.get_by_label('File name',exact=True).input_value()=='bytes.bin'
+                d.get_by_role('button',name='Open',exact=True).click();assert complete()['names']==['bytes.bin']
+            check('Ctrl-deselect to one returns the remaining file, never the deselected filename',deselect_to_one)
+            def save_navigation():
+                for preset in ['windows-light','macos26-light','ubuntu-light']:
+                    js('await OS.themes.select(arg);',preset)
+                    d=launch('save');name='Preserved draft '+preset+' Ω.txt';field=d.get_by_label('File name',exact=True);field.fill(name)
+                    row(d,'Projects').click();assert field.input_value()==name
+                    d.get_by_role('button',name='Save',exact=True).click();page.wait_for_function('document.querySelector(".io-picker-status").textContent==="/Documents/Picker review/Projects"')
+                    assert field.input_value()==name
+                    assert js('return !await OS.fs.stat("/Documents/Picker review/"+arg);',name)
+                    row(d,'Empty').dblclick();page.wait_for_function('document.querySelector(".io-picker-status").textContent.endsWith("/Projects/Empty")')
+                    assert field.input_value()==name
+                    d.get_by_role('button',name='Save',exact=True).click();complete()
+                    assert js('return await OS.fs.text(await OS.fs.read("/Documents/Picker review/Projects/Empty/"+arg));',name)==frame.locator('#text').input_value()
+                js('await OS.themes.select("windows-light");')
+            check('Save As retains typed names while entering folders and writes only to the chosen destination',save_navigation)
             def profiles():
                 presets=js('return AsterThemeModels.PRESETS.map(t=>t.id);');captures=[]
                 for preset in presets:
@@ -161,7 +182,9 @@ def main(args):
             check('Display preferences save independently of grants and requested file filters',setprefs)
             if not args.inject:
                 def persistence():
-                    js('await OS.filePicker.pending;OS.cancelSessionSave();await OS.persistSessionNow();');page.reload();page.wait_for_function('Aster.booted&&Aster.filePicker');js('await OS.ready;assert(!OS.db.memory);assert(await OS.fs.stat("/Documents/Picker review/document.txt"));assert(OS.webIO.sessions.every(s=>s.grants===0));const v=await OS.db.get("file-picker-ui-v1");assert(v.view==="grid"&&v.preview&&v.hidden&&v.sort==="size");window.reviewWindow=OS.openApp("picker-review");await reviewWindow.ready;')
+                    # registerCustom is an in-memory test descriptor, not an app installation.
+                    # Re-register it after reload; do not reseed its stored file or preferences.
+                    js('await OS.filePicker.pending;OS.cancelSessionSave();await OS.persistSessionNow();');page.reload();page.wait_for_function('Aster.booted&&Aster.filePicker');js('await OS.ready;assert(!OS.db.memory);assert(await OS.fs.stat("/Documents/Picker review/document.txt"));assert(OS.webIO.sessions.every(s=>s.grants===0));const v=await OS.db.get("file-picker-ui-v1");assert(v.view==="grid"&&v.preview&&v.hidden&&v.sort==="size");OS.registerCustom({id:"picker-review",title:"Design workspace",path:"/Documents/picker-review.html"});window.reviewWindow=OS.openApp("picker-review");assert(reviewWindow,"Reload fixture registration failed");await reviewWindow.ready;')
                     page.wait_for_function('Aster.webIO.sessions.some(s=>s.app==="picker-review"&&s.state==="connected")');f=page.locator('.app-frame').element_handle().content_frame();f.locator('#open').click();d=page.get_by_role('dialog',name='Open from Aster',exact=True);page.wait_for_function('document.querySelector(".io-picker").dataset.view==="grid"');assert d.get_by_role('button',name='Preview pane',exact=True).get_attribute('aria-pressed')=='true';d.get_by_role('button',name='Cancel',exact=True).click();f.wait_for_function('error?.name==="AbortError"')
                 check('Full-page IndexedDB reload restores views without restoring expired permissions',persistence)
             if args.standalone:
