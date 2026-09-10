@@ -1,0 +1,109 @@
+name: Verify and add five requested web apps
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/add-requested-apps.yml']
+permissions:
+  contents: write
+jobs:
+  catalog:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit actual repository identities and published HTML before updating source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import datetime, hashlib, html, json, os, re, time, urllib.request
+          from pathlib import Path
+          from zoneinfo import ZoneInfo
+          requested=[
+            ('VoltWeaveCircuitStudio','VoltWeave Circuit Studio','simulation','Schematic editing, analog circuit simulation and waveform analysis'),
+            ('StratumIntelligence','Stratum Intelligence','industrial','Operational intelligence, data workflows and P&ID diagram analysis'),
+            ('Veldra3D','Veldra 3D + Weave','cad','NURBS modeling, visual parametric design and final rendering'),
+            ('AvolithStudio','Avolith Studio','cad','Direct and analytic 3D modeling, sheet metal and CAD exchange'),
+            ('AureonStudio','Aureon Studio','animation','3D modeling, animation and WebGPU rendering')]
+          def get(url,api=False):
+              headers={'User-Agent':'Aster-catalog-audit','Accept':'application/vnd.github+json' if api else 'text/html'}
+              if api:headers['Authorization']='Bearer '+os.environ['GH_TOKEN']
+              for attempt in range(3):
+                  try:
+                      with urllib.request.urlopen(urllib.request.Request(url,headers=headers),timeout=45) as response:
+                          body=response.read(32*1024*1024+1)
+                          assert len(body)<=32*1024*1024
+                          return response.status,response.url,dict(response.headers.items()),body
+                  except Exception:
+                      if attempt==2:raise
+                      time.sleep(2)
+          p=Path('src/web-app-catalog.js');source=p.read_text();prefix,tail=source.split('    const data = ',1);raw,suffix=tail.split('\n};',1);data=json.loads(raw+'\n}')
+          assert len(data['apps'])==74 and not any(a['repo'] in {r[0] for r in requested} for a in data['apps'])
+          inventory_path=Path('docs/web-app-inventory.json');inventory=json.loads(inventory_path.read_text());assert len(inventory['repositories'])==75
+          now=datetime.datetime.now(datetime.timezone.utc).isoformat();audit=[]
+          for repo,title,category,description in requested:
+              status,_,_,body=get('https://api.github.com/repos/wieslawsoltes/'+repo,True);meta=json.loads(body)
+              assert status==200 and meta['full_name']=='wieslawsoltes/'+repo and not meta['private'] and meta['has_pages']
+              _,_,_,readme=get('https://api.github.com/repos/wieslawsoltes/'+repo+'/readme',True)
+              url='https://wieslawsoltes.github.io/'+repo+'/'
+              status,final,headers,body=get(url);headers={k.lower():v for k,v in headers.items()}
+              assert status==200 and final==url and 'text/html' in headers.get('content-type','')
+              assert not headers.get('x-frame-options') and not re.search(r"frame-ancestors\s+'none'",headers.get('content-security-policy',''))
+              text=body.decode('utf-8');m=re.search(r'<title[^>]*>(.*?)</title>',text,re.I|re.S);assert m and '<body' in text.lower()
+              document_title=html.unescape(m.group(1).strip());assert 'Site not found' not in document_title
+              entry={'repo':repo,'title':title,'description':description,'category':category,'createdAt':meta['created_at'],'url':url,'documentTitle':document_title,'selection':'explicit-request','addedAt':now}
+              data['apps'].append(entry)
+              deployment={'requestedUrl':url,'status':status,'finalUrl':final,'headers':{k:headers[k] for k in ['content-type','x-frame-options','content-security-policy'] if k in headers},'bytes':len(body),'sha256':hashlib.sha256(body).hexdigest(),'title':document_title,'checkedAt':now}
+              record={'name':repo,'createdAt':meta['created_at'],'createdLocal':datetime.datetime.fromisoformat(meta['created_at'].replace('Z','+00:00')).astimezone(ZoneInfo('Europe/Warsaw')).isoformat(),'repository':meta['html_url'],'readmeSHA':json.loads(readme)['sha'],'included':True,'selection':'explicit-request','addedAt':now,'reason':'Explicit user request on September 10, 2026; not part of the original Sunday–Tuesday date selection.','deployments':[deployment]}
+              inventory['repositories'].append(record);audit.append(record)
+          data['version']=3;data['updatedAt']=now;inventory['updatedAt']=now
+          p.write_text(prefix+'    const data = '+json.dumps(data,ensure_ascii=False,indent=2)+';'+suffix)
+          inventory_path.write_text(json.dumps(inventory,ensure_ascii=False,indent=2)+'\n')
+          # Retain every original date assertion, with an explicit provenance branch for requested additions.
+          p=Path('tests/web-apps/catalog.cjs');s=p.read_text().replace('inventory.repositories.length, 75','inventory.repositories.length, 80');s=re.sub(r'\b74\b','79',s)
+          needle='    for (const app of catalog.apps) {\n        assert(Date.parse(app.createdAt) >= Date.parse(catalog.startInclusive));'
+          assert s.count(needle)==1
+          s=s.replace(needle,"    for (const app of catalog.apps) {\n        if (app.selection === 'explicit-request') {\n            assert(Number.isFinite(Date.parse(app.createdAt)));\n            assert(Date.parse(app.addedAt) >= Date.parse('2026-09-10T00:00:00+02:00'));\n            assert.equal(inventory.repositories.find(r => r.name === app.repo).selection, 'explicit-request');\n            continue;\n        }\n        assert(Date.parse(app.createdAt) >= Date.parse(catalog.startInclusive));")
+          s+='\ntest(\'September 10 requested additions remain unique, searchable, scoped and explicitly audited\', () => {\n    const {apps} = register();\n    const expected = '+json.dumps([[r[0],r[1],r[2]] for r in requested])+';\n    assert.equal(catalog.apps.filter(a => a.selection === "explicit-request").length, 5);\n    for (const [repo,title,category] of expected) {\n        const matches=catalog.apps.filter(a=>a.repo===repo);assert.equal(matches.length,1);\n        const app=matches[0];assert.equal(app.title,title);assert.equal(app.category,category);\n        assert.equal(app.selection,"explicit-request");assert.equal(apps.get(app.id).webApp,true);\n        assert(apps.get(app.id).keywords.includes(repo));\n        assert(!launcher.match(/const recordingApps = new Set\\(\\[([^\\]]+)\\]\\)/)[1].includes("\\\'"+repo+"\\\'"));\n    }\n});\n'
+          p.write_text(s)
+          for name in ['tests/web-apps/browser.py','tests/web-apps/README.md','tests/desktop-features/browser.py','tests/integrated-shell/browser.py','tests/themes/browser.py','tests/smoke.py','tests/web-chrome/models.cjs','docs/web-apps.md']:
+              p=Path(name);s=re.sub(r'\b74\b','79',p.read_text())
+              if name=='tests/web-apps/browser.py':
+                  s=s.replace('querySelectorAll(".start-main .search-result").length===9','querySelectorAll(".start-main .search-result").length===11').replace("count('CAD & Manufacturing')==9","count('CAD & Manufacturing')==11")
+                  s=s.replace("'Formalyth','Jailbreak']","'Formalyth','Jailbreak','VoltWeaveCircuitStudio','StratumIntelligence','Veldra3D','AvolithStudio','AureonStudio']")
+              p.write_text(s)
+          p=Path('README.md');p.write_text('## September 10 catalog update — 79 web apps\n\nAdded VoltWeave Circuit Studio, Stratum Intelligence (including P&ID analysis),\nVeldra 3D + Weave, Avolith Studio and Aureon Studio to **Start → Your web apps**.\nThese five explicit additions are audited separately from the original date-window selection.\nThe catalog remains lazy: no application payload is loaded until launch.\n\n'+p.read_text())
+          p=Path('sw.js');s=p.read_text();assert "aster-desktop-2.1-profile-pickers-r2" in s;p.write_text(s.replace('aster-desktop-2.1-profile-pickers-r2','aster-desktop-2.1-profile-pickers-r2-catalog79'))
+          Path('/tmp/catalog-audit.json').write_text(json.dumps(audit,ensure_ascii=False,indent=2)+'\n')
+          print('All five repositories and exact HTTPS launch documents verified; 79 catalog apps.')
+          PY
+      - name: Build and verify all source contracts before committing
+        run: |
+          for file in src/*.js sw.js; do node --check "$file"; done
+          python3 build.py
+          node --test tests/*/models.cjs tests/integrated-shell/contracts.cjs tests/web-apps/catalog.cjs
+          python3 -m py_compile tests/web-apps/browser.py tests/desktop-features/browser.py tests/integrated-shell/browser.py tests/themes/browser.py tests/smoke.py
+          git diff --check
+      - name: Commit requested additions directly to main
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/web-app-catalog.js docs/web-app-inventory.json docs/web-apps.md tests/web-apps tests/desktop-features/browser.py tests/integrated-shell/browser.py tests/themes/browser.py tests/smoke.py tests/web-chrome/models.cjs README.md sw.js Aster.html
+          git commit -m 'Add VoltWeave, Stratum, Veldra, Avolith and Aureon to the 79-app catalog'
+          git push origin HEAD:main
+      - name: Preserve the exact catalog source and audit
+        if: always()
+        run: |
+          mkdir -p /tmp/catalog-evidence
+          cp /tmp/catalog-audit.json /tmp/catalog-evidence/ 2>/dev/null || true
+          git archive --format=zip HEAD -o /tmp/catalog-evidence/source.zip
+          git rev-parse HEAD > /tmp/catalog-evidence/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: requested-five-apps-source-and-audit
+          path: /tmp/catalog-evidence/
+          retention-days: 14
