@@ -169,8 +169,11 @@ def main(args):
                             with ctx.expect_event('requestfailed',predicate=lambda r:r.url==target and r.is_navigation_request(),timeout=15000) as refused:
                                 w=launch({'url':target,'mode':'webview'})
                             failure=refused.value.failure
-                            expected=firefox_error if args.engine=='firefox' else 'net::ERR_BLOCKED_BY_RESPONSE'
-                            assert failure and failure.startswith(expected),(target,failure)
+                            # Juggler can map frame-policy security failures to its generic
+                            # SEC_ERROR_UNKNOWN code. These fixtures are plain HTTP (no TLS),
+                            # with a successful same-document response and policy checked below.
+                            expected={firefox_error,'SEC_ERROR_UNKNOWN'} if args.engine=='firefox' else {'net::ERR_BLOCKED_BY_RESPONSE'}
+                            assert failure in expected,(target,failure)
                             page.wait_for_function('b.getWebview().snapshot.status==="unverified"')
                             assert js('return b.getWebview().snapshot.reportedURL;')==''
                             assert 'allow-same-origin' not in w.locator('iframe').get_attribute('sandbox')

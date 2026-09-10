@@ -57,9 +57,18 @@ and failure DOM. A timeout is a failure, never a passing or skipped scenario.
 
 A Firefox run reached the real denied frame but stalled while trying to inspect
 the browser-generated error document. Denial verification now requires the
-browser's actual `requestfailed` navigation event and exact policy error, then
+browser's actual `requestfailed` navigation event and security error, then
 checks that the unmodified response opens through the external link with no opener.
 CSP frame-ancestors and X-Frame-Options-only responses are exercised independently;
 ordinary allowed HTTP webviews still prove real rendering, isolation and SDK updates.
 No browser, policy or fallback assertion is skipped. The complete driver process is
 bounded separately from in-page promises, and failures preserve their report first.
+
+Playwright's Firefox/Juggler adapter can expose a frame-policy rejection as
+`SEC_ERROR_UNKNOWN`; its `getNetworkErrorStatusText` falls back to that label for
+unmapped security-channel errors. The test accepts that observed adapter code
+only for its controlled plain-HTTP loopback fixture, not arbitrary HTTPS failures.
+The allowed same-origin frame must render, both denied requests must fail, and
+each identical denied response must render externally with HTTP 200 and its
+actual CSP/XFO header intact. There is no TLS or certificate exception. See the
+upstream [adapter mapping](https://github.com/microsoft/playwright/blob/main/browser_patches/firefox/juggler/Helper.js).
