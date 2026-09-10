@@ -74,3 +74,7 @@ copy event or fake clipboard is used for the file-reference transfer.
 The inherited theme helper moves the pointer off the dock and uses Escape before
 programmatic Settings navigation. This dismisses a real taskbar hover preview
 that otherwise intercepted a contrast-preset click; no forced click is used.
+
+Sensitive autocomplete matching includes multi-token, section-prefixed and
+case-insensitive credit-card, password and one-time-code fields. The browser
+regression copies their actual text and verifies that no history or target survives.

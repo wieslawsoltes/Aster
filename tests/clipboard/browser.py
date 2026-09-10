@@ -75,6 +75,9 @@ def main(args):
             def private():
                 js('window.privateBox=OS.el("div",{"data-private":"true"});privateBox.innerHTML="<input aria-label=Secret value=secret><div contenteditable=true>private span</div>";w.body.prepend(privateBox);window.count=C.model.entries.length;')
                 q=page.get_by_role('textbox',name='Secret');q.click();q.press(primary+'+a');q.press(primary+'+c');js('assert(C.model.entries.length===count);assert(!C.target);privateBox.remove();')
+                for token in ['section-checkout billing cc-number','section-signin ONE-TIME-CODE','section-login current-password']:
+                    js('window.tokenField=OS.el("input",{type:"text","aria-label":"Sensitive autocomplete",autocomplete:arg});tokenField.value="sensitive autocomplete";w.body.prepend(tokenField);window.retainedCount=C.model.entries.length;',token)
+                    q=page.get_by_label('Sensitive autocomplete');q.click();q.press(primary+'+a');q.press(primary+'+c');js('assert(C.model.entries.length===retainedCount);assert(!C.target);tokenField.remove();')
                 e=editor();js('window.sensitive=document.createElement("input");sensitive.type="password";sensitive.value="DO NOT RETAIN";document.body.append(sensitive);sensitive.focus();assert(!C.target);sensitive.remove();')
             check('Private containers and password fields are excluded and invalidate previous targets',private)
             def manual():

@@ -2242,7 +2242,7 @@ body.theme-managed.theme-contrast .aster-adaptive-icon[data-icon-family] .art-pl
 (() => {
     const OS=Aster,M=AsterInputModels;
     Object.assign(OS.settings,M.DEFAULTS);
-    const privateSelector='[data-private],input[type="password"],[autocomplete="one-time-code"],[autocomplete^="cc-"],[autocomplete="current-password"],[autocomplete="new-password"]';
+    const privateSelector='[data-private],input[type="password"],[autocomplete~="one-time-code" i],[autocomplete*="cc-" i],[autocomplete~="current-password" i],[autocomplete~="new-password" i]';
     const ownUI=e=>!!e?.closest?.('[data-clipboard-ui],[data-app="clipboard"]');
     const privateField=e=>{for(let n=e;n;n=n.getRootNode?.().host){if(n.closest?.(privateSelector))return true;}return false;};
     const privateSelection=doc=>{const selection=doc.getSelection();if(!selection?.rangeCount)return false;const range=selection.getRangeAt(0),root=range.commonAncestorContainer.nodeType===1?range.commonAncestorContainer:range.commonAncestorContainer.parentElement;if(privateField(root))return true;return [...(root?.querySelectorAll?.(privateSelector)||[])].some(node=>range.intersectsNode(node));};
