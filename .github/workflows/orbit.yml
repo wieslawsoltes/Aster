@@ -35,9 +35,9 @@ jobs:
           python -m pip install playwright
           python -m playwright install --with-deps chromium
       - name: Actual HTTP, popup, frame denial and durable storage
-        run: python tests/orbit/browser.py
+        run: timeout --signal=TERM --kill-after=10s 180s python -u tests/orbit/browser.py
       - name: Standalone and offline local webviews
-        run: python tests/orbit/browser.py --standalone --output tests/orbit/artifacts/standalone
+        run: timeout --signal=TERM --kill-after=10s 180s python -u tests/orbit/browser.py --standalone --output tests/orbit/artifacts/standalone
       - name: Preserve exact tested source
         if: always()
         run: |
@@ -63,7 +63,11 @@ jobs:
         run: |
           python -m pip install playwright
           python -m playwright install --with-deps firefox
-      - run: python tests/orbit/browser.py --engine firefox --output tests/orbit/artifacts/firefox
+      - name: Independent browser with bounded process and retained driver log
+        run: |
+          mkdir -p tests/orbit/artifacts/firefox
+          set -o pipefail
+          DEBUG=pw:api timeout --signal=TERM --kill-after=10s 180s python -u tests/orbit/browser.py --engine firefox --output tests/orbit/artifacts/firefox 2>&1 | tee tests/orbit/artifacts/firefox/driver.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -83,7 +87,7 @@ jobs:
           python -m pip install playwright
           python -m playwright install --with-deps chromium
       - name: Unchanged Google document through the actual Aster handoff
-        run: python tests/orbit/browser.py --live --output tests/orbit/artifacts/live
+        run: timeout --signal=TERM --kill-after=10s 180s python -u tests/orbit/browser.py --live --output tests/orbit/artifacts/live
       - uses: actions/upload-artifact@v4
         if: always()
         with:
