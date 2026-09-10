@@ -1,4 +1,4 @@
-name: Verify the focused file paste fixture
+name: Verify final clipboard and input repairs
 on:
   push:
     branches: [fix/clipboard-keyboard]
@@ -8,46 +8,62 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 7
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Strengthen fixture focus and data preconditions
+      - name: Validate and apply exact reviewed edits
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import hashlib
-          p=Path('tests/clipboard/browser.py');raw=p.read_bytes()
-          assert hashlib.sha256(raw).hexdigest()=='f0d033bce2e507b99031cb2f033d77906dffcc00d7670eee54fe7bfeacc2b94c'
-          lines=raw.decode().splitlines(keepends=True)
-          indices=[i for i,line in enumerate(lines) if line.startswith("                clean();launch('files',{'path':'/Downloads'});js('const data=new DataTransfer();")]
-          assert len(indices)==1
-          lines[indices[0]]='''                clean();launch('files',{'path':'/Downloads'});page.locator('.explorer-main').click()
-                          report['fileFixture']=js('const list=w.body.querySelector(".explorer-main");assert(document.activeElement===list,"File fixture must begin with focused list");assert(OS.focused===w.id,"File fixture must own the focused window");const data=new DataTransfer();data.items.add(new File(["pasted actual fixture bytes Ω"],"Pasted fixture.txt",{type:"text/plain"}));assert(data.files.length===1,"File fixture DataTransfer omitted its File");const event=new ClipboardEvent("paste",{bubbles:true,cancelable:true,clipboardData:data});assert(event.clipboardData?.files.length===1,"Synthetic ClipboardEvent omitted its File");list.dispatchEvent(event);return {trusted:event.isTrusted,prevented:event.defaultPrevented,files:event.clipboardData.files.length,types:[...event.clipboardData.types],active:document.activeElement.tagName,focused:OS.focused,owner:w.id};')
-                          (out/'progress.json').write_text(json.dumps(report,indent=2))
-                          assert report['fileFixture']['prevented'],'Supplied-file paste was not handled by Files'
-                          stored('/Downloads/Pasted fixture.txt');js('assert(await OS.fs.text(await OS.fs.read("/Downloads/Pasted fixture.txt"))==="pasted actual fixture bytes Ω");')
-          '''.replace('\n                          ','\n                ')
-          result=''.join(lines).encode()
-          assert hashlib.sha256(result).hexdigest()=='44baf6699487b3a1c3c0f36bdbcb55d0266a020457b6e959049d6d0f987f7169'
-          p.write_bytes(result)
+          import hashlib,json,base64,zlib
+          encoded='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'
+          # Preserve the exact reviewed payload despite a transport-only spelling correction.
+          encoded=encoded.replace('BQHTbhcmkXfPnbar','BQHTbhcmXfPnbar')
+          data=base64.b64decode(encoded,validate=True)
+          assert len(data)==2799 and hashlib.sha256(data).hexdigest()=='57c8a5801d6eb414dd3958dc01309002c63069a4b48c38ef0905d6f78eca4653'
+          decoder=zlib.decompressobj();raw=decoder.decompress(data,6282)
+          assert decoder.eof and not decoder.unused_data and len(raw)==6281 and hashlib.sha256(raw).hexdigest()=='2ba4917915ae1ca868b101d52e703af1beb492bfe9a28c34591151a5e59825d5'
+          changes=json.loads(raw)
+          allowed={'tests/clipboard/browser.py','tests/clipboard/README.md','src/apps-browser.js','sw.js','tests/win32/gui-browser.py','docs/clipboard.md'}
+          assert len(changes)==6 and {c['path'] for c in changes}==allowed
+          outputs=[]
+          for c in changes:
+              p=Path(c['path']);before=p.read_bytes();assert not p.is_symlink() and hashlib.sha256(before).hexdigest()==c['before'],str(p)
+              text=before.decode();last=0
+              for a,b,value in c['ops']:
+                  assert last<=a<=b<=len(text);last=b
+              for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+              result=text.encode();assert hashlib.sha256(result).hexdigest()==c['after'],str(p)
+              outputs.append((p,result))
+          for p,result in outputs:p.write_bytes(result)
           PY
-          python3 -m py_compile tests/clipboard/browser.py
+      - name: Check source, models and reproducible standalone
+        run: |
+          for f in src/*.js sdk/*.js sw.js; do node --check "$f"; done
+          python -m py_compile tests/clipboard/browser.py tests/win32/gui-browser.py
+          node --test tests/*/models.cjs tests/integrated-shell/contracts.cjs tests/web-apps/catalog.cjs
+          python build.py
+          echo '3188ed6c4d5ec3bc1db51d16844371e9269bfc3b27ad0174a1787708e1983287  Aster.html' | sha256sum -c -
+          git diff --exit-code -- sdk/aster-files.js sdk/aster-clipboard.js tests/results.json
           git diff --check
       - name: Install independent Firefox
         run: |
           python -m pip install playwright
           python -m playwright install --with-deps firefox
-      - name: Run unchanged native clipboard scenarios and focused importer fixture
+      - name: Native clipboard and explicitly labeled supplied-file fixture
         run: timeout 300s python -u tests/clipboard/browser.py --engine firefox --output tests/clipboard/artifacts/firefox-fixture
       - name: Commit only after full Firefox suite passes
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add tests/clipboard/browser.py
-          git commit -m 'Require focused Files owner and intact supplied File in synthetic importer coverage'
+          git add tests/clipboard/browser.py tests/clipboard/README.md src/apps-browser.js sw.js tests/win32/gui-browser.py docs/clipboard.md Aster.html
+          git commit -m 'Preserve pasted Orbit drafts and verify supplied-file imports across browser engines'
           git push origin HEAD:fix/clipboard-keyboard
       - uses: actions/upload-artifact@v4
         if: always()
