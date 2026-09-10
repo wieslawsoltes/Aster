@@ -1,0 +1,61 @@
+name: Apply exact reviewed clipboard repair
+on:
+  push:
+    branches: [fix/clipboard-keyboard]
+    paths: ['.github/workflows/apply-clipboard-repair.yml']
+permissions:
+  contents: write
+jobs:
+  complete:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify the corrected payload and all source hashes before writing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,base64,zlib,hashlib,json
+          text=Path('.github/workflows/complete-native-clipboard.yml').read_text()
+          encoded=re.search(r"encoded='([^']+)'",text).group(1)
+          assert encoded.count('YG6apoz7/W')==1
+          encoded=encoded.replace('YG6apoz7/W','YG6apoz/W')
+          data=base64.b64decode(encoded,validate=True)
+          assert len(data)==4048 and hashlib.sha256(data).hexdigest()=='0698e763e2138115350e6ebee09a998425d0bc8bc0171b6fbe28417cb7b62ef4'
+          decoder=zlib.decompressobj();raw=decoder.decompress(data,9863)
+          assert decoder.eof and not decoder.unused_data and len(raw)==9862
+          assert hashlib.sha256(raw).hexdigest()=='6b8cb518744586394068f53c7fa3f222ce420670e72500472ed9e26b831de387'
+          changes=json.loads(raw)
+          allowed={'docs/clipboard.md','src/apps-files.js','src/clipboard-service.js','src/input-models.js','sw.js','tests/clipboard/README.md','tests/clipboard/browser.py','tests/clipboard/models.cjs'}
+          assert len(changes)==8 and {c['path'] for c in changes}==allowed
+          outputs=[]
+          for c in changes:
+              p=Path(c['path']);assert not p.is_symlink()
+              before=p.read_bytes();assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent change: '+str(p)
+              text=before.decode();last=0
+              for a,b,value in c['ops']:
+                  assert last<=a<=b<=len(text);last=b
+              for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+              after=text.encode();assert hashlib.sha256(after).hexdigest()==c['after'],'Output mismatch: '+str(p)
+              outputs.append((p,after))
+          for p,after in outputs:p.write_bytes(after)
+          PY
+      - name: Validate actual source and exact standalone
+        run: |
+          for f in src/*.js sdk/*.js sw.js; do node --check "$f"; done
+          python3 -m py_compile tests/clipboard/browser.py
+          node --test tests/*/models.cjs tests/integrated-shell/contracts.cjs tests/web-apps/catalog.cjs
+          python3 build.py
+          echo '9a074eaaabe4b721ddf9bd135074b0acc2545ec8fd71d4264f6bda3e10ef00b4  Aster.html' | sha256sum -c -
+          git diff --exit-code -- sdk/aster-files.js sdk/aster-clipboard.js tests/results.json
+          git diff --check
+      - name: Commit verified clipboard source
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Aster.html docs/clipboard.md src/apps-files.js src/clipboard-service.js src/input-models.js sw.js tests/clipboard/README.md tests/clipboard/browser.py tests/clipboard/models.cjs
+          git commit -m 'Fix native Firefox BODY paste routing and portable token-bearing file clipboard data'
+          git push origin HEAD:fix/clipboard-keyboard
