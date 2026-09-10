@@ -48,6 +48,7 @@
     const previous = OS.integrations.renderSettings;
     OS.integrations.renderSettings = async function(w, section, main, navigate) {
         const row = (title, text, control) => OS.el('div',{class:'setting-row'},OS.el('div',{class:'setting-label'},OS.el('strong',{text:title}),OS.el('small',{text})),control);
+        if (section === 'apps' || section === 'webapps') main.append(row('Installed app library','Install HTML apps and HTTPS links, edit descriptions and manage packages.',OS.el('button',{class:'secondary',text:'Manage installed apps',onclick:()=>OS.openApp('store',{mode:'installed'})})));
         if (section === 'apps') main.append(row('Web app windows','Choose title bars and navigation controls for embedded apps.',OS.el('button',{class:'secondary',text:'Manage',onclick:()=>navigate('webapps')})));
         if (section !== 'webapps') return previous.call(this,w,section,main,navigate);
         const inputs = [];

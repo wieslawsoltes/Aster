@@ -28,3 +28,5 @@ tests/desktop-refinement/artifacts/
 tests/web-io/artifacts/
 
 tests/file-pickers/artifacts/
+
+tests/app-library/artifacts/

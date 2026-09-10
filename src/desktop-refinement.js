@@ -45,7 +45,7 @@
         [pins[i],pins[j]]=[pins[j],pins[i]];return pins;
     },id);
     OS.togglePin=id=>mutatePins(pins=>{
-        if(!OS.apps.has(id))throw Error('Application is not installed.');
+        if(!pins.includes(id)&&!OS.apps.has(id))throw Error('Application is not installed.');
         return pins.includes(id)?pins.filter(p=>p!==id):[...pins,id];
     });
     OS.taskbarOrdering=Object.freeze({get pending(){return pinJobs;}});

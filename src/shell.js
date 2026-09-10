@@ -73,7 +73,7 @@
                 {text:pinned?'Unpin from Start':'Pin to Start',icon:'pin',action:async()=>{await OS.toggleStartPin(id);if(start.isConnected)home();}},
                 {text:OS.pins.includes(id)?'Unpin from taskbar':'Pin to taskbar',icon:'pin',action:()=>OS.togglePin(id)},
                 {text:'Add desktop shortcut',icon:'desktop',action:()=>OS.addDesktopShortcut(id)},
-                ...(app.custom?[null,{text:'Remove app',icon:'trash',danger:true,action:()=>OS.uninstallApp(id)}]:[])]);
+                ...(app.custom?[null,{text:'App details',icon:'store',action:()=>OS.showAppDetails(id)},{text:'Edit details',icon:'rename',action:()=>OS.editInstalledApp(id)},{text:'Remove app',icon:'trash',danger:true,action:()=>OS.uninstallApp(id)}]:[])]);
         };
         const appButton = (id,cls='pinned-app') => {
             const app=OS.apps.get(id),b=OS.el('button',{class:cls,title:app.description||app.title,'data-start-app':id,
