@@ -1,0 +1,82 @@
+name: Recover native Orbit source
+on:
+  push:
+    branches: [build/native-orbit]
+    paths: ['.github/workflows/native-source.yml']
+permissions:
+  contents: write
+concurrency:
+  group: native-orbit-source-recovery
+  cancel-in-progress: false
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate complete source delta before any file writes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import base64, hashlib, json, lzma
+          encoded=''.join(Path(f'.transfer/native-{i}.b64').read_text().strip() for i in range(3))
+          assert len(encoded)==33356, ('encoded length',len(encoded))
+          data=base64.b64decode(encoded,validate=True)
+          assert len(data)==25016 and hashlib.sha256(data).hexdigest()=='484c4e9e8d5c89657515d73f4e811afd9ac16b0c158d92dadf7503471965ae04','compressed hash'
+          decoder=lzma.LZMADecompressor(memlimit=256*1024*1024)
+          raw=decoder.decompress(data,max_length=80101)
+          assert decoder.eof and not decoder.unused_data and len(raw)==80100
+          assert hashlib.sha256(raw).hexdigest()=='ddd0dd2e6649a7eeabcf0bba150330f071241f064d27ce892a488d8cc2f101de'
+          changes=json.loads(raw)
+          allowed={'.gitignore','README.md','docs/orbit.md','index.html','src/apps-browser.js','src/core.js','src/orbit-models.js','src/orbit-service.js','src/orbit.css','src/webviews.js','sw.js','.github/workflows/desktop.yml','desktop/main.cjs','desktop/package.cjs','desktop/package.json','desktop/policy.cjs','desktop/preload.cjs','desktop/runtime.cjs','docs/native-browser.md','src/native-browser.js','tests/native-browser/README.md','tests/native-browser/integration.cjs','tests/native-browser/models.cjs'}
+          assert len(changes)==23 and {c['path'] for c in changes}==allowed
+          outputs=[]
+          for c in changes:
+              p=Path(c['path']);path=PurePosixPath(c['path'])
+              assert not path.is_absolute() and '..' not in path.parts and not p.is_symlink()
+              if c['before'] is None:
+                  result=c['content'].encode('utf-8')
+                  if p.exists():
+                      assert str(p)=='.github/workflows/desktop.yml' and p.read_bytes()==result,'Unexpected existing file: '+str(p)
+              else:
+                  before=p.read_bytes()
+                  assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent change: '+str(p)
+                  text=before.decode('utf-8');last=0
+                  for a,b,value in c['ops']:
+                      assert isinstance(a,int) and isinstance(b,int) and last<=a<=b<=len(text) and isinstance(value,str)
+                      last=b
+                  for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+                  result=text.encode('utf-8')
+              assert hashlib.sha256(result).hexdigest()==c['after'],'Output mismatch: '+str(p)
+              outputs.append((p,result))
+          for p,result in outputs:
+              p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(result)
+          print('All 23 editable source paths match reviewed hashes.')
+          PY
+      - name: Generate real dependency lock and validate runtime/build
+        run: |
+          npm install --prefix desktop --package-lock-only --ignore-scripts
+          for f in src/*.js desktop/*.cjs tests/native-browser/*.cjs; do node --check "$f"; done
+          node --test tests/*/models.cjs tests/integrated-shell/contracts.cjs tests/web-apps/catalog.cjs
+          python3 build.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          d=Path('Aster.html').read_bytes()
+          assert len(d)==6098157
+          assert hashlib.sha256(d).hexdigest()=='9ab65782850e0ae29d867b4c1ef7b26af4ec92251e6bc1cd06137ca6f4b091b3'
+          PY
+          git diff --exit-code -- sdk/aster-files.js sdk/aster-clipboard.js tests/results.json .github/workflows/desktop.yml
+          git diff --check
+      - name: Commit verified source, generated lock and standalone
+        run: |
+          rm .transfer/native-{0,1,2}.b64
+          rmdir .transfer
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m 'Implement native Chromium views inside Orbit with isolated desktop runtime and integration tests'
+          git push origin HEAD:build/native-orbit
