@@ -1,0 +1,91 @@
+name: Clipboard and keyboard — native paste, profiles and isolated apps
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths: ['src/**', 'sdk/**', 'tests/clipboard/**', 'index.html', 'Aster.html', 'build.py', 'sw.js', '.github/workflows/clipboard.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: clipboard-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source, model regressions and reproducible standalone
+        run: |
+          for f in src/*.js sdk/*.js sw.js; do node --check "$f"; done
+          python -m py_compile tests/clipboard/browser.py
+          node --test tests/*/models.cjs tests/integrated-shell/contracts.cjs tests/web-apps/catalog.cjs
+          python build.py
+          git diff --exit-code -- Aster.html sdk/aster-files.js sdk/aster-clipboard.js
+          git diff --check
+      - name: Install native clipboard browser
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Real native clipboard, HTTP, images and IndexedDB
+        run: timeout 240s python -u tests/clipboard/browser.py
+      - name: Standalone and offline clipboard / local SDK guest
+        run: timeout 240s python -u tests/clipboard/browser.py --standalone --output tests/clipboard/artifacts/standalone
+      - name: Preserve exact tested source
+        if: always()
+        run: |
+          mkdir -p tests/clipboard/artifacts
+          git archive --format=zip HEAD -o tests/clipboard/artifacts/source.zip
+          git rev-parse HEAD > tests/clipboard/artifacts/checkout.txt
+          sha256sum Aster.html > tests/clipboard/artifacts/standalone.sha256
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: clipboard-chromium-evidence
+          path: tests/clipboard/artifacts/
+          retention-days: 14
+  firefox:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps firefox
+      - name: Independent Firefox native clipboard and isolated guest
+        run: timeout 300s python -u tests/clipboard/browser.py --engine firefox --output tests/clipboard/artifacts/firefox
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: clipboard-firefox-evidence
+          path: tests/clipboard/artifacts/firefox/
+          retention-days: 14
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python -m pip install playwright
+          python -m playwright install chromium
+      - name: Actual macOS Command-copy / Command-paste
+        run: python -u tests/clipboard/browser.py --output tests/clipboard/artifacts/macos
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: clipboard-macos-evidence
+          path: tests/clipboard/artifacts/macos/
+          retention-days: 14
