@@ -1,0 +1,41 @@
+name: Finalize Firefox policy error mapping
+on:
+  push:
+    branches: [fix/orbit-webviews]
+    paths: ['.github/workflows/finalize-orbit-frame-tests.yml']
+permissions:
+  contents: write
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate exact test and documentation changes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          changes=json.loads(r'''[{"path":"tests/orbit/browser.py","before":"94b6217abc8f61fa96034cf54f544079e1720b851fed1fa58a8ee70a17d42db6","after":"1d43afd19c052301403ec93dbcd7f6ba0700ccba6c3b41051e3fbea393f9eed8","ops":[[23557,23763,"                            # Juggler can map frame-policy security failures to its generic\n                            # SEC_ERROR_UNKNOWN code. These fixtures are plain HTTP (no TLS),\n                            # with a successful same-document response and policy checked below.\n                            expected={firefox_error,'SEC_ERROR_UNKNOWN'} if args.engine=='firefox' else {'net::ERR_BLOCKED_BY_RESPONSE'}\n                            assert failure in expected,(target,failure)\n"]]},{"path":"tests/orbit/README.md","before":"e19e5c05d50cb92b37f702f8e80d0d6bbbea2ac07d7c87075221bc6fee545c03","after":"fb3c660775a408170f398016a7d2ec331990e7c9ee7d017e32a718c52ab0a4ad","ops":[[3563,3563,"s"],[3564,3566,""],[3567,3567,"uri"],[3568,3574,""],[4010,4010,"\nPlaywright's Firefox/Juggler adapter can expose a frame-policy rejection as\n`SEC_ERROR_UNKNOWN`; its `getNetworkErrorStatusText` falls back to that label for\nunmapped security-channel errors. The test accepts that observed adapter code\nonly for its controlled plain-HTTP loopback fixture, not arbitrary HTTPS failures.\nThe allowed same-origin frame must render, both denied requests must fail, and\neach identical denied response must render externally with HTTP 200 and its\nactual CSP/XFO header intact. There is no TLS or certificate exception. See the\nupstream [adapter mapping](https://github.com/microsoft/playwright/blob/main/browser_patches/firefox/juggler/Helper.js).\n"]]}]''')
+          assert len(changes)==2 and {c['path'] for c in changes}=={'tests/orbit/browser.py','tests/orbit/README.md'}
+          outputs=[]
+          for c in changes:
+              p=Path(c['path']);before=p.read_bytes()
+              assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent change: '+str(p)
+              text=before.decode('utf-8');last=0
+              for a,b,value in c['ops']:
+                  assert last<=a<=b<=len(text);last=b
+              for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+              result=text.encode('utf-8');assert hashlib.sha256(result).hexdigest()==c['after'],'Output mismatch: '+str(p)
+              outputs.append((p,result))
+          for p,result in outputs:p.write_bytes(result)
+          PY
+          python3 -m py_compile tests/orbit/browser.py
+          git diff --check
+      - name: Commit only verified tests and documentation
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/orbit/browser.py tests/orbit/README.md
+          git commit -m 'Recognize Firefox protocol security-error mapping for controlled frame-denial fixtures'
+          git push origin HEAD:fix/orbit-webviews
