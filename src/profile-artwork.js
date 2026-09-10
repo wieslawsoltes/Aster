@@ -109,6 +109,8 @@
         const app=OS.apps?.get(id), glyph=paths[id]||null;
         let hash=0;for(const c of id.slice(0,128))hash=(hash*31+c.charCodeAt(0))>>>0;
         const fallback=[['board','#5076aa','#f7fbff','#bfd6fc'],['hex','#789b79','#fcfff4','#d5edc5'],['screen','#a97879','#fff7f4','#f1c6b6']][hash%3];
+        const customColors={blue:'#3678c8',violet:'#8962bd',teal:'#258980',green:'#4e8d57',gold:'#b37c29',coral:'#c66356',slate:'#62768c',charcoal:'#424a59'};
+        if(app?.custom&&customColors[app.color]){fallback[1]=customColors[app.color];fallback[2]='#ffffff';}
         const [shape,sourceBase,sourceInk,sourceAccent]=specs[id]||fallback, d=silhouettes[shape];
         const [base,ink,accent]=palettes[which]?.[id]||[sourceBase,sourceInk,sourceAccent];
         const symbol=(which==='prism'?glyph:illustrations[id]||glyph)||OS.icon(app?.icon||'code',32).replace('<svg ','<svg x="16" y="16" ');
@@ -134,16 +136,16 @@
     }
     OS.visualIcon=(id,size=32)=>{
         id=String(id||'unknown').slice(0,256);size=Math.max(8,Math.min(128,Number.isFinite(Number(size))?Number(size):32));
-        const which=family(),key=which+':'+id+':'+size+':'+(OS.apps?.get(id)?.icon||'');
+        const which=family(),key=which+':'+id+':'+size+':'+(OS.apps?.get(id)?.icon||'')+':'+(OS.apps?.get(id)?.color||'');
         if(cache.has(key)){const value=cache.get(key);cache.delete(key);cache.set(key,value);return value;}
         const value=paint(id,size,which);if(cache.size>=256)cache.delete(cache.keys().next().value);cache.set(key,value);return value;
     };
     // Update artwork, not its enclosing buttons/windows: keyboard focus, pointer
     // capture, open panels and application state survive an icon-family change.
-    OS.refreshIconArtwork=()=>{
+    OS.refreshIconArtwork=(appId=null)=>{
         const which=family();if(typeof document==='undefined')return;
         for(const node of document.querySelectorAll('.aster-adaptive-icon')){
-            if(node.dataset.iconFamily===which)continue;
+            if(appId ? node.dataset.iconId!==appId : node.dataset.iconFamily===which)continue;
             const size=parseFloat(node.style.getPropertyValue('--icon-size'))||32,template=document.createElement('template');
             template.innerHTML=OS.visualIcon(node.dataset.iconId,size);
             const next=template.content.firstElementChild;

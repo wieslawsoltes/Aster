@@ -317,7 +317,7 @@
         const saved = await OS.db.get('startPins');
         OS.startPins = [...new Set((Array.isArray(saved) ? saved : ['browser','files','settings','notepad','photos','store','paint','calculator','terminal','calendar','tasks','media','code','clock','mines','snips','taskmanager','welcome']).filter(id => OS.apps.has(id) && !OS.apps.get(id).hidden))].slice(0, 24);
         OS.toggleStartPin = async id => {
-            if(!OS.apps.has(id)||OS.apps.get(id).hidden)throw Error('Only visible apps can be pinned.');
+            if(!OS.startPins.includes(id)&&(!OS.apps.has(id)||OS.apps.get(id).hidden))throw Error('Only visible apps can be pinned.');
             if(!OS.startPins.includes(id)&&OS.startPins.length>=24)throw Error('Unpin an app first (24 Start pins maximum).');
             OS.startPins=OS.startPins.includes(id)?OS.startPins.filter(x=>x!==id):[...OS.startPins,id];
             await OS.featureSave('startPins',OS.startPins);

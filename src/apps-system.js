@@ -16,7 +16,7 @@
                 entry.content = { type: 'text', data: String(f.content || '') };
             packed.push(entry);
         }
-        const backup = { format: 'aster-desktop-backup', version: 1, createdAt: new Date().toISOString(), settings: OS.settings, files: packed, tasks: await OS.db.get('tasks') || [], calendarEvents: await OS.db.get('calendarEvents') || [], customApps: OS.customApps, worldCities: await OS.db.get('worldCities') || [] };
+        const backup = { format: 'aster-desktop-backup', version: 1, createdAt: new Date().toISOString(), settings: OS.settings, files: packed, tasks: await OS.db.get('tasks') || [], calendarEvents: await OS.db.get('calendarEvents') || [], customApps: (await OS.db.get('customApps')) ?? OS.customApps, worldCities: await OS.db.get('worldCities') || [] };
         OS.download(new Blob([JSON.stringify(backup)], { type: 'application/json' }), 'Aster-backup-' + OS.isoDate(new Date()) + '.json');
         OS.notify('Backup exported', `${files.length} virtual files and folders. Connected local folders are not included.`);
     };
@@ -75,18 +75,7 @@
         const safeEvents = (Array.isArray(backup.calendarEvents) ? backup.calendarEvents : []).slice(0, 10000).filter(e => typeof e.title === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && /^\d{2}:\d{2}$/.test(e.time)).map(e => ({ id: OS.uid(), title: e.title.slice(0, 150), date: e.date, time: e.time, notes: String(e.notes || '').slice(0, 20000), reminder: !!e.reminder }));
         await OS.db.set('tasks', safeTasks);
         await OS.db.set('calendarEvents', safeEvents);
-        for (const record of Array.isArray(backup.customApps) ? backup.customApps : []) {
-            if (typeof record.id === 'string' && /^custom-[\w-]+$/.test(record.id) && typeof record.title === 'string' && typeof record.path === 'string' && record.path === OS.fs.normalize(record.path) && !record.path.startsWith('/Local') && (await OS.fs.stat(record.path))?.kind === 'file') {
-                const app = { id: record.id, title: record.title.slice(0, 60), path: record.path };
-                const old = OS.customApps.find(a => a.id === app.id);
-                if (old)
-                    Object.assign(old, app);
-                else
-                    OS.customApps.push(app);
-                OS.registerCustom(app);
-            }
-        }
-        await OS.db.set('customApps', OS.customApps);
+        await OS.appLibrary.restore(backup.customApps);
         OS.emit('fs-change', { path: '/' });
         OS.emit('tasks-change');
         OS.emit('calendar-change');
@@ -154,7 +143,7 @@
                     if (OS.customApps.length) {
                         heading('Your apps');
                         for (const app of OS.customApps)
-                            main.append(row('code', app.title, app.path, OS.el('button', { class: 'secondary', text: 'Launch', onclick: () => OS.launch(app.id) })));
+                            main.append(row(app.icon || 'code', app.title, app.description || app.path || app.url, OS.el('div', {class:'row'}, OS.el('button', { class: 'secondary', text: 'Manage', onclick: () => OS.showAppDetails(app.id) }), OS.el('button', { class: 'secondary', text: 'Launch', onclick: () => OS.launch(app.id) }))));
                     }
                 }
                 else {
@@ -246,54 +235,6 @@
             } });
             w.addCleanup(() => clearTimeout(pending));
             w.navigate = id => { section = id; render(); };
-            render();
-        }
-    });
-    OS.installHTML = async () => {
-        const [file] = await OS.readFile('.html,.htm,text/html');
-        if (!file)
-            return;
-        if (file.size > 5 * 1024 * 1024)
-            throw Error('HTML app packages are limited to 5 MB. Use self-contained HTML without large embedded media.');
-        const name = await OS.prompt('Install HTML app', file.name.replace(/\.[^.]+$/, ''), 'The app runs in an isolated frame. Only install code you trust; it may make network requests. It will not have direct access to Aster’s files.');
-        if (!name?.trim())
-            return;
-        const folder = '/Projects/Installed apps';
-        if (!await OS.fs.stat(folder))
-            await OS.fs.mkdir(folder);
-        const path = await OS.fs.unique(OS.fs.join(folder, file.name));
-        await OS.fs.write(path, await file.text(), 'text/html');
-        const record = { id: 'custom-' + OS.uid(), title: name.trim().slice(0, 60), path };
-        OS.customApps.push(record);
-        await OS.db.set('customApps', OS.customApps);
-        OS.registerCustom(record);
-        OS.notify('App installed in Aster', record.title, 'info', { label: 'Launch', fn: () => OS.launch(record.id) });
-    };
-    OS.uninstallApp = async (id) => { const app = OS.customApps.find(a => a.id === id); if (!app)
-        return; if (!await OS.confirm('Remove ' + app.title + '?', `This removes the app launcher and closes its windows. Its source file is kept at ${app.path}.`, 'Remove'))
-        return; for (const w of Array.from(OS.windows.values()).filter(w => w.appId === id))
-        await w.close(true); OS.customApps = OS.customApps.filter(a => a.id !== id); OS.apps.delete(id); await OS.db.set('customApps', OS.customApps); OS.emit('apps'); };
-    OS.register('store', { title: 'App Center', description: 'A small collection of genuinely useful apps.', category: 'System', width: 985, height: 700, minWidth: 430, singleton: true,
-        mount: async (w) => {
-            let query = '';
-            const toolbar = OS.el('div', { class: 'toolbar' }), search = OS.el('input', { placeholder: 'Search your apps', 'aria-label': 'Search apps', style: 'width:250px;max-width:55%;font-size:12px' }), main = OS.el('div', { class: 'store-main' });
-            toolbar.append(search, OS.el('span', { class: 'spacer' }), OS.el('button', { class: 'secondary', html: OS.icon('upload', 16) + 'Install HTML app', onclick: OS.guard(OS.installHTML) }));
-            w.body.append(toolbar, main);
-            const render = () => { main.replaceChildren(); if (!query) {
-                main.append(OS.el('div', { class: 'store-hero', html: '<div class="grow"><div class="eyebrow" style="color:#b9c9f3;margin-bottom:9px">A LITTLE MORE POSSIBILITY</div><h1>Good things come built in.</h1><p>Write, create, organize, and explore. Every app here runs in your browser. No account. No subscriptions.</p></div><div class="aster-symbol"></div>' }));
-            } const apps = Array.from(OS.apps.values()).filter(a => !a.hidden && (a.title + ' ' + a.description + ' ' + a.category).toLowerCase().includes(query)); main.append(OS.el('div', { class: 'section-heading', html: `<span>${query ? 'Search results' : 'Your collection'}</span><span class="muted" style="font-size:11px;font-weight:400">${apps.length} apps</span>` })); const grid = OS.el('div', { class: 'store-grid' }); for (const app of apps) {
-                const card = OS.el('div', { class: 'store-card' }), content = OS.el('div', { class: 'grow' });
-                content.append(OS.el('strong', { text: app.title }), OS.el('p', { text: app.description || 'Your HTML application' }));
-                const row = OS.el('div', { class: 'row' });
-                row.append(OS.el('button', { text: 'Open', onclick: () => OS.launch(app.id) }), ib('more', 'App options', () => { }));
-                row.lastChild.onclick = e => OS.context(e, [{ text: 'Open', icon: 'play', action: () => OS.launch(app.id) }, { text: 'Add desktop shortcut', icon: 'desktop', action: () => OS.addDesktopShortcut?.(app.id) }, ...(app.custom ? [null, { text: 'Remove app', icon: 'trash', danger: true, action: () => OS.uninstallApp(app.id) }] : [])]);
-                content.append(row);
-                card.append(OS.el('span', { html: OS.appIcon(app.id, 48) }), content);
-                grid.append(card);
-            } main.append(grid); if (!apps.length)
-                main.append(OS.el('div', { class: 'empty', text: 'No apps match that search.' })); main.append(OS.el('p', { class: 'muted', text: 'App Center is a local app library, not an online marketplace. Imported HTML apps are isolated, but they may access the network. Install only code you trust.', style: 'font-size:10px;line-height:1.8;margin-top:25px' })); };
-            search.oninput = () => { query = search.value.toLowerCase(); render(); };
-            w.on('apps', render);
             render();
         }
     });

@@ -1,3 +1,11 @@
+## Aster 2.2 — your local app library
+
+**App Center** now has Discover, Installed, Favorites and Built-in views. Install
+HTML apps with a custom description, edit name/category/artwork/publisher/version,
+update packages without reloading running work, export/import `.asterapp` packages,
+or add sandboxed HTTPS shortcuts. Uninstall respects unsaved-close confirmations
+and keeps your files. [Usage, architecture and limits](docs/app-library.md).
+
 ## September 10 catalog update — 79 web apps
 
 Added VoltWeave Circuit Studio, Stratum Intelligence (including P&ID analysis),
