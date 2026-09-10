@@ -65,9 +65,9 @@ def main(args):
             check('Issue 11: real HTML install saves the custom description and exact source bytes',installed)
             def editing():
                 js('window.running=OS.launch(arg);await running.ready;window.originalFrame=running.body.querySelector("iframe");',app)
-                f=page.locator('.app-frame').element_handle().content_frame();f.get_by_label('Draft').fill('Keep unsaved Ω text');f.locator('#check').click();assert f.locator('output').inner_text()=='Working'
+                f=page.locator('.app-frame').element_handle().content_frame();f.get_by_label('Draft').click();f.get_by_label('Draft').fill('Keep unsaved Ω text');assert f.get_by_label('Draft').input_value()=='Keep unsaved Ω text','Draft entry failed before any metadata edit';f.locator('#check').click();assert f.locator('output').inner_text()=='Working'
                 details(app);page.get_by_role('button',name='Edit details',exact=True).click();d=form('Edit app details');d.get_by_label('App name',exact=True).fill('Engineering desk Ω');d.get_by_label('Description',exact=True).fill('Reactor review <img src=x onerror=alert(1)>');d.get_by_label('Icon',exact=True).select_option('calculator');d.get_by_label('Icon color',exact=True).select_option('teal');d.get_by_label('Favorite',exact=True).check();d.get_by_role('button',name='Save changes',exact=True).click();d.wait_for(state='detached')
-                assert f.get_by_label('Draft').input_value()=='Keep unsaved Ω text';js('assert(originalFrame===running.body.querySelector("iframe"));assert(running.title==="Engineering desk Ω");assert(OS.appLibrary.get(arg).color==="teal");assert(OS.appIcon(arg).includes("#258980"));',app)
+                assert f.get_by_label('Draft').input_value()=='Keep unsaved Ω text','Metadata editing changed the guest draft';js('assert(originalFrame===running.body.querySelector("iframe"));assert(running.title==="Engineering desk Ω");assert(OS.appLibrary.get(arg).color==="teal");assert(OS.appIcon(arg).includes("#258980"));',app)
                 assert not page.locator('.library-description img').count();assert '<img' in page.locator('.library-description').inner_text()
             check('Editing name, description and artwork preserves iframe identity and unsaved content',editing)
             def filters():
@@ -134,6 +134,21 @@ def main(args):
             def settings():
                 js('window.settings=OS.launch("settings",{section:"apps"});await settings.ready;');page.get_by_role('button',name='Manage installed apps',exact=True).click();page.wait_for_function('document.querySelector(".library-header h1").textContent==="Installed"');js('await settings.close(true);')
             check('Settings routes an already-open App Center to Installed apps',settings)
+            def backup_roundtrip():
+                cleanup();expected=js('return OS.appLibrary.get(arg);',app)
+                js('window.backupSettings=OS.launch("settings",{section:"recovery"});await backupSettings.ready;')
+                with page.expect_download() as download:page.get_by_role('button',name='Export backup',exact=True).click()
+                file=out/'desktop-backup.json';download.value.save_as(file);packed=json.loads(file.read_text())
+                assert next(r for r in packed['customApps'] if r['id']==app)==expected
+                js('const r=OS.appLibrary.get(arg);await OS.fs.write(r.path,"Source changed after export","text/html");await OS.appLibrary.save({...r,description:"Changed after export",favorite:false},r.revision);',app)
+                with page.expect_file_chooser() as chooser:page.get_by_role('button',name='Restore backup',exact=True).click()
+                chooser.value.set_files(str(file));form('Restore Aster backup?').get_by_role('button',name='Restore',exact=True).click()
+                page.wait_for_function('id=>Aster.appLibrary.get(id)?.description==="Mobile draft"&&Aster.appLibrary.get(id).favorite===true',arg=app)
+                actual=js('return OS.appLibrary.get(arg);',app)
+                for key in ['id','kind','title','description','category','icon','color','publisher','version','favorite','path']:assert actual[key]==expected[key],key
+                assert js('return await OS.fs.text(await OS.fs.read(arg));',expected['path'])==SOURCE2
+                js('await backupSettings.close(true);');focus_store()
+            check('Real desktop backup restores edited app metadata and the actual HTML package',backup_roundtrip)
             if not args.inject:
                 def abort_transaction():
                     js('const raw=structuredClone(await OS.db.get("customApps")),before=await OS.db.all();const original=OS.db.db.transaction.bind(OS.db.db);OS.db.db.transaction=(...args)=>{const tx=original(...args);if(args[1]==="readwrite"&&Array.isArray(args[0])&&args[0].includes("meta"))queueMicrotask(()=>tx.abort());return tx;};try{await OS.appLibrary.install({kind:"html",title:"Abort test"},"<h1>Never committed</h1>");throw Error("Unexpected commit");}catch(e){assert(e.message!=="Unexpected commit");}finally{OS.db.db.transaction=original;}assert(JSON.stringify(raw)===JSON.stringify(await OS.db.get("customApps")));assert((await OS.db.all()).length===before.length);assert(!OS.customApps.some(a=>a.title==="Abort test"));')
@@ -142,12 +157,17 @@ def main(args):
                     expected=js('return OS.appLibrary.get(arg);',app);page.reload();page.wait_for_function('Aster.booted');page.locator('#boot').wait_for(state='detached');assert js('return OS.appLibrary.get(arg);',app)==expected;assert js('return Aster.db.mode;')=='IndexedDB';assert js('return OS.webIO.sessions.length;')==0;focus_store();tab('Favorites');assert page.locator('[data-library-app="'+app+'"]').count()==1
                 check('Full reload restores edited details, favorites and packages but not expired grants',reload)
                 def legacy():
-                    js('await OS.fs.write("/Projects/legacy.html",arg,"text/html");const apps=await OS.db.get("customApps");apps.push({id:"custom-legacy",title:"Legacy install",path:"/Projects/legacy.html"});await OS.db.set("customApps",apps);',SOURCE);page.reload();page.wait_for_function('Aster.booted');r=js('return OS.appLibrary.get("custom-legacy");');assert r['description']=='Your sandboxed HTML application';assert r['path']=='/Projects/legacy.html';focus_store();details('custom-legacy');page.get_by_role('button',name='Edit details',exact=True).click();d=form('Edit app details');d.get_by_label('Description',exact=True).fill('Updated legacy description');d.get_by_role('button',name='Save changes',exact=True).click();d.wait_for(state='detached');page.reload();page.wait_for_function('Aster.booted');assert js('return OS.appLibrary.get("custom-legacy").description;')=='Updated legacy description';focus_store()
+                    js('await OS.fs.write("/Projects/legacy.html",arg,"text/html");const apps=await OS.db.get("customApps");apps.push({id:"custom-legacy",title:"Legacy install",path:"/Projects/legacy.html"},{id:"files",title:"Rejected raw record",path:"/Projects/legacy.html",description:"Recoverable metadata"});await OS.db.set("customApps",apps);',SOURCE);page.reload();page.wait_for_function('Aster.booted');r=js('return OS.appLibrary.get("custom-legacy");');assert r['description']=='Your sandboxed HTML application';assert r['path']=='/Projects/legacy.html'
+                    js('assert(OS.appLibrary.rejected.length===1);assert(!OS.apps.get("files").custom);window.recovery=OS.launch("settings",{section:"recovery"});await recovery.ready;')
+                    with page.expect_download() as download:page.get_by_role('button',name='Export backup',exact=True).click()
+                    file=out/'legacy-recovery-backup.json';download.value.save_as(file);raw=json.loads(file.read_text())
+                    assert any(r.get('id')=='files' and r.get('description')=='Recoverable metadata' for r in raw['customApps'])
+                    js('await recovery.close(true);');focus_store();details('custom-legacy');page.get_by_role('button',name='Edit details',exact=True).click();d=form('Edit app details');d.get_by_label('Description',exact=True).fill('Updated legacy description');d.get_by_role('button',name='Save changes',exact=True).click();d.wait_for(state='detached');page.reload();page.wait_for_function('Aster.booted');assert js('return OS.appLibrary.get("custom-legacy").description;')=='Updated legacy description';focus_store()
                 check('Legacy installations migrate and retain edited descriptions after another reload',legacy)
                 if args.standalone:
                     context.set_offline(True);page.reload();page.wait_for_function('Aster.booted');focus_store();details(app);assert 'Mobile draft' in page.locator('.library-description').inner_text();context.set_offline(False);check('Standalone library starts offline with persisted app details',lambda:None)
             def final_remove():
-                cleanup();details(app);old=js('return OS.appLibrary.get(arg).path;',app);page.get_by_role('button',name='Remove app',exact=True).click();form('Remove Engineering desk Ω?').get_by_role('button',name='Remove',exact=True).click();page.wait_for_function('id=>!Aster.apps.has(id)',arg=app);js('assert(!OS.customApps.some(a=>a.id===arg));assert(!OS.pins.includes(arg));assert(!OS.startPins.includes(arg));',app);assert js('return (await OS.fs.stat(arg)).kind;',old)=='file'
+                cleanup();details(app);old=js('return OS.appLibrary.get(arg).path;',app);page.get_by_role('button',name='Remove app',exact=True).click();form('Remove Engineering desk Ω?').get_by_role('button',name='Remove',exact=True).click();page.wait_for_function('id=>!Aster.apps.has(id)&&!Aster.pins.includes(id)&&!Aster.startPins.includes(id)',arg=app);js('assert(!OS.customApps.some(a=>a.id===arg));assert(!OS.pins.includes(arg));assert(!OS.startPins.includes(arg));assert(!(await OS.db.get("taskbarPins")||[]).includes(arg));assert(!(await OS.db.get("startPins")||[]).includes(arg));',app);assert js('return (await OS.fs.stat(arg)).kind;',old)=='file'
             check('Uninstall removes the launcher and pins while preserving the package and documents',final_remove)
             assert not report['errors'],report['errors'];report['status']='PASS'
         except Exception:

@@ -16,7 +16,7 @@
                 entry.content = { type: 'text', data: String(f.content || '') };
             packed.push(entry);
         }
-        const backup = { format: 'aster-desktop-backup', version: 1, createdAt: new Date().toISOString(), settings: OS.settings, files: packed, tasks: await OS.db.get('tasks') || [], calendarEvents: await OS.db.get('calendarEvents') || [], customApps: OS.customApps, worldCities: await OS.db.get('worldCities') || [] };
+        const backup = { format: 'aster-desktop-backup', version: 1, createdAt: new Date().toISOString(), settings: OS.settings, files: packed, tasks: await OS.db.get('tasks') || [], calendarEvents: await OS.db.get('calendarEvents') || [], customApps: (await OS.db.get('customApps')) ?? OS.customApps, worldCities: await OS.db.get('worldCities') || [] };
         OS.download(new Blob([JSON.stringify(backup)], { type: 'application/json' }), 'Aster-backup-' + OS.isoDate(new Date()) + '.json');
         OS.notify('Backup exported', `${files.length} virtual files and folders. Connected local folders are not included.`);
     };

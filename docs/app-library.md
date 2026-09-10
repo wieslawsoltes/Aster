@@ -37,7 +37,8 @@ running windows continue executing the old document. Save work and close/reopen
 the app to use the replacement. Nothing silently updates a running editor.
 
 **Export app package** downloads `.asterapp` JSON containing the allowlisted
-metadata and, for HTML apps, the actual source bytes as text. Import always
+metadata and, for HTML apps, their UTF-8 source text. Other character encodings
+should be converted to UTF-8 before installation. Import always
 assigns a new local ID and asks for confirmation in the installation form.
 Identity, file grants, sandbox permissions and source paths are never imported.
 The normal desktop backup also retains descriptions, favorites and the other

@@ -5,7 +5,7 @@
     let queue = Promise.resolve();
     const enqueue = task => { const work = queue.catch(()=>{}).then(task); queue = work; return work; };
     const clone = value => structuredClone(value);
-    const conflict = () => { throw Error('The app library or source changed elsewhere. Reopen the details and try again.'); };
+    const conflict = () => { throw Error('The app library or source changed elsewhere. Preserve your drafts, reload the older tab, and try again.'); };
     const stamp = value => value == null ? '' : JSON.stringify(value);
     const fileStamp = value => value ? [value.path,value.kind,value.modified,value.size,value.mime,value.revision].join('|') : '';
     const lib = OS.appLibrary = {

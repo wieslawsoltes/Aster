@@ -120,7 +120,7 @@ def main(args):
                 launch('tasks');launch('widgets');page.get_by_role('textbox',name='Widget quick note').fill('Pinned thought Ω')
                 page.wait_for_timeout(350)
                 page.get_by_role('checkbox',name='Complete through widget',exact=True).click()
-                page.wait_for_function("!document.querySelector('[data-widget=tasks]').textContent.includes('Complete through widget')")
+                page.wait_for_function("(()=>{const n=document.querySelector('[data-widget=tasks]');return !!n&&!n.textContent.includes('Complete through widget');})()")
                 page.get_by_role('button',name='Move Quick note up',exact=True).click()
                 page.wait_for_function('Aster.widgetBoard.order.indexOf("notes")===2')
                 page.locator('summary').click();page.get_by_role('checkbox',name='Storage',exact=True).uncheck()

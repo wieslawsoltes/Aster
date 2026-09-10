@@ -6405,7 +6405,7 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                 entry.content = { type: 'text', data: String(f.content || '') };
             packed.push(entry);
         }
-        const backup = { format: 'aster-desktop-backup', version: 1, createdAt: new Date().toISOString(), settings: OS.settings, files: packed, tasks: await OS.db.get('tasks') || [], calendarEvents: await OS.db.get('calendarEvents') || [], customApps: OS.customApps, worldCities: await OS.db.get('worldCities') || [] };
+        const backup = { format: 'aster-desktop-backup', version: 1, createdAt: new Date().toISOString(), settings: OS.settings, files: packed, tasks: await OS.db.get('tasks') || [], calendarEvents: await OS.db.get('calendarEvents') || [], customApps: (await OS.db.get('customApps')) ?? OS.customApps, worldCities: await OS.db.get('worldCities') || [] };
         OS.download(new Blob([JSON.stringify(backup)], { type: 'application/json' }), 'Aster-backup-' + OS.isoDate(new Date()) + '.json');
         OS.notify('Backup exported', `${files.length} virtual files and folders. Connected local folders are not included.`);
     };
@@ -8400,7 +8400,7 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
     let queue = Promise.resolve();
     const enqueue = task => { const work = queue.catch(()=>{}).then(task); queue = work; return work; };
     const clone = value => structuredClone(value);
-    const conflict = () => { throw Error('The app library or source changed elsewhere. Reopen the details and try again.'); };
+    const conflict = () => { throw Error('The app library or source changed elsewhere. Preserve your drafts, reload the older tab, and try again.'); };
     const stamp = value => value == null ? '' : JSON.stringify(value);
     const fileStamp = value => value ? [value.path,value.kind,value.modified,value.size,value.mime,value.revision].join('|') : '';
     const lib = OS.appLibrary = {
