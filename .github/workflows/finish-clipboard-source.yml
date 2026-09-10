@@ -1,0 +1,92 @@
+name: Finish verified clipboard source
+on:
+  push:
+    branches: [fix/clipboard-keyboard]
+    paths: ['.github/workflows/finish-clipboard-source.yml']
+permissions:
+  contents: write
+concurrency:
+  group: finish-clipboard-source
+  cancel-in-progress: false
+jobs:
+  finish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate the complete bounded delta before writing any source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import base64, hashlib, json, lzma
+          encoded=''.join(Path(f'.transfer/clipboard-{i}.b64').read_text().strip() for i in range(6))
+          assert len(encoded)==44928
+          data=base64.b64decode(encoded,validate=True)
+          assert len(data)==33696 and hashlib.sha256(data).hexdigest()=='443d48953259ce08db2108ec374643ee6f5a4aa2e11c2155ee5e9cdb25ac7520'
+          decoder=lzma.LZMADecompressor(memlimit=256*1024*1024)
+          raw=decoder.decompress(data,max_length=116324)
+          assert decoder.eof and not decoder.unused_data and len(raw)==116323
+          assert hashlib.sha256(raw).hexdigest()=='f088853860778f5e06e56b016cfd6bf0c3c3b0f9a25763b45884f582e8beeaeb'
+          changes=json.loads(raw)
+          allowed={'.gitignore','README.md','build.py','docs/clipboard.md','index.html','sdk/aster-clipboard.js','src/app-library.js','src/apps-creative.js','src/apps-desktop.js','src/apps-files.js','src/apps-tools.js','src/apps-web.js','src/clipboard-client.js','src/clipboard-service.js','src/clipboard-ui.js','src/clipboard.css','src/core.js','src/desktop-services.js','src/file-picker.js','src/input-models.js','src/integrated-desktop.js','src/shell-experience.js','src/shell.js','src/theme-shell.js','src/webviews.js','src/windows.js','sw.js','tests/app-library/browser.py','tests/clipboard/README.md','tests/clipboard/browser.py','tests/clipboard/models.cjs','tests/desktop-features/browser.py','tests/smoke.py'}
+          assert len(changes)==33 and {c['path'] for c in changes}==allowed
+          outputs=[]
+          for c in changes:
+              path=PurePosixPath(c['path']);p=Path(path)
+              assert not path.is_absolute() and '..' not in path.parts and not p.is_symlink()
+              if c['before'] is None:
+                  assert not p.exists(),str(p)
+                  result=c['content'].encode('utf-8')
+              else:
+                  before=p.read_bytes()
+                  assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent source change: '+str(p)
+                  text=before.decode('utf-8');last=0
+                  for a,b,value in c['ops']:
+                      assert isinstance(a,int) and isinstance(b,int) and last<=a<=b<=len(text) and isinstance(value,str)
+                      last=b
+                  for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+                  result=text.encode('utf-8')
+              assert hashlib.sha256(result).hexdigest()==c['after'],'Output mismatch: '+str(p)
+              outputs.append((p,result))
+          for p,result in outputs:
+              p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(result)
+          print('All 33 editable source, SDK, documentation and test paths verified.')
+          PY
+      - name: Validate source, regressions and exact reproducible standalone
+        run: |
+          for f in src/*.js sdk/*.js sw.js; do node --check "$f"; done
+          python3 -m py_compile tests/clipboard/browser.py tests/app-library/browser.py tests/desktop-features/browser.py tests/smoke.py
+          node --test tests/*/models.cjs tests/integrated-shell/contracts.cjs tests/web-apps/catalog.cjs
+          python3 build.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          data=Path('Aster.html').read_bytes()
+          assert len(data)==6081847
+          assert hashlib.sha256(data).hexdigest()=='97b7614495c83d0e9b8116729755cf7c99f66752d4406abb5d8c2bac7bb22242'
+          PY
+          git diff --exit-code -- sdk/aster-files.js tests/results.json
+          git diff --check
+      - name: Commit verified source and remove transfer data
+        run: |
+          rm .transfer/clipboard-{0,1,2,3,4,5}.b64
+          rmdir .transfer
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m 'Fix native paste and host keyboard routing; add integrated clipboard utilities, privacy settings and scoped SDK'
+          git push origin HEAD:fix/clipboard-keyboard
+      - name: Preserve recovery diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p /tmp/clipboard-recovery
+          tar --exclude=.git -czf /tmp/clipboard-recovery/source.tar.gz .
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: clipboard-recovery-diagnostics
+          path: /tmp/clipboard-recovery/
+          retention-days: 14
