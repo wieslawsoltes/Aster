@@ -310,7 +310,7 @@
                 }
             }
             cover.addEventListener('keydown', event => {
-                if (!topmost()) return;
+                if (!topmost() || OS.input?.blocked(event)) return;
                 event.stopPropagation(); const key = event.key, command = event.ctrlKey || event.metaKey;
                 if (key === 'Escape') { event.preventDefault(); cancel.click(); return; }
                 if (key === 'Tab') {

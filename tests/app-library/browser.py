@@ -46,7 +46,7 @@ def main(args):
             page.wait_for_function('window.Aster?.booted');page.locator('#boot').wait_for(state='detached')
             js('await OS.ready;OS.settings.restore=false;OS.settings.motion=false;OS.settings.dnd=true;OS.applySettings();await OS.db.set("settings",OS.settings);for(const w of [...OS.windows.values()])await w.close(true);document.querySelectorAll(".toast").forEach(n=>n.remove());')
             focus_store()
-            check('Discover lists all 79 catalog apps without eager remote execution',lambda:js('assert(document.querySelectorAll("[data-library-app]").length===79);assert(!document.querySelector(".web-app-frame"));assert(OS.apps.size===107);'))
+            check('Discover lists all 79 catalog apps without eager remote execution',lambda:js('assert(document.querySelectorAll("[data-library-app]").length===79);assert(!document.querySelector(".web-app-frame"));assert(OS.apps.size===108);'))
             def discover():
                 for repo,title in [('VoltWeaveCircuitStudio','VoltWeave Circuit Studio'),('StratumIntelligence','Stratum Intelligence'),('Veldra3D','Veldra 3D + Weave'),('AvolithStudio','Avolith Studio'),('AureonStudio','Aureon Studio')]:
                     page.get_by_label('Search apps',exact=True).fill(title);assert page.locator('[data-library-app="web-'+repo.lower()+'"]').count()==1

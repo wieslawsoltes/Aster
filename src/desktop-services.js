@@ -109,23 +109,6 @@
             await OS.db.mutateFiles(all=>{if(parent!=='/'&&!all.some(e=>e.path===parent&&e.kind==='directory'))throw Error('Destination folder was removed.');return {puts:[...puts.values()]};});OS.emit('fs-change',{path:root});return root;
         }
     };
-    OS.clipboardText={target:null,model:new M.ClipboardHistory(),
-        async save(){await OS.featureSave('clipboard-pins',this.model.saved());OS.featureChange('clipboard');},
-        async add(text){if(!OS.settings.clipboardHistory)return false;const entry=this.model.add(text);if(entry)await this.save();return entry;},
-        paste(id){const e=this.model.entries.find(e=>e.id===id),target=this.target;if(!e||!target||!target.element.isConnected)throw Error('Click an Aster text field before opening Clipboard History.');
-            const el=target.element;if(el.disabled||el.readOnly||!['text','search','email','url','tel','textarea'].includes(el.type))throw Error('This field does not accept clipboard history.');
-            if(target.value!==el.value)throw Error('The target changed. Select its insertion point again before pasting.');
-            el.setRangeText(e.text,target.start,target.end,'end');el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertFromPaste',data:e.text}));el.focus();this.remember(el);return true;},
-        remember(el){if((el instanceof HTMLTextAreaElement||el instanceof HTMLInputElement)&&['text','search','email','url','tel','textarea'].includes(el.type)&&!el.readOnly&&!el.disabled&&typeof el.selectionStart==='number')this.target={element:el,start:el.selectionStart,end:el.selectionEnd,value:el.value};},
-        async readSystem(){if(!navigator.clipboard?.readText)throw Error('System clipboard access is unavailable. Copy text inside Aster instead.');return this.add(await navigator.clipboard.readText());}
-    };
-    document.addEventListener('focusout',e=>{if(!e.target.closest?.('[data-app="clipboard"]'))OS.clipboardText.remember(e.target);});
-    const captureClipboard=e=>{
-        if(!OS.settings.clipboardHistory||e.target.closest?.('input[type="password"],[data-private]'))return;
-        const el=e.target;let text='';if(el instanceof HTMLTextAreaElement||el instanceof HTMLInputElement){if(!['text','search','url','tel','textarea'].includes(el.type))return;text=el.value.slice(el.selectionStart,el.selectionEnd);}else text=getSelection()?.toString()||'';
-        OS.clipboardText.add(text).catch(console.warn);
-    };
-    document.addEventListener('copy',captureClipboard);document.addEventListener('cut',captureClipboard);
     OS.quiet={schedule:{enabled:false,start:'22:00',end:'08:00'},active(){return !!OS.settings.dnd||OS.focusSession?.state.status==='running'||M.inQuietHours(this.schedule);}};
     OS.focusAction=async(action,...args)=>{if(!['start','pause','resume','cancel'].includes(action))throw Error('Unknown focus action');OS.focusSession[action](...args);await OS.featureSave('focus-session',OS.focusSession.state);OS.featureChange('focus');};
     OS.workspaces={groups:[],
@@ -154,7 +137,7 @@
     OS.initDesktopServices=async()=>{
         OS.db.memory && (OS.db.memory.history ||= new Map());
         const [pins,focus,quiet,storage,groups,favorites,widgets]=await Promise.all(['clipboard-pins','focus-session','quiet-hours','storage-sense','window-groups','file-favorites','widget-board'].map(k=>OS.db.get(k)));
-        OS.clipboardText.model=new M.ClipboardHistory(OS.settings.clipboardHistory?pins:[]);
+        OS.clipboardText.initialize(pins);
         OS.focusSession=new M.FocusSession(focus);OS.quiet.schedule={enabled:!!quiet?.enabled,start:/^\d\d:\d\d$/.test(quiet?.start)?quiet.start:'22:00',end:/^\d\d:\d\d$/.test(quiet?.end)?quiet.end:'08:00'};
         Object.assign(OS.storageSense.policy,{enabled:!!storage?.enabled,days:M.clamp(storage?.days,1,365,30),lastRun:M.clamp(storage?.lastRun,0,Date.now(),0)});
         OS.workspaces.groups=(Array.isArray(groups)?groups:[]).filter(g=>g&&typeof g.id==='string'&&typeof g.name==='string'&&Array.isArray(g.entries)).slice(0,20).map(g=>({...g,name:g.name.slice(0,60),entries:g.entries.filter(e=>e&&typeof e.app==='string'&&e.rect&&['x','y','w','h'].every(k=>Number.isFinite(e.rect[k])&&Math.abs(e.rect[k])<=2)).slice(0,12).map(e=>({...e,state:M.safeWindowState(e.state)}))}));

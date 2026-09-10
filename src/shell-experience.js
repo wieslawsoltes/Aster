@@ -36,26 +36,27 @@
     }
     OS.showClipboard = () => {
         const previous = document.activeElement;
-        if (previous?.matches('input[type="password"],[data-private]')) OS.clipboardText.target = null;
+        if (OS.input.privateField(previous)) OS.clipboardText.target = null;
         else if (!previous?.closest('[data-app="clipboard"]')) OS.clipboardText.remember(previous);
         const host = surface('clipboard', 'Clipboard history', 'clipboard-flyout', previous);
         if (!host) return;
         const p = host.panel; p.dataset.app = 'clipboard';
-        const head = title('Clipboard', icon('settings', 'Clipboard settings', () => OS.openApp('settings', { section: 'clipboard' })), icon('close', 'Close clipboard', () => OS.closePanels(true)));
+        const head = title('Clipboard', icon('more', 'Clipboard utilities', OS.showClipboardUtilities), icon('settings', 'Clipboard settings', () => OS.openApp('settings', { section: 'clipboard' })), icon('close', 'Close clipboard', () => OS.closePanels(true)));
         const search = OS.el('input', { type: 'search', placeholder: 'Search clipboard history', 'aria-label': 'Search clipboard history' });
         const list = OS.el('div', { class: 'clipboard-items' });
         const footer = OS.el('footer', { class: 'surface-footer' }, button('Clear all unpinned', async () => { OS.clipboardText.model.clear(); await OS.clipboardText.save(); }), button('Read system clipboard', async () => {
-            if (!OS.settings.clipboardHistory) throw Error('Turn clipboard history on first.'); await OS.clipboardText.readSystem();
+            await OS.clipboardText.readSystem(); if(!OS.settings.clipboardHistory)OS.showClipboardUtilities();
         }));
+        footer.append(button('Paste from system', () => OS.clipboardText.pasteSystem(OS.clipboardText.target)),button('Manual paste…',()=>OS.clipboardText.manualPaste(OS.clipboardText.target)));
         p.append(head, search, list, footer);
         function render() {
-            list.replaceChildren(); search.hidden = footer.hidden = !OS.settings.clipboardHistory;
+            list.replaceChildren(); search.hidden = !OS.settings.clipboardHistory;
             if (!OS.settings.clipboardHistory) {
                 list.append(OS.el('div', { class: 'flyout-empty' }, OS.el('span', { html: OS.icon('paste', 40) }), OS.el('h3', { text: 'Save multiple clipboard items' }),
                     note('Turn on history for text copied inside Aster. Only pinned items are kept after reload.'), button('Turn on', async () => { await OS.setSetting('clipboardHistory', true); render(); }, true)));
                 return;
             }
-            const entries = OS.clipboardText.model.entries.filter(e => e.text.toLowerCase().includes(search.value.toLowerCase()));
+            const entries = OS.clipboardText.model.prune().filter(e => e.text.toLowerCase().includes(search.value.toLowerCase()));
             if (!entries.length) list.append(OS.el('div', { class: 'flyout-empty' }, OS.el('span', { html: OS.icon('paste', 36) }), note('Nothing here yet. Copy text in an Aster editor.')));
             for (const entry of entries) {
                 const item = OS.el('article', { class: 'clipboard-item', 'data-clip': entry.id });
@@ -295,23 +296,21 @@
 
     let startKey = false;
     document.addEventListener('keydown', e => {
-        if ($('#dialog-layer').children.length || $('.lock-screen')) return;
-        const key = e.key.toLowerCase();
-        if (key === 'meta') { startKey = true; return; }
-        if (e.metaKey) startKey = false;
-        let action;
-        if (e.metaKey && !e.ctrlKey && !e.altKey) {
-            action = ({ r: () => OS.showRun(), v: OS.showClipboard, a: OS.toggleQuick, n: OS.showNotifications, w: OS.showWidgets, tab: OS.showTaskView,
-                e: () => OS.openApp('files'), i: () => OS.openApp('settings'), d: OS.showDesktop, l: OS.lock,
-                z: () => OS.windows.get(OS.focused)?.showSnapLayouts(), arrowleft: () => OS.windows.get(OS.focused)?.snap('left'),
-                arrowright: () => OS.windows.get(OS.focused)?.snap('right'), arrowup: () => OS.windows.get(OS.focused)?.snap('max'), arrowdown: () => OS.windows.get(OS.focused)?.minimize() })[key];
-            if (e.shiftKey && key === 's') action = () => OS.openApp('snips');
-        } else if (e.ctrlKey && e.altKey) action = ({ v: OS.showClipboard, f: () => OS.openApp('clock', { mode: 'focus' }), w: OS.showTaskView,
-            u: () => OS.openApp('settings', { section: 'accessibility' }), o: () => OS.showRun(), r: () => OS.openApp('snips', { mode: 'record' }), a: OS.toggleQuick })[key];
-        if (action) { e.preventDefault(); e.stopImmediatePropagation(); OS.guard(action)(); }
-    }, true);
-    document.addEventListener('keyup', e => { if (e.key === 'Meta' && startKey && !$('#dialog-layer').children.length && !$('.lock-screen')) { e.preventDefault(); startKey = false; OS.toggleStart(); } });
-    window.addEventListener('blur', () => { startKey = false; });
+        if ($('#dialog-layer').children.length || $('.lock-screen') || OS.input.blocked(e)) { startKey=false;return; }
+        const p=OS.input.preferences(),target=OS.input.target(e),editing=OS.input.editable(target);
+        if(e.key==='Meta'){startKey=!editing&&p.shellShortcuts&&p.superShortcuts!=='off'&&(p.superShortcuts==='on'||OS.input.platform()!=='macos');return;}
+        if(e.metaKey)startKey=false;
+        const name=AsterInputModels.shellAction(e,p,navigator.userAgentData?.platform||navigator.platform,editing);
+        const current=()=>OS.windows.get(OS.focused);
+        const actions={run:()=>OS.showRun(),clipboard:()=>OS.showClipboard(),quick:OS.toggleQuick,notifications:OS.showNotifications,widgets:OS.showWidgets,taskview:OS.showTaskView,
+            files:()=>OS.openApp('files'),settings:()=>OS.openApp('settings'),desktop:OS.showDesktop,lock:OS.lock,snap:()=>current()?.showSnapLayouts(),
+            left:()=>current()?.snap('left'),right:()=>current()?.snap('right'),max:()=>current()?.snap('max'),min:()=>current()?.minimize(),
+            snips:()=>OS.openApp('snips'),focus:()=>OS.openApp('clock',{mode:'focus'}),accessibility:()=>OS.openApp('settings',{section:'accessibility'}),recorder:()=>OS.openApp('snips',{mode:'record'}),
+            terminal:()=>OS.openApp('terminal'),notepad:()=>OS.openApp('notepad')};
+        if(name&&actions[name]){e.preventDefault();e.stopImmediatePropagation();OS.guard(actions[name])();}
+    },true);
+    document.addEventListener('keyup',e=>{if(e.key==='Meta'&&startKey){startKey=false;if(!OS.input.blocked(e)&&!$('#dialog-layer').children.length&&!$('.lock-screen')){e.preventDefault();OS.toggleStart();}}});
+    window.addEventListener('blur',()=>{startKey=false;});
 
     OS.ready.then(async () => {
         const saved = await OS.db.get('startPins');

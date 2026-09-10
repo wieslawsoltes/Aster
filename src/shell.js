@@ -17,11 +17,11 @@
     OS.mountShellPanel = (type, el, cleanup, anchor) => { mountPanel(type, el); OS.panelCleanup = cleanup; OS.panelReturnFocus = anchor; return el; };
     document.addEventListener('pointerdown', e => { if (!e.target.closest('#panel-layer,#taskbar,#theme-topbar,#context-menu,#dialog-layer'))
         OS.closePanels(); });
-    document.addEventListener('contextmenu', e => { if (!e.target.closest('input,textarea,audio,video,iframe'))
+    document.addEventListener('contextmenu', e => { if (!e.target.closest('input,textarea,audio,video,iframe,[contenteditable],[role="textbox"]'))
         e.preventDefault(); });
     const visibleApps = () => Array.from(OS.apps.values()).filter(a => !a.hidden);
     OS.lock = () => { OS.closePanels(); if ($('.lock-screen'))
-        return; const cover = OS.el('section', { class: 'lock-screen', role: 'dialog', 'aria-label': 'Visual desktop lock', 'aria-modal': 'true', tabindex: '0' }), time = OS.el('div', { class: 'lock-time' }), date = OS.el('div', { class: 'lock-date' }), user = OS.el('div', { class: 'lock-user' }); const initials = OS.settings.username.split(' ').map(s => s[0]).slice(0, 2).join(''); user.innerHTML = `<div class="user-avatar">${esc(initials)}</div><strong style="font-size:18px;font-weight:500">${esc(OS.settings.username)}</strong>`; const resume = OS.el('button', { text: 'Resume your session' }); user.append(resume, OS.el('small', { text: 'Visual lock only — not an authentication boundary', style: 'font-size:10px' })); cover.append(time, date, user); document.body.append(cover); const tick = () => { time.textContent = OS.time(); date.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }); }; tick(); const interval = setInterval(tick, 1000); const unlock = () => { clearInterval(interval); cover.remove(); OS.windows.get(OS.focused)?.focus(); }; resume.onclick = unlock; cover.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter' || e.code === 'Space') {
+        return; OS.emit('clipboard-lock'); const cover = OS.el('section', { class: 'lock-screen', role: 'dialog', 'aria-label': 'Visual desktop lock', 'aria-modal': 'true', tabindex: '0' }), time = OS.el('div', { class: 'lock-time' }), date = OS.el('div', { class: 'lock-date' }), user = OS.el('div', { class: 'lock-user' }); const initials = OS.settings.username.split(' ').map(s => s[0]).slice(0, 2).join(''); user.innerHTML = `<div class="user-avatar">${esc(initials)}</div><strong style="font-size:18px;font-weight:500">${esc(OS.settings.username)}</strong>`; const resume = OS.el('button', { text: 'Resume your session' }); user.append(resume, OS.el('small', { text: 'Visual lock only — not an authentication boundary', style: 'font-size:10px' })); cover.append(time, date, user); document.body.append(cover); const tick = () => { time.textContent = OS.time(); date.textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }); }; tick(); const interval = setInterval(tick, 1000); const unlock = () => { clearInterval(interval); cover.remove(); OS.windows.get(OS.focused)?.focus(); }; resume.onclick = unlock; cover.onkeydown = e => { if(OS.input.blocked(e))return;e.stopPropagation(); if (e.key === 'Enter' || e.code === 'Space') {
         e.preventDefault();
         unlock();
     }
@@ -582,12 +582,6 @@
     window.addEventListener('resize', renderTaskbar);
     matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (OS.settings.theme === 'auto')
         OS.applySettings(); });
-    document.addEventListener('keydown', e => {
-        if(e.ctrlKey && e.altKey && ['v','f','w','u','r'].includes(e.key.toLowerCase()) && !OS.$('#dialog-layer').children.length && !OS.$('.lock-screen')){e.preventDefault();const id={v:'clipboard',f:'focus',w:'workspaces',u:'accessibility',r:'recorder'}[e.key.toLowerCase()];OS.openApp(id);}
-        if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'l') {
-        e.preventDefault();
-        OS.lock();
-    } });
     OS.ready = (async () => {
         await OS.init();
         OS.pins = await OS.db.get('taskbarPins') || ['files', 'browser', 'notepad', 'terminal', 'store'];

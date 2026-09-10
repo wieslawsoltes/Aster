@@ -51,17 +51,16 @@
                 return; OS.fs.validateName(name); const p = OS.fs.join(dir, name); if (await OS.fs.stat(p))
                 throw Error('This name is already in use.'); if (!dir.startsWith('/Local/')) await OS.fileOps.execute({kind:'create',destination:dir,name,directory:kind==='directory'});
             else if(kind==='directory') await OS.fs.mkdir(p); else await OS.fs.write(p,'','text/plain'); selected = new Set([p]); await render(); };
-            const copy = cut => { if (!selected.size)
-                return; OS.clipboard = { paths: [...selected], cut }; OS.notify(cut ? 'Ready to move' : 'Copied', `${selected.size} item${selected.size === 1 ? '' : 's'} on the Aster clipboard.`); updateCommandState(); };
+            const copy = (cut,event=null) => { if (!selected.size)
+                return; OS.clipboard = { paths: [...selected], cut, token:OS.uid() }; if(event?.clipboardData){event.clipboardData.setData('text/plain',[...selected].join('\n'));event.clipboardData.setData('application/x-aster-files',OS.clipboard.token);} else OS.clipboardTools.copyFileReference(OS.clipboard); OS.notify(cut ? 'Ready to move' : 'Copied', `${selected.size} item${selected.size === 1 ? '' : 's'} on the Aster clipboard.`); updateCommandState(); };
             const paste = async () => {
-                if (!OS.clipboard?.paths.length)
-                    return;
+                if (!OS.clipboard?.paths.length) { selected=new Set(await OS.clipboardTools.pasteToFolder(targetDir()));await render();return; }
                 const clip = OS.clipboard, dir = targetDir();
                 if (dir === '/.Trash')
                     throw Error('Use Delete to move items to the Recycle Bin.');
                 if (clip.cut && clip.paths.some(p => OS.fs.native(p)) && !await OS.confirm('Move local files?', 'Moving removes the original local files after they are copied.', 'Move'))
                     return;
-                if(virtualSelection(clip.paths,dir)){const outcome=await OS.fileOps.execute({kind:clip.cut?'move':'copy',paths:clip.paths,destination:dir});if(outcome.cancelled)return;if(clip.cut)OS.clipboard=outcome.skipped.length?{paths:outcome.skipped,cut:true}:null;selected=new Set(outcome.results);await render();return;}
+                if(virtualSelection(clip.paths,dir)){const outcome=await OS.fileOps.execute({kind:clip.cut?'move':'copy',paths:clip.paths,destination:dir});if(outcome.cancelled)return;if(clip.cut)OS.clipboard=outcome.skipped.length?{paths:outcome.skipped,cut:true,token:clip.token}:null;selected=new Set(outcome.results);await render();return;}
                 const result = [];
                 for (const src of clip.paths) {
                     let dest = OS.fs.join(dir, OS.fs.name(src));
@@ -136,7 +135,7 @@
                             }
                             else
                                 openSelection(); } }, ...(!inTrash && sel.length === 1 && sel[0].kind === 'file' ? [{ text: 'Open with…', icon: 'file', action: () => OS.showOpenWith(sel[0].path) }, {text:'Quick preview',icon:'eye',key:'Space',disabled:sel[0].native,action:quickPreview}] : []), null, { text: 'Cut', icon: 'cut', key: 'Ctrl+X', disabled: inTrash, action: () => copy(true) }, { text: 'Copy', icon: 'copy', key: 'Ctrl+C', disabled: inTrash, action: () => copy(false) }, { text: 'Rename', icon: 'rename', key: 'F2', disabled: !sel.length || inTrash || sel.length>1&&!virtualSelection(), action: rename }, { text: inTrash ? 'Delete permanently' : 'Delete', icon: 'trash', key: 'Del', danger: true, action: remove }, { text: 'Download', icon: 'download', action: download }, null, { text: 'Properties', icon: 'info', action: properties }] : [
-                        { text: 'New folder', icon: 'folder', disabled: inTrash, action: () => newItem('directory') }, { text: 'New text document', icon: 'file', disabled: inTrash, action: () => newItem('file') }, { text: 'Paste', icon: 'paste', disabled: !OS.clipboard || inTrash, action: paste }, { text: 'Refresh', icon: 'refresh', action: render }, { text: 'Open in Terminal', icon: 'terminal', action: () => OS.launch('terminal', { cwd: targetDir() }) }
+                        { text: 'New folder', icon: 'folder', disabled: inTrash, action: () => newItem('directory') }, { text: 'New text document', icon: 'file', disabled: inTrash, action: () => newItem('file') }, { text: 'Paste', icon: 'paste', disabled: inTrash, action: paste }, { text: 'Refresh', icon: 'refresh', action: render }, { text: 'Open in Terminal', icon: 'terminal', action: () => OS.launch('terminal', { cwd: targetDir() }) }
                     ])
                 ]);
             };
@@ -182,7 +181,7 @@
                 }
             } });
             nav.append(back, forward, up, refresh, crumbs, search);
-            function updateCommandState() {undoB.disabled=!OS.fileOps.canUndo;redoB.disabled=!OS.fileOps.canRedo; extractB.hidden=!(archiveActive || selected.size===1 && /\.zip$/i.test([...selected][0]) && path!=='/.Trash');newButton.disabled=archiveActive;cutB.disabled = copyB.disabled = renameB.disabled = deleteB.disabled = downloadB.disabled = archiveActive||!selected.size; renameB.disabled = archiveActive||!selected.size||selected.size>1&&!virtualSelection(); pasteB.disabled = archiveActive||!OS.clipboard; }
+            function updateCommandState() {undoB.disabled=!OS.fileOps.canUndo;redoB.disabled=!OS.fileOps.canRedo; extractB.hidden=!(archiveActive || selected.size===1 && /\.zip$/i.test([...selected][0]) && path!=='/.Trash');newButton.disabled=archiveActive;cutB.disabled = copyB.disabled = renameB.disabled = deleteB.disabled = downloadB.disabled = archiveActive||!selected.size; renameB.disabled = archiveActive||!selected.size||selected.size>1&&!virtualSelection(); pasteB.disabled = archiveActive||path==='/.Trash'; }
             function markSelection() { for (const item of OS.$$('[data-path]', main)) {
                 item.classList.toggle('selected', selected.has(item.dataset.path));
                 item.setAttribute('aria-selected', String(selected.has(item.dataset.path)));
@@ -399,24 +398,17 @@
             main.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = e.ctrlKey||e.dataTransfer.types.includes('Files')?'copy':'move'; });
             main.addEventListener('drop', OS.guard(e => { e.preventDefault(); return drop(e); }));
             w.onKey = e => {
+                if(!e.type && OS.input.primary(e) && ['c','x','v'].includes(e.key.toLowerCase())){e.key.toLowerCase()==='v'?OS.guard(paste)():copy(e.key.toLowerCase()==='x');return;}
                 if((e.ctrlKey||e.metaKey)&&['t','w','Tab'].includes(e.key)){e.preventDefault();e.stopPropagation();if(e.key==='t')openTab(path);else if(e.key==='w')closeTab(activeTab);else switchTab((activeTab+(e.shiftKey?fileTabs.length-1:1))%fileTabs.length);return;}
+                if(OS.input.editable(OS.input.target(e)))return;
                 if(archiveActive && (['Delete','F2'].includes(e.key)||(e.ctrlKey||e.metaKey)&&['c','x','v'].includes(e.key.toLowerCase()))){e.preventDefault();return;}
                 if (/INPUT|TEXTAREA/.test(e.target.tagName)||e.target.isContentEditable)
-                return; if((e.ctrlKey||e.metaKey)&&['z','y'].includes(e.key.toLowerCase())){e.preventDefault();e.stopPropagation();OS.guard(()=>e.key.toLowerCase()==='y'||e.shiftKey?OS.fileOps.redo():OS.fileOps.undo())();return;} if ((e.ctrlKey || e.metaKey) && ['a', 'c', 'x', 'v'].includes(e.key.toLowerCase())) {
+                return; if((e.ctrlKey||e.metaKey)&&['z','y'].includes(e.key.toLowerCase())){e.preventDefault();e.stopPropagation();OS.guard(()=>e.key.toLowerCase()==='y'||e.shiftKey?OS.fileOps.redo():OS.fileOps.undo())();return;} if ((e.ctrlKey || e.metaKey) && ['a'].includes(e.key.toLowerCase())) {
                 e.preventDefault();
                 switch (e.key.toLowerCase()) {
                     case 'a':
                         selected = new Set(rows.map(r => r.path));
                         markSelection();
-                        break;
-                    case 'c':
-                        copy(false);
-                        break;
-                    case 'x':
-                        copy(true);
-                        break;
-                    case 'v':
-                        OS.guard(paste)();
                         break;
                 }
             }
@@ -449,6 +441,14 @@
                     OS.$$('[data-path]', main).find(el => el.dataset.path === next.path)?.scrollIntoView({ block: 'nearest' });
                 }
             } };
+            for(const kind of ['copy','cut','paste'])w.body.addEventListener(kind,e=>{
+                if(e.defaultPrevented||OS.input.editable(OS.input.target(e))||archiveActive||path==='/.Trash')return;
+                if(kind!=='paste'){if(!selected.size||!e.clipboardData)return;copy(kind==='cut',e);e.preventDefault();return;}
+                const files=[...(e.clipboardData?.files||[])];
+                if(files.length){e.preventDefault();const dir=targetDir();OS.guard(async()=>{const paths=await OS.clipboardTools.importFiles(files,dir);selected=new Set(paths);await render();OS.notify('Pasted files',paths.length+' files imported to '+dir);})();}
+                else if(OS.clipboard?.paths?.length&&e.clipboardData?.getData('application/x-aster-files')===OS.clipboard.token){e.preventDefault();OS.guard(paste)();}
+                else OS.notify('No Aster files to paste','Use Paste on the toolbar to save clipboard text or an image as a new file.');
+            });
             w.on('fs-change', () => { clearTimeout(w.refreshTimer); w.refreshTimer = setTimeout(() => OS.guard(render)(), 80); });
             w.on('settings', () => renderDetails());
             w.on('file-operations',updateCommandState);
@@ -564,7 +564,7 @@
             const togglePreview = () => { previewMode = !previewMode; preview.hidden = !previewMode; editor.hidden = previewMode; if (previewMode)
                 preview.innerHTML = OS.markdown(editor.value); };
             const fileMenu = OS.el('button', { text: 'File', onclick: e => OS.context(e, [{ text: 'New window', icon: 'plus', key: 'Ctrl+N', action: () => OS.launch('notepad') }, { text: 'Open…', icon: 'folder', key: 'Ctrl+O', action: open }, { text: 'Import from computer…', icon: 'upload', action: importText }, null, { text: 'Save', icon: 'save', key: 'Ctrl+S', action: () => save() }, { text: 'Save as…', icon: 'save', key: 'Ctrl+Shift+S', action: () => save(true) }, { text: 'Download a copy', icon: 'download', action: () => OS.download(new Blob([editor.value], { type: 'text/plain' }), path ? OS.fs.name(path) : 'Untitled.txt') }, null, { text: 'Close', icon: 'close', action: () => w.close() }]) });
-            const editMenu = OS.el('button', { text: 'Edit', onclick: e => OS.context(e, [{ text: 'Undo', icon: 'undo', key: 'Ctrl+Z', action: () => { editor.focus(); document.execCommand('undo'); } }, { text: 'Redo', icon: 'redo', key: 'Ctrl+Y', action: () => { editor.focus(); document.execCommand('redo'); } }, null, { text: 'Find and replace', icon: 'search', key: 'Ctrl+F', action: () => { find.hidden = false; findInput.focus(); } }, { text: 'Select all', icon: 'file', key: 'Ctrl+A', action: () => { editor.focus(); editor.select(); } }, { text: 'Insert date and time', icon: 'clock', key: 'F5', action: () => { editor.setRangeText(new Date().toLocaleString(), editor.selectionStart, editor.selectionEnd, 'end'); editor.oninput(); } }]) });
+            const editMenu = OS.el('button', { text: 'Edit', onclick: e => OS.context(e, [...OS.clipboardTools.editItems(editor),null,{ text: 'Undo', icon: 'undo', key: 'Ctrl+Z', action: () => { editor.focus(); document.execCommand('undo'); } }, { text: 'Redo', icon: 'redo', key: 'Ctrl+Y', action: () => { editor.focus(); document.execCommand('redo'); } }, null, { text: 'Find and replace', icon: 'search', key: 'Ctrl+F', action: () => { find.hidden = false; findInput.focus(); } }, { text: 'Select all', icon: 'file', key: 'Ctrl+A', action: () => { editor.focus(); editor.select(); } }, { text: 'Insert date and time', icon: 'clock', key: 'F5', action: () => { editor.setRangeText(new Date().toLocaleString(), editor.selectionStart, editor.selectionEnd, 'end'); editor.oninput(); } }]) });
             const viewMenu = OS.el('button', { text: 'View', onclick: e => OS.context(e, [{ text: (wrap ? '✓ ' : '') + 'Word wrap', action: () => { wrap = !wrap; editor.classList.toggle('wrap', wrap); update(); } }, { text: 'Zoom in', icon: 'plus', action: () => { zoom = Math.min(34, zoom + 2); editor.style.fontSize = zoom + 'px'; update(); } }, { text: 'Zoom out', icon: 'min', action: () => { zoom = Math.max(10, zoom - 2); editor.style.fontSize = zoom + 'px'; update(); } }, { text: 'Reset zoom', action: () => { zoom = 14; editor.style.fontSize = '14px'; update(); } }, null, { text: previewMode ? 'Edit text' : 'Markdown preview', icon: 'eye', action: togglePreview }]) });
             menu.append(fileMenu, editMenu, viewMenu, OS.el('span', { class: 'spacer' }), button('save', 'Save document', () => save()), button('eye', 'Toggle Markdown preview', togglePreview));
             w.onKey = e => {
@@ -582,7 +582,7 @@
                     if (k === 'n')
                         OS.launch('notepad');
                 }
-                if (e.key === 'Tab' && e.target === editor) {
+                if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey && e.target === editor && !OS.settings.editorTabFocus) {
                     e.preventDefault();
                     editor.setRangeText('    ', editor.selectionStart, editor.selectionEnd, 'end');
                     editor.oninput();
@@ -848,6 +848,7 @@
                 }
             }
             input.onkeydown = async (e) => {
+                if(OS.input.blocked(e))return;
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     if (busy)
@@ -886,7 +887,7 @@
                     historyIndex = Math.min(history.length, historyIndex + 1);
                     input.value = history[historyIndex] || '';
                 }
-                else if (e.key === 'Tab') {
+                else if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey && !OS.settings.editorTabFocus) {
                     e.preventDefault();
                     const tokens = tokenize(input.value), last = tokens.at(-1) || '';
                     const commands = ['help', 'ls', 'cd', 'pwd', 'cat', 'echo', 'touch', 'mkdir', 'cp', 'mv', 'rm', 'tree', 'find', 'export', 'open', 'edit', 'apps', 'launch', 'ps', 'kill', 'theme', 'desk', 'date', 'whoami', 'uname', 'neofetch', 'clear'];
@@ -913,12 +914,18 @@
                     e.preventDefault();
                     output.replaceChildren();
                 }
-                else if (e.ctrlKey && e.key === 'c' && !window.getSelection().toString()) {
+                else if (e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'c' && input.selectionStart===input.selectionEnd && !window.getSelection().toString()) {
                     e.preventDefault();
                     print(prompt.textContent + ' ' + input.value + ' ^C');
                     input.value = '';
                 }
             };
+            input.addEventListener('paste',e=>{
+                if(e.defaultPrevented||!e.clipboardData)return;
+                const text=e.clipboardData.getData('text/plain');if(!OS.settings.terminalPasteGuard||!/[\r\n\x00-\x08\x0b\x0c\x0e-\x1f]/.test(text))return;
+                e.preventDefault();const target=OS.clipboardTools.remember(input),preview=OS.el('pre',{text:text.slice(0,5000),class:'clipboard-snippet'});
+                OS.guard(async()=>{if(await OS.dialog({title:'Review terminal paste',message:'Multiline/control-character text is converted to one editable line. Nothing runs until you press Enter.',extra:preview,confirm:'Insert as one line'}))OS.clipboardTools.insert(text.replace(/[\r\n]+/g,' ').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,''),target);})();
+            });
             term.onclick = e => { if (!window.getSelection().toString())
                 input.focus(); };
             w.runCommand = command;

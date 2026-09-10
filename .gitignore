@@ -32,3 +32,6 @@ tests/file-pickers/artifacts/
 tests/app-library/artifacts/
 
 tests/orbit/artifacts/
+
+# Clipboard browser evidence is retained as CI artifacts.
+tests/clipboard/artifacts/

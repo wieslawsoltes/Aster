@@ -42,7 +42,7 @@
         back(){return this.travel(-1);}forward(){return this.travel(1);}
         async reload(){const request=++this.request;if(!await this.canLeave('Reload this page?')||this.disposed||request!==this.request)return false;return this.load(this.state.url,{mode:this.state.mode,history:false});}
         clearPage() {
-            ++this.generation;clearTimeout(this.timer);this.timer=null;this.detachIO?.();this.detachIO=null;this.detachChild?.();this.detachChild=null;
+            ++this.generation;clearTimeout(this.timer);this.timer=null;this.detachIO?.();this.detachIO=null;this.detachClipboard?.();this.detachClipboard=null;this.detachChild?.();this.detachChild=null;
             if(this.port){this.port.onmessage=null;this.port.close();this.port=null;}
             if(this.frame){const f=this.frame;this.frame=null;f.remove();f.removeAttribute('srcdoc');f.src='about:blank';}
             this.element.replaceChildren();this.message=null;
@@ -104,7 +104,7 @@
                         this.state.status='readable';this.state.title=M.text(doc.title,160)||new URL(doc.URL).hostname;
                         if(new URL(doc.URL).origin===new URL(url).origin)this.state.reportedURL=M.webURL(doc.URL);
                         const focus=()=>{if(valid()){OS.closePanels?.();this.owner.focus(false);}};
-                        const key=e=>{if((e.ctrlKey||e.metaKey)&&!e.altKey&&['l','t'].includes(e.key.toLowerCase())){this.owner.onKey?.(e);}};
+                        const key=e=>{if(OS.input.blocked(e))return;if((e.ctrlKey||e.metaKey)&&!e.altKey&&['l','t'].includes(e.key.toLowerCase())){this.owner.onKey?.(e);}};
                         doc.addEventListener('pointerdown',focus,true);doc.addEventListener('focusin',focus,true);doc.addEventListener('keydown',key,true);
                         this.detachChild=()=>{doc.removeEventListener('pointerdown',focus,true);doc.removeEventListener('focusin',focus,true);doc.removeEventListener('keydown',key,true);};
                     }}catch{ }
@@ -112,6 +112,7 @@
                 });
                 this.timer=setTimeout(()=>{if(valid()){this.state.status='unverified';this.message.textContent='Still waiting. A blank page may indicate a framing policy or connection problem. Use Open in browser; this is not a reliable error detector.';this.emit('status');}},12000);
                 if(local)frame.srcdoc=OS.webIO?OS.webIO.bootstrap(html):html;else frame.src=url;
+                this.detachClipboard=OS.clipboardTools.attachFrame(frame,this.owner);
                 content.append(frame);
                 const catalog=local||this.options.isolated===true?null:N.catalogApp(url,OS.webCatalog?.apps||[]);
                 if(local||catalog)this.detachIO=OS.webIO?.attach(this.owner,frame,local?(this.options.appId||'local-html'):catalog.id,local?'about:srcdoc':url,local);

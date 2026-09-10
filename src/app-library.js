@@ -125,7 +125,7 @@
                 if(current.kind==='html') {
                     const f=await OS.fs.read(current.path),html=await OS.fs.text(f);if(!alive||w.closed)return;
                     if(new Blob([html]).size>M.LIMITS.html)throw Error('Installed HTML exceeds the 5 MiB package limit.');
-                    frame.srcdoc=OS.webIO?OS.webIO.bootstrap(html):html;w.body.append(frame);OS.webIO?.attach(w,frame,r.id,'about:srcdoc',true);
+                    OS.clipboardTools.attachFrame(frame,w);frame.srcdoc=OS.webIO?OS.webIO.bootstrap(html):html;w.body.append(frame);OS.webIO?.attach(w,frame,r.id,'about:srcdoc',true);
                 }
                 w.addCleanup(()=>{frame.remove();frame.srcdoc='';frame.src='about:blank';});
             }});

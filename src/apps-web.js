@@ -22,7 +22,7 @@
     });
     function mount(w, app) {
         const url = checkedURL(app);
-        let alive = true, loadingTimer = 0, focusTimer = 0, frame = null, detachChild = () => {}, detachIO = () => {};
+        let alive = true, loadingTimer = 0, focusTimer = 0, frame = null, detachChild = () => {}, detachIO = () => {}, detachClipboard = () => {};
         w.body.classList.add('web-app-window');
         w.state.webApp = app.id; // No credentials, remote document content or transient URLs.
         const toolbar = OS.el('nav', { class: 'web-app-toolbar', 'aria-label': app.title + ' web app controls' });
@@ -56,7 +56,7 @@
         };
         function load() {
             if (!alive) return;
-            clearTimeout(loadingTimer); detachChild(); detachIO();
+            clearTimeout(loadingTimer); detachChild(); detachIO(); detachClipboard();
             if (frame) { frame.remove(); frame.src = 'about:blank'; }
             // Scripts + same-origin are intentional for these user-owned applications:
             // they need storage, workers and WebGPU. This is NOT an isolation boundary
@@ -70,6 +70,7 @@
                 allowfullscreen: true, referrerpolicy: 'no-referrer'
             });
             frame = next; w.webFrame = next;
+            detachClipboard = OS.clipboardTools.attachFrame(next,w);
             status.textContent = 'Loading ' + app.title + '…';
             viewport.setAttribute('aria-busy', 'true'); notice.hidden = true;
             next.addEventListener('load', () => {
@@ -85,6 +86,7 @@
                         doc.addEventListener('pointerdown', focusWindow, true);
                         doc.addEventListener('focusin', focusWindow, true);
                         const key = event => {
+                            if(OS.input.blocked(event))return;
                             if (event.altKey && event.code === 'Space') {
                                 event.preventDefault(); event.stopPropagation();
                                 w.titleMenu({preventDefault(){},stopPropagation(){},target:w.webChrome?.lastElementChild || w.titleEl});
@@ -133,7 +135,7 @@
         w.beforeClose = () => OS.confirm('Close ' + app.title + '?',
             'Save your work inside the app first. Aster cannot determine whether an embedded document has unsaved changes.', 'Close app');
         w.addCleanup(() => {
-            alive = false; clearTimeout(loadingTimer); clearTimeout(focusTimer); detachChild(); detachIO();
+            alive = false; clearTimeout(loadingTimer); clearTimeout(focusTimer); detachChild(); detachIO(); detachClipboard();
             window.removeEventListener('blur', blurred); window.removeEventListener('offline', offline); window.removeEventListener('online', online);
             if (frame) { frame.remove(); frame.src = 'about:blank'; }
             w.webFrame = null;

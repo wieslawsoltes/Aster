@@ -178,12 +178,7 @@
                 main.append(row('info', 'During Focus', 'Quiet mode follows an active focus session without overwriting manual Do not disturb.', button('Open Focus', () => navigate('focus'))));
                 main.append(button('Open Notification Center', () => OS.showNotifications())); return true;
             }
-            if (section === 'clipboard') {
-                main.append(row('paste', 'Clipboard history', 'Opt in to saving text copied in supported Aster editors. Unpinned items disappear on reload.', switchFor('clipboardHistory', 'Clipboard history')),
-                    row('shield', 'Sync across devices', 'Not available. Text is not uploaded or synced to an account.'),
-                    row('trash', 'Clear clipboard data', 'Pinned entries are kept.', button('Clear', async () => { OS.clipboardText.model.clear(); await OS.clipboardText.save(); })),
-                    button('Open clipboard history', () => OS.showClipboard())); return true;
-            }
+            if (section === 'clipboard') { OS.clipboardSettings(main); return true; }
             if(section === 'time'){
                 const select=OS.el('select',{'aria-label':'clock24'});
                 for(const [value,label]of [['true','24-hour'],['false','12-hour']])select.append(OS.el('option',{value,text:label,selected:String(OS.settings.clock24)===value}));
