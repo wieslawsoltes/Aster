@@ -51,40 +51,43 @@
     const changed=p=>{OS.emit('fs-change',{path:p,operation:'web-io'});OS.featureChange('history');};
     const newFile=(p,blob=new Blob([]))=>({path:p,kind:'file',mime:blob.type||OS.fs.mime(p),size:blob.size,modified:Date.now(),content:blob});
     async function ensureEmpty(s,p,authority){const r=await OS.fs.stat(p);if(r)return r;await IO.atomic([[p,null]],[newFile(p)],[],authority);changed(p);return row(p);}
-    // Aster-owned picker. No application path is exposed until the user confirms.
+    // One shared profile-aware presentation, with authority retained here.
     IO.pick=(s,kind,raw={},acceptOverride=null)=>{
-        activation(s);if(pickerOpen) return Promise.reject(new DOMException('Another file dialog is already open.','InvalidStateError'));
-        let o;try{o=M.options(raw);}catch(e){return Promise.reject(e);}let dir='/Documents',selection=new Set(),view=0,navigation=0,done=false,filter=acceptOverride||o.types[0]?.accept||[];const epoch=s.epoch;
-        if(s.caps.has(raw.startIn)){const c=cap(s,raw.startIn);dir=c.kind==='directory'?c.path:OS.fs.parent(c.path);}else dir=({desktop:'/Desktop',documents:'/Documents',downloads:'/Downloads',pictures:'/Pictures',music:'/Music',videos:'/Videos'})[o.startIn]||dir;
-        const oldFocus=document.activeElement,cover=OS.el('div',{class:'dialog-backdrop'}),panel=OS.el('section',{class:'dialog io-picker',role:'dialog','aria-modal':'true','aria-label':kind==='save'?'Save to Aster':kind==='folder'?'Choose Aster folder':'Open from Aster'}),header=OS.el('div',{class:'io-heading'},OS.el('h2',{text:panel.getAttribute('aria-label')}),OS.el('p',{text:s.title+' · '+(kind==='folder'?(o.mode==='readwrite'?'Read and edit the selected folder and its descendants.':'Read the selected folder and its descendants.'):'Only your confirmed selection is shared.')}));
-        const address=OS.el('input',{'aria-label':'Aster folder',value:dir}),up=OS.el('button',{class:'icon-button','aria-label':'Parent folder',html:OS.icon('up',18)}),go=OS.el('button',{class:'secondary',text:'Go'}),search=OS.el('input',{'aria-label':'Filter files',placeholder:'Filter this folder'}),list=OS.el('div',{class:'io-file-list',role:'group','aria-label':'Aster files'}),status=OS.el('p',{class:'io-picker-status',role:'status'}),filename=OS.el('input',{'aria-label':'File name',value:o.suggestedName}),types=OS.el('select',{'aria-label':'File types'}),actions=OS.el('div',{class:'dialog-actions'}),cancel=OS.el('button',{class:'secondary',text:'Cancel'}),confirm=OS.el('button',{class:'primary',text:kind==='save'?'Save':kind==='folder'?'Select folder':'Open'});
-        if(!o.excludeAcceptAllOption)types.append(OS.el('option',{value:'all',text:'All files'}));o.types.forEach((t,i)=>types.append(OS.el('option',{value:String(i),text:t.description})));if(o.types.length)types.value='0';else types.value='all';
-        const shortcuts=OS.el('nav',{class:'io-places','aria-label':'Places'});for(const p of ['/Documents','/Downloads','/Desktop','/Pictures','/Music','/Videos'])shortcuts.append(OS.el('button',{class:'secondary',text:label(p),onclick:()=>navigate(p)}));
-        const newFolder=OS.el('button',{class:'secondary',text:'New folder',onclick:OS.guard(async()=>{const name=await ask(s,{title:'New folder',value:'New folder',message:'Create a folder in '+dir,confirm:'Save'});if(name===null||done)return;const p=validPath(OS.fs.join(dir,M.name(name)));await IO.atomic([[p,null]],[{path:p,kind:'directory',modified:Date.now()}],[],()=>{alive(s);if(s.epoch!==epoch)fail('Access changed.','AbortError');});changed(p);await navigate(p);})});
-        panel.append(header,OS.el('div',{class:'io-address'},up,address,go,newFolder),shortcuts,search,list);if(kind==='save')panel.append(OS.el('label',{class:'io-name',text:'File name'},filename));if(kind!=='folder'&&!acceptOverride)panel.append(types);panel.append(status);actions.append(cancel,confirm);panel.append(actions);cover.append(panel);OS.$('#dialog-layer').append(cover);pickerOpen=s;OS.emit('window-action',{action:'SystemQuestion'});
-        let resolve,reject;const promise=new Promise((r,j)=>{resolve=r;reject=j;});
-        function finish(result,error){if(done)return;done=true;cover.remove();pickerOpen=null;s.pickerCancel=null;if(oldFocus?.isConnected)oldFocus.focus({preventScroll:true});error?reject(error):resolve(result);}
-        s.pickerCancel=()=>finish(null,new DOMException('Selection cancelled or access revoked.','AbortError'));cancel.onclick=s.pickerCancel;
-        async function navigate(p){
-            // Invalidate earlier listings before awaiting metadata, including when
-            // this request fails validation. Never rewrite text typed while a
-            // previous folder read was pending.
-            const request=++navigation;++view;address.value=p;confirm.disabled=true;
-            panel.setAttribute('aria-busy','true');status.textContent='Loading folder…';
-            try{if(p!=='/')validPath(p);if((await row(p)).kind!=='directory')fail('Choose a folder.','TypeMismatchError');if(done||request!==navigation)return;dir=p;selection.clear();await render();}
-            catch(e){if(!done&&request===navigation)status.textContent=e.message;}
-            finally{if(!done&&request===navigation){panel.setAttribute('aria-busy','false');confirm.disabled=false;}}
-        }
-        async function render(){const version=++view,request=navigation,folder=dir;try{const rows=(await OS.fs.list(folder)).slice(0,L.entries).filter(r=>{try{validPath(r.path);return true;}catch{return false;}});if(done||version!==view||request!==navigation)return;list.replaceChildren();const q=search.value.toLowerCase();for(const r of rows){if(!label(r.path).toLowerCase().includes(q))continue;if(r.kind==='file'&&(kind==='folder'||!M.accepts(label(r.path),r.mime||'',filter)))continue;const b=OS.el('button',{class:'io-file'+(selection.has(r.path)?' selected':''),'data-io-path':r.path,'aria-pressed':String(selection.has(r.path)),html:OS.fileIcon(r,24)+'<span>'+OS.esc(label(r.path))+'</span><small>'+OS.esc(r.kind==='directory'?'Folder':OS.formatBytes(r.size||0))+'</small>'});b.onclick=e=>{if(r.kind==='directory'){void navigate(r.path);return;}if(!o.multiple||kind==='save'||!(e.ctrlKey||e.metaKey))selection.clear();if(selection.has(r.path))selection.delete(r.path);else selection.add(r.path);if(kind==='save')filename.value=label(r.path);for(const child of list.children){child.classList.toggle('selected',selection.has(child.dataset.ioPath));child.setAttribute('aria-pressed',String(selection.has(child.dataset.ioPath)));}status.textContent=selection.size+' selected';};b.ondblclick=()=>{if(r.kind==='file')confirm.click();};list.append(b);}up.disabled=dir==='/';status.textContent=dir+(o.multiple?' · Ctrl/Command-click selects multiple files':'');}catch(e){if(!done&&version===view&&request===navigation)status.textContent=e.message;}}
-        go.onclick=()=>navigate(address.value);up.onclick=()=>navigate(OS.fs.parent(dir));search.oninput=render;types.onchange=()=>{filter=types.value==='all'?[]:o.types[+types.value].accept;selection.clear();void render();};
-        confirm.onclick=async()=>{confirm.disabled=true;try{alive(s);if(s.epoch!==epoch)fail('File access changed.','AbortError');let result;
-            if(kind==='folder'){validPath(dir);await directoryRow(dir);result=[dir];}
-            else if(kind==='save'){let name=M.name(filename.value);if(types.value!=='all'&&filter.length&&!M.accepts(name,OS.fs.mime(name),filter)){const ext=filter.find(x=>x.startsWith('.'));if(ext)name+=ext;}const p=validPath(OS.fs.join(dir,name)),exists=await OS.fs.stat(p);if(exists?.kind==='directory')fail('A folder already uses this name.');if(exists&&!await ask(s,{title:'Replace existing file?',message:p+' will be replaced only when the app closes its writable stream.',confirm:'Replace'}))return;result=[p];result.stamp=M.stamp(exists);}
-            else{result=[...selection];if(!result.length)fail('Select at least one file.');if(result.length>256)fail('Select no more than 256 files.');for(const p of result){const r=await row(p);if(r.kind!=='file'||!M.accepts(label(p),r.mime||'',filter))fail('The selected file changed or no longer matches.');}}
-            alive(s);if(s.epoch!==epoch)fail('File access changed.','AbortError');finish(result);
-        }catch(e){if(e.name==='AbortError')finish(null,e);else status.textContent=e.message;}finally{confirm.disabled=false;}};
-        cover.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();cancel.click();}else if(e.key==='Enter'&&e.target===address){e.preventDefault();void navigate(address.value);}else if(e.key==='Enter'&&e.target===filename){e.preventDefault();confirm.click();}else if(e.key==='Tab'){const els=[...panel.querySelectorAll('button,input,select')].filter(e=>!e.disabled&&e.offsetParent);let i=els.indexOf(document.activeElement);e.preventDefault();els[(i+(e.shiftKey?els.length-1:1))%els.length]?.focus();}};
-        void navigate(dir);search.focus();return promise;
+        activation(s);
+        if(pickerOpen)return Promise.reject(new DOMException('Another file dialog is already open.','InvalidStateError'));
+        let o;try{o=M.options(raw);}catch(e){return Promise.reject(e);}
+        let dir='/Documents',closed=false;const epoch=s.epoch;
+        if(s.caps.has(raw.startIn)){const c=cap(s,raw.startIn);dir=c.kind==='directory'?c.path:OS.fs.parent(c.path);}
+        else dir=({desktop:'/Desktop',documents:'/Documents',downloads:'/Downloads',pictures:'/Pictures',music:'/Music',videos:'/Videos'})[o.startIn]||dir;
+        const authority=()=>{alive(s);if(closed||s.epoch!==epoch)fail('File access changed.','AbortError');};
+        const picker=OS.filePicker.show({kind,options:o,acceptOverride,startDirectory:dir,appTitle:s.title,
+            title:kind==='save'?'Save to Aster':kind==='folder'?'Choose Aster folder':'Open from Aster',
+            validate:validPath,stat:p=>OS.fs.stat(p),list:p=>OS.fs.list(p),
+            canCreate:()=>IO.policy(s.app).write&&IO.policy(s.app).save,
+            onClose:()=>{closed=true;pickerOpen=null;s.pickerCancel=null;},
+            onNewFolder:async dir=>{
+                authority();check(s,'write');check(s,'save');const name=await ask(s,{title:'New folder',value:'New folder',message:'Create a folder in '+dir,confirm:'Save'});
+                if(name===null)return null;authority();const p=validPath(OS.fs.join(dir,M.name(name)));
+                await IO.atomic([[p,null]],[{path:p,kind:'directory',modified:Date.now()}],[],()=>{authority();check(s,'write');check(s,'save');});changed(p);return p;
+            },
+            onConfirm:async({dir,paths,name,filter,allTypes})=>{
+                authority();let result;
+                if(kind==='folder'){validPath(dir);await directoryRow(dir);result=[dir];}
+                else if(kind==='save'){
+                    name=M.name(name);
+                    if(!allTypes&&filter.length&&!M.accepts(name,OS.fs.mime(name),filter)){const ext=filter.find(x=>x.startsWith('.'));if(ext)name+=ext;}
+                    const p=validPath(OS.fs.join(dir,name)),exists=await OS.fs.stat(p);
+                    if(exists?.kind==='directory')fail('A folder already uses this name.');
+                    if(exists&&!await ask(s,{title:'Replace existing file?',message:p+' will be replaced only when the app closes its writable stream.',confirm:'Replace'}))return null;
+                    result=[p];result.stamp=M.stamp(exists);
+                }else{
+                    result=paths;if(!result.length)fail('Select at least one file.');if(result.length>256)fail('Select no more than 256 files.');
+                    for(const p of result){validPath(p);const r=await row(p);if(r.kind!=='file'||!M.accepts(label(p),r.mime||'',filter))fail('The selected file changed or no longer matches.');}
+                }
+                authority();return result;
+            }
+        });
+        pickerOpen=s;s.pickerCancel=picker.cancel;return picker.promise;
     };
     async function permission(s,id,mode,prompt){if(!['read','readwrite'].includes(mode))fail('Invalid permission mode.');let c;try{c=cap(s,id);}catch(e){if(e.name==='NotAllowedError')return 'denied';throw e;}if(mode==='read')return 'granted';if(!IO.policy(s.app).save||!IO.policy(s.app).write)return 'denied';if(c.write)return 'granted';if(!prompt)return 'prompt';activation(s);const epoch=s.epoch,ok=await ask(s,{title:'Allow this app to edit?',message:s.title+' requests write access to '+c.path+(c.kind==='directory'?' and its descendants.':'.'),confirm:'Allow editing'});if(!ok||s.epoch!==epoch)return 'denied';cap(s,id);c.write=true;return 'granted';}
     async function treeFiles(s,id){const c=cap(s,id);if(c.kind!=='directory')fail('Expected a directory.','TypeMismatchError');const all=await OS.db.all(),rows=all.filter(r=>r.kind==='file'&&M.inside(c.path,r.path));if(rows.length>L.entries)fail('Directory has too many entries.','QuotaExceededError');const out=[];let bytes=0;for(const r of rows){try{scopePath(s,r.path,c.feature);}catch{continue;}const f=await asFile(r,label(c.path)+'/'+r.path.slice(c.path.length+1));bytes+=f.blob.size;if(bytes>L.batch)fail('Directory exceeds transfer limit.','QuotaExceededError');out.push(f);}cap(s,id);return out;}

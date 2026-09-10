@@ -1,3 +1,19 @@
+## Aster 2.1 — profile-aware file pickers
+
+Integrated web-file Open, Save As and Choose Folder now use genuine profile-specific
+layouts: Explorer-style Windows, a unified macOS sheet, or a GNOME headerbar.
+They follow the active Aster theme, original icon family, font metrics and contrast
+settings. Ubuntu Light uses its light app palette, not the always-dark top panel.
+
+Working navigation history, breadcrumbs, natural sorting, search, hidden files,
+list/icon views, safe previews, range selection and keyboard shortcuts share one
+broker-backed chooser. Display preferences persist without retaining permissions;
+live theme changes preserve typed names and focus. Native browser fallback and
+existing file-security checks are unchanged.
+
+[Design, controls and exact scope](docs/file-pickers.md) ·
+[Reproducible verification](tests/file-pickers/README.md)
+
 ## Aster Web Files (2.0)
 
 Web apps can use Aster-backed open/save/folder pickers, scoped asynchronous file

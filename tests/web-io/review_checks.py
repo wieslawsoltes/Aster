@@ -16,8 +16,8 @@ def run(page, ctx, js, picker, frame, done, check, args, root, origin):
     def cleanup_ui():
         js('OS.closePanels();document.querySelector(".file-operation-panel header button")?.click();iow.minimized=false;iow.sync();iow.focus();')
     def root_grant():
-        cleanup_ui();frame.locator('#folder').click();d=picker('Choose Aster folder','/');d.get_by_role('button',name='Select folder',exact=True).click()
-        page.wait_for_function('document.querySelector(".io-picker-status").textContent.includes("not the filesystem root")')
+        cleanup_ui();frame.locator('#folder').click();d=picker('Choose Aster folder','/');assert d.get_by_role('button',name='Select folder',exact=True).is_disabled()
+        assert js("try{AsterIOModels.grantPath('/');return 'unsafe';}catch(e){return e.name;}")== 'NotAllowedError'
         assert d.is_visible();d.get_by_role('button',name='Cancel',exact=True).click();assert done()['error']['name']=='AbortError'
     check('Security: filesystem root is navigation-only and cannot be granted',root_grant)
     def folder_race():
