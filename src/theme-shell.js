@@ -38,7 +38,8 @@
                 const key=(name,ctrl=true)=>current.onKey?.({key:name,ctrlKey:ctrl,metaKey:false,shiftKey:false,altKey:false,target:current.body,preventDefault(){},stopPropagation(){}});
                 const menu=(label,items)=>menus.append(action(label,event=>OS.context(event,items)));
                 menu('File',[{text:'New window',key:'⌘N',action:()=>OS.openApp('files',{path:current.state.path})},{text:'New tab',key:'⌘T',action:()=>key('t')},null,{text:'Close window',key:'⌘W',action:()=>current.close()}]);
-                menu('Edit',[{text:'Undo',key:'⌘Z',disabled:!OS.fileOps.canUndo,action:()=>OS.fileOps.undo()},{text:'Redo',key:'⇧⌘Z',disabled:!OS.fileOps.canRedo,action:()=>OS.fileOps.redo()},null,{text:'Cut',key:'⌘X',action:()=>key('x')},{text:'Copy',key:'⌘C',action:()=>key('c')},{text:'Paste',key:'⌘V',action:()=>key('v')},{text:'Select all',key:'⌘A',action:()=>key('a')}]);
+                let editTarget=null;const edit=action('Edit',event=>OS.context(event,editTarget&&current.body.contains(editTarget)&&OS.input.editable(editTarget)?OS.clipboardTools.editItems(editTarget):[{text:'Undo',key:'⌘Z',disabled:!OS.fileOps.canUndo,action:()=>OS.fileOps.undo()},{text:'Redo',key:'⇧⌘Z',disabled:!OS.fileOps.canRedo,action:()=>OS.fileOps.redo()},null,{text:'Cut',key:'⌘X',action:()=>key('x')},{text:'Copy',key:'⌘C',action:()=>key('c')},{text:'Paste',key:'⌘V',action:()=>key('v')},{text:'Select all',key:'⌘A',action:()=>key('a')} ]));
+                edit.addEventListener('pointerdown',()=>{editTarget=OS.input.deepActive();});menus.append(edit);
                 menu('Go',[['Home','home'],['Desktop','/Desktop'],['Documents','/Documents'],['Downloads','/Downloads'],['Pictures','/Pictures']].map(([text,path])=>({text,action:()=>current.navigate(path)})));
             }
             menus.append(action('Window',event=>OS.context(event,[

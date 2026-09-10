@@ -76,10 +76,10 @@
         dialog.append(content, actions);
         cover.append(dialog);
         $('#dialog-layer').append(cover); OS.emit('window-action', {action: 'SystemQuestion'});
-        cover.onkeydown = e => { if (e.key === 'Escape') {
+        cover.onkeydown = e => { if(OS.input?.blocked(e))return; if (e.key === 'Escape') {
             e.stopPropagation();
             finish(null);
-        } if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+        } if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.altKey && e.target.tagName !== 'TEXTAREA') {
             e.preventDefault();
             yes.click();
         } if (e.key === 'Tab') {
@@ -166,7 +166,7 @@
             max.addEventListener('mouseenter', () => { clearTimeout(this.snapTimer); this.snapTimer = setTimeout(() => this.showSnapLayouts(), 500); });
             max.addEventListener('mouseleave', () => clearTimeout(this.snapTimer));
             this.addCleanup(() => { this.dismissSnapLayouts(); this.keyboardFinish?.(false); });
-            this.el.addEventListener('keydown', e => { if (e.altKey && e.key === 'F4') {
+            this.el.addEventListener('keydown', e => { if(OS.input?.blocked(e))return; if (e.altKey && e.key === 'F4') {
                 e.preventDefault();
                 this.close();
             }
@@ -536,7 +536,7 @@
         w.sync();
     } OS.closePanels?.(); });
     document.addEventListener('keydown', e => {
-        if ($('#dialog-layer').children.length)
+        if (OS.input?.blocked(e) || !OS.settings.shellShortcuts || $('#dialog-layer').children.length)
             return;
         if (e.key === 'Escape') {
             $('#context-menu').hidden = true;
@@ -549,46 +549,9 @@
             if (e.key === 'F7' || e.key === 'F8') { e.preventDefault(); active.beginKeyboardTransform(e.key === 'F7' ? 'move' : 'resize'); return; }
             if (e.key === 'F10') { e.preventDefault(); active.toggleMaximize(); return; }
         }
-        if (e.ctrlKey && e.code === 'Space') {
+        if (e.ctrlKey && !e.altKey && !e.metaKey && e.code === 'Space' && !OS.input.editable(OS.input.target(e))) {
             e.preventDefault();
             OS.toggleStart?.();
-        }
-        if (e.ctrlKey && e.altKey) {
-            const current = OS.windows.get(OS.focused);
-            switch (e.key.toLowerCase()) {
-                case 't':
-                    e.preventDefault();
-                    OS.launch('terminal');
-                    break;
-                case 'n':
-                    e.preventDefault();
-                    OS.launch('notepad');
-                    break;
-                case 'd':
-                    e.preventDefault();
-                    OS.showDesktop();
-                    break;
-                case 'arrowleft':
-                    e.preventDefault();
-                    current?.snap('left');
-                    break;
-                case 'arrowright':
-                    e.preventDefault();
-                    current?.snap('right');
-                    break;
-                case 'arrowup':
-                    e.preventDefault();
-                    current?.snap('max');
-                    break;
-                case 'arrowdown':
-                    e.preventDefault();
-                    current?.minimize();
-                    break;
-                case 'tab':
-                    e.preventDefault();
-                    OS.showTaskView?.();
-                    break;
-            }
         }
     });
     window.addEventListener('beforeunload', e => { if (!OS.ignoreUnload && Array.from(OS.windows.values()).some(w => w.dirty)) {

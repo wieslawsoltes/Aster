@@ -499,7 +499,7 @@
             editor.oninput = () => { w.dirty = true; sync(); };
             editor.onscroll = () => { gutter.scrollTop = editor.scrollTop; };
             editor.onclick = editor.onkeyup = () => sync();
-            editor.onkeydown = e => { if (e.key === 'Tab') {
+            editor.onkeydown = e => { if(OS.input.blocked(e))return; if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey && !OS.settings.editorTabFocus) {
                 e.preventDefault();
                 const start = editor.selectionStart, end = editor.selectionEnd;
                 if (e.shiftKey) {

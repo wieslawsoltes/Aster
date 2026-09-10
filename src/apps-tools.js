@@ -200,8 +200,7 @@
                 return;
             } insert(k); };
             const modeB = OS.el('button', { text: 'Standard', style: 'font-size:17px;font-weight:600', onclick: () => { scientific = !scientific; science.hidden = !scientific; modeB.textContent = scientific ? 'Scientific' : 'Standard'; } }), angleB = OS.el('button', { text: 'DEG', title: 'Toggle degrees/radians', onclick: () => { degrees = !degrees; angleB.textContent = degrees ? 'DEG' : 'RAD'; } });
-            menu.append(ib('list', 'Toggle scientific mode', () => modeB.click()), modeB, OS.el('span', { class: 'spacer' }), angleB, ib('copy', 'Copy result', async () => { if (!navigator.clipboard)
-                throw Error('Clipboard is unavailable in this context.'); await navigator.clipboard.writeText(expression || '0'); OS.notify('Copied', 'Calculator value copied to your clipboard.'); }));
+            menu.append(ib('list', 'Toggle scientific mode', () => modeB.click()), modeB, OS.el('span', { class: 'spacer' }), angleB, ib('copy', 'Copy result', async () => { await OS.clipboardTools.copyText(expression || '0'); OS.notify('Copied', 'Calculator value copied to your clipboard.'); }));
             for (const name of ['MC', 'MR', 'M+', 'M−', 'MS']) {
                 const b = OS.el('button', { text: name, onclick: OS.guard(() => { if (name === 'MC')
                         memory = 0; if (name === 'MR') {

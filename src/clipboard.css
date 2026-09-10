@@ -1,0 +1,18 @@
+/* Clipboard utilities use the active desktop profile's native Aster tokens. */
+.clipboard-tools {height:100%;overflow:auto;box-sizing:border-box;max-width:100%;}
+.clipboard-tools .suite-heading h1 {font-size:27px;margin:8px 0;}
+.clipboard-tools [role=tablist] {position:sticky;top:-1px;z-index:1;background:var(--bg,#fff);padding:9px 0;}
+.clipboard-tools [role=tab][aria-selected=true] {border-color:var(--accent,#176ae6);box-shadow:inset 0 -2px var(--accent,#176ae6);}
+.clipboard-tools textarea {width:100%;box-sizing:border-box;resize:vertical;min-height:100px;font:14px/1.6 ui-monospace,monospace;}
+.clipboard-status {padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;line-height:1.6;white-space:pre-wrap;}
+.clipboard-setting {padding:14px 0;border-bottom:1px solid var(--border);}
+.clipboard-setting>label {display:flex;align-items:center;gap:10px;}
+.clipboard-setting .integration-note {margin:6px 0;line-height:1.6;}
+.clipboard-setting select {max-width:100%;}
+.clipboard-image {max-width:100%;max-height:280px;object-fit:contain;border:1px solid var(--border);border-radius:8px;}
+.clipboard-html,.clipboard-snippet {white-space:pre-wrap;overflow-wrap:anywhere;max-height:200px;overflow:auto;font:12px/1.6 ui-monospace,monospace;}
+.clipboard-tools .suite-actions {flex-wrap:wrap;gap:8px;margin:12px 0;}
+.clipboard-flyout .surface-footer {flex-wrap:wrap;gap:6px;}
+.clipboard-flyout .clipboard-item-actions {flex-wrap:wrap;}
+.clipboard-tools :focus-visible,.clipboard-flyout :focus-visible {outline:2px solid var(--accent,#176ae6);outline-offset:2px;}
+@media(max-width:560px){.clipboard-tools {padding:16px!important;}.clipboard-tools [role=tablist] {position:static;}.clipboard-setting>label {flex-wrap:wrap;}}

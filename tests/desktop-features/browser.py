@@ -40,7 +40,7 @@ def main(args):
                 report['tests'].append({'name':name,'status':'FAIL','error':str(e)});print('FAIL',name,str(e),flush=True);page.screenshot(path=str(out/'failure.png'));raise
         try:
             boot()
-            check('Boot registers all ten workflows and preserves 79 web apps',lambda:js("assert([...OS.apps.values()].filter(a=>!a.webApp).length===28);assert(OS.webCatalog.apps.length===79);for(const id of ['files','archives','clipboard','focus','widgets','workspaces','history','storage','accessibility','recorder'])assert(OS.apps.has(id));assert(!document.querySelector('.web-app-frame'));return {apps:OS.apps.size,storage:OS.db.mode};"))
+            check('Boot registers all ten workflows and preserves 79 web apps',lambda:js("assert([...OS.apps.values()].filter(a=>!a.webApp).length===29);assert(OS.webCatalog.apps.length===79);for(const id of ['files','archives','clipboard','focus','widgets','workspaces','history','storage','accessibility','recorder'])assert(OS.apps.has(id));assert(!document.querySelector('.web-app-frame'));return {apps:OS.apps.size,storage:OS.db.mode};"))
             def explorer():
                 clean();js("await OS.fs.write('/Documents/Feature note.txt','Preview text Ω','text/plain');")
                 launch('files',{'path':'/Documents'})

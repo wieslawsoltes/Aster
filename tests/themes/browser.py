@@ -28,6 +28,8 @@ def main(args):
         def js(source,arg=None):return page.evaluate('async arg=>{const OS=Aster;const assert=(v,m="Assertion failed")=>{if(!v)throw Error(m);};'+source+'}',arg)
         def clear():js('OS.closePanels();for(const w of [...OS.windows.values()])await w.close(true);document.querySelectorAll(".toast").forEach(t=>t.remove());')
         def settings(section):
+            # Leave the dock and dismiss its hover preview before programmatic navigation.
+            page.mouse.move(5,80);page.keyboard.press('Escape')
             ident=js('let w=[...OS.windows.values()].find(w=>w.appId==="settings");if(w)await w.navigate(arg);else{w=OS.openApp("settings",{section:arg});await w.ready;}w.restore();return w.id;',section)
             return page.locator(f'[data-window="{ident}"]')
         def preset(name):

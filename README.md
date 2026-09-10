@@ -1,3 +1,22 @@
+## Aster 2.4 — native clipboard and keyboard handling
+
+Copy/paste no longer conflicts with desktop shortcuts. Command editing follows
+macOS even under Windows or Ubuntu themes; AltGr, IME composition, dead keys,
+claimed events and held launch keys do not trigger desktop commands.
+
+**Start → Clipboard Utilities** provides a native-paste workbench, text conversion,
+PNG inspection/copy/download, Files import, editable and portable snippets, and
+browser capability diagnostics. **Settings → System → Clipboard** configures the
+host keyboard, shortcuts, opt-in history, pinned retention and privacy, editor Tab
+navigation and terminal paste review. Native paste does not need history or a
+clipboard API permission. Browser API reads remain explicit and permission-gated;
+a manual paste dialog works when API reads are unavailable.
+
+Cooperating embedded apps can use the optional `sdk/aster-clipboard.js` helper,
+with a separate visible approval for every text read/write. Sandboxing is unchanged.
+See [clipboard usage, configuration and limitations](docs/clipboard.md) and
+[verification](tests/clipboard/README.md).
+
 ## Aster 2.3 — Orbit Browser and webviews
 
 Ordinary websites and searches now open through the real browser instead of

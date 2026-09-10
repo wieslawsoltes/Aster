@@ -1,0 +1,38 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict'),M=require('../../src/input-models.js');
+const key=(key,p={})=>({key,ctrlKey:false,metaKey:false,altKey:false,shiftKey:false,...p});
+test('host keyboard auto detection is independent of visual profile',()=>{assert.equal(M.profile({theme:'windows'},'MacIntel'),'macos');assert.equal(M.profile({},'Linux x86_64'),'linux');assert.equal(M.profile({},'Win32'),'windows');});
+test('macOS Command paste, select-all, undo, redo and close are never shell commands',()=>{for(const k of ['v','a','z','c','x','w'])assert.equal(M.shellAction(key(k,{metaKey:true}),{},'MacIntel',true),null);assert.equal(M.shellAction(key('v',{metaKey:true}),{},'MacIntel',false),null);});
+test('even explicit Windows mode preserves editing Command chords',()=>{for(const k of ['v','a','z','n','r'])assert.equal(M.shellAction(key(k,{metaKey:true}),{keyboardProfile:'windows',superShortcuts:'on'},'MacIntel',true),null);});
+test('AltGraph, IME and claimed keys do not trigger shell or app commands',()=>{for(const extra of [{getModifierState:k=>k==='AltGraph'},{isComposing:true},{keyCode:229},{defaultPrevented:true}]){const e=key('v',{ctrlKey:true,altKey:true,...extra});assert.equal(M.shellAction(e),null);assert.equal(M.primary(e),false);}});
+test('dead keys and repeated launches are ignored',()=>{for(const k of ['Dead','Process'])assert.equal(M.shellAction(key(k,{ctrlKey:true,altKey:true})),null);assert.equal(M.shellAction(key('v',{ctrlKey:true,altKey:true,repeat:true})),null);});
+test('history shortcut is exact, configurable and does not consume plain paste',()=>{assert.equal(M.shellAction(key('v',{ctrlKey:true,altKey:true})),'clipboard');assert.equal(M.shellAction(key('v',{ctrlKey:true})),null);assert.equal(M.shellAction(key('h',{ctrlKey:true,shiftKey:true}),{clipboardShortcut:'Ctrl+Shift+H'}),'clipboard');assert.equal(M.shellAction(key('v',{ctrlKey:true,altKey:true}),{clipboardShortcut:'none'}),null);});
+test('turning off shell shortcuts preserves all editing',()=>assert.equal(M.shellAction(key('v',{ctrlKey:true,altKey:true}),{shellShortcuts:false}),null));
+test('unsafe settings, unknown shortcut strings and capacities normalize',()=>{const p=M.preferences({keyboardProfile:'malicious',clipboardLimit:10000,clipboardHistory:'yes',clipboardShortcut:'Ctrl+V'});assert.equal(p.clipboardLimit,25);assert.equal(p.clipboardHistory,false);assert.equal(p.keyboardProfile,'auto');assert.equal(p.clipboardShortcut,'Ctrl+Alt+V');});
+test('history is bounded, unique and pin-safe',()=>{const h=new M.History([],{clipboardLimit:10});for(let i=0;i<20;i++)h.add('text'+i);assert.equal(h.entries.length,10);const first=h.entries[0];h.pin(first.id);h.add(first.text);assert.equal(h.entries.length,10);assert.equal(h.saved().length,1);h.clear();assert.equal(h.entries.length,1);});
+test('pinned capacity cannot silently evict pins on capture',()=>{const h=new M.History([],{clipboardLimit:10});for(let i=0;i<10;i++)h.add('p'+i,true);assert.equal(h.add('new'),false);assert.equal(h.entries.length,10);});
+test('expiry removes only unpinned records',()=>{const h=new M.History([],{clipboardExpire:15});h.add('old',false,1000);h.add('pin',true,1000);h.prune(1000+16*60000);assert.deepEqual(h.saved(),[{text:'pin'}]);assert.equal(h.entries.length,1);});
+test('pin restore rejects malformed and oversized data',()=>{const h=new M.History([{text:'ok'},{text:23},{text:'x'.repeat(16385)}]);assert.deepEqual(h.saved(),[{text:'ok'}]);assert.equal(h.add('x'.repeat(16385)),false);});
+test('editing snippets preserves identity and rejects invalid payloads',()=>{const h=new M.History(),e=h.add('before',true);h.edit(e.id,'after Ω');assert.equal(e.text,'after Ω');assert.throws(()=>h.edit(e.id,''));assert.throws(()=>h.edit('missing','text'));});
+test('plain transformations preserve exact Unicode until explicitly transformed',()=>{const t='  Ω 👩‍💻\r\nx  ';assert.equal(M.transform(t),t);assert.equal(M.transform(t,'line'),'Ω 👩‍💻 x');assert.equal(M.transform('a\r\nb\rc','lf'),'a\nb\nc');assert.throws(()=>M.transform('x','eval'));});
+test('packages contain allowlisted plain text, never commands or identity',()=>{assert.deepEqual(M.unpack({format:'aster.clipboard',version:1,snippets:[{text:'<script>never execute</script>',pinned:true,id:'override',url:'file:///secret'}]}),[{text:'<script>never execute</script>',pinned:true}]);assert.throws(()=>M.unpack({format:'other',snippets:[]}));assert.throws(()=>M.unpack({format:'aster.clipboard',version:1,snippets:[{text:25}]}));});
+test('packages and text have hard size bounds',()=>{assert.throws(()=>M.unpack({format:'aster.clipboard',version:1,snippets:Array(101).fill({text:'x'})}));assert.throws(()=>M.transform('x'.repeat(M.LIMITS.text+1)));});
+test('service does not redefine browser clipboard or poll clipboard contents',()=>{const fs=require('node:fs'),s=fs.readFileSync('src/clipboard-service.js','utf8');assert(!s.includes('setInterval'));assert(!/navigator\.clipboard\s*=/.test(s));assert(s.includes('e.isTrusted'));assert(s.includes('port===channel'));});
+
+test('file reference uses portable inert HTML and preserves readable Unicode paths',()=>{
+    const ref={token:'test-token-123',paths:['/Documents/<script>&".txt','/Documents/Ω.txt']},f=M.fileReferenceFormats(ref);
+    assert.equal(f['text/plain'],ref.paths.join('\n'));assert.equal(f['application/x-aster-files'],ref.token);
+    assert(!f['text/html'].includes('<script>'));assert(f['text/html'].includes('&lt;script&gt;'));
+    assert(M.matchesFileReference({getData:t=>f[t]||''},ref));
+    assert(M.matchesFileReference({getData:t=>t==='application/x-aster-files'?'':f[t]||''},ref));
+});
+test('portable file marker cannot authorize stale tokens or plain paths alone',()=>{
+    const ref={token:'new-token',paths:['/Documents/Ω.txt']},f=M.fileReferenceFormats(ref),data=f=>({getData:t=>f[t]||''});
+    assert(!M.matchesFileReference(data({'text/plain':f['text/plain']}),ref));
+    assert(!M.matchesFileReference(data({...f,'application/x-aster-files':'old-token'}),ref));
+    assert(!M.matchesFileReference(data({...f,'text/plain':'external copy'}),ref));
+    assert(!M.matchesFileReference(data({'text/plain':f['text/plain'],'text/html':f['text/html'].replace('new-token','old-token')}),ref));
+    assert(!M.matchesFileReference(data(f),null));
+    assert.throws(()=>M.fileReferenceFormats({token:'" onclick="bad',paths:['a']}));
+    assert.throws(()=>M.fileReferenceFormats({token:'safe',paths:['a'.repeat(M.LIMITS.text+1)]}));
+});
