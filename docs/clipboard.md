@@ -151,3 +151,11 @@ Reproduction, fixture boundaries and actual verification commands are in
 [tests/clipboard/README.md](../tests/clipboard/README.md). Test artifacts distinguish
 native clipboard operations from supplied synthetic file fixtures and distinguish
 injected memory storage from ordinary HTTP/file IndexedDB verification.
+
+### Manual workbench paste and lock lifecycle
+
+The workbench's Manual paste action fills its preview only. Insertion into a
+previous editor remains a separate explicit action. Lock revokes guest clipboard
+channels and pending requests; resuming the visual desktop reconnects enabled
+helpers without reloading their documents. Disabled helpers do not handshake on
+new frame loads, and reconnecting never grants clipboard contents automatically.

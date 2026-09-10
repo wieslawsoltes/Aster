@@ -54,3 +54,23 @@ A passing run records its browser engine, real host platform, mode and exact che
 The permanent workflow retains the exact source archive and standalone checksum.
 This is automated browser verification, not screen-reader certification, physical
 keyboard-layout coverage or a native OS clipboard daemon certification.
+
+## Hosted continuation regressions
+
+The snippet-edit assertion now waits for the actual rendered edited text after the
+IndexedDB-backed save rather than checking the previous card in the same event
+turn. The exact text, export and import assertions remain. Native Cut and undo are
+also checked with history off. Workbench Manual paste deliberately updates only
+its preview; it never implicitly inserts into the remembered editor. An isolated
+guest's helper is revoked on lock and reconnects after explicit Resume without
+reloading or losing its draft. Every subsequent request still needs approval.
+
+Firefox exposed a real Files focus bug: clicking a non-focusable table row could
+leave focus on the window rather than the file list. Row selection now focuses
+the list, and clipboard events are scoped to the owning window so caption focus
+works too. The native test asserts actual list focus before Copy; no synthetic
+copy event or fake clipboard is used for the file-reference transfer.
+
+The inherited theme helper moves the pointer off the dock and uses Escape before
+programmatic Settings navigation. This dismisses a real taskbar hover preview
+that otherwise intercepted a contrast-preset click; no forced click is used.

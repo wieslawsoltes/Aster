@@ -197,7 +197,7 @@
             }
             else
                 selected = new Set([entry.path]); anchor = entry.path; markSelection(); main.focus({ preventScroll: true }); }
-            function wireRow(el, entry) { el.dataset.path = entry.path; el.setAttribute('aria-selected', String(selected.has(entry.path))); el.onclick = e => { e.stopPropagation(); select(e, entry); }; el.ondblclick = () => { selected = new Set([entry.path]); openSelection(); }; el.oncontextmenu = e => context(e, entry); el.draggable = !archiveActive&&path !== '/.Trash'; el.ondragstart = e => { if (!selected.has(entry.path)) {
+            function wireRow(el, entry) { el.dataset.path = entry.path; el.setAttribute('aria-selected', String(selected.has(entry.path))); el.onclick = e => { e.stopPropagation(); main.focus({preventScroll:true}); select(e, entry); }; el.ondblclick = () => { selected = new Set([entry.path]); openSelection(); }; el.oncontextmenu = e => context(e, entry); el.draggable = !archiveActive&&path !== '/.Trash'; el.ondragstart = e => { if (!selected.has(entry.path)) {
                 selected = new Set([entry.path]);
                 markSelection();
             } e.dataTransfer.setData('application/x-aster-paths', JSON.stringify([...selected])); e.dataTransfer.effectAllowed = 'copyMove'; OS.webIO?.beginDrag(e,[...selected]); }; if (!archiveActive && entry.kind === 'directory') {
@@ -441,7 +441,7 @@
                     OS.$$('[data-path]', main).find(el => el.dataset.path === next.path)?.scrollIntoView({ block: 'nearest' });
                 }
             } };
-            for(const kind of ['copy','cut','paste'])w.body.addEventListener(kind,e=>{
+            for(const kind of ['copy','cut','paste'])w.el.addEventListener(kind,e=>{
                 if(e.defaultPrevented||OS.input.editable(OS.input.target(e))||archiveActive||path==='/.Trash')return;
                 if(kind!=='paste'){if(!selected.size||!e.clipboardData)return;copy(kind==='cut',e);e.preventDefault();return;}
                 const files=[...(e.clipboardData?.files||[])];

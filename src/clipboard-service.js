@@ -120,7 +120,7 @@
         const focused=()=>alive&&!owner.closed&&!owner.minimized&&owner.desktop===OS.activeDesktop&&frame.isConnected&&!frame.closest('[hidden]')&&document.activeElement===frame&&OS.focused===owner.id&&!OS.$('.lock-screen');
         const reset=()=>{pending?.abort();pending=null;try{port?.postMessage({type:'aster.clipboard.closed'});}catch{}port?.close();port=null;used.clear();};
         const connect=()=>{
-            reset();if(!alive||!frame.isConnected||owner.closed)return;
+            reset();if(!alive||!frame.isConnected||owner.closed||!OS.settings.clipboardBridge||OS.$('.lock-screen'))return;
             const pair=new MessageChannel();port=pair.port1;const channel=port;
             const origin=frame.hasAttribute('srcdoc')?'null':(()=>{try{return new URL(frame.src).origin;}catch{return 'null';}})();
             port.onmessage=async event=>{
@@ -145,7 +145,7 @@
             };port.start();frame.contentWindow?.postMessage({type:'aster.clipboard.host'},'*',[pair.port2]);
         };
         frame.addEventListener('load',connect);
-        const cancel=()=>{if(!OS.settings.clipboardBridge)reset();else if(!port)connect();};const off=OS.on('settings',cancel),lock=OS.on('clipboard-lock',reset);
-        const dispose=()=>{if(!alive)return;alive=false;reset();off();lock();frame.removeEventListener('load',connect);};owner.addCleanup(dispose);return dispose;
+        const cancel=()=>{if(!OS.settings.clipboardBridge)reset();else if(!port)connect();};const off=OS.on('settings',cancel),lock=OS.on('clipboard-lock',reset),unlock=OS.on('clipboard-unlock',cancel);
+        const dispose=()=>{if(!alive)return;alive=false;reset();off();lock();unlock();frame.removeEventListener('load',connect);};owner.addCleanup(dispose);return dispose;
     };
 })();
