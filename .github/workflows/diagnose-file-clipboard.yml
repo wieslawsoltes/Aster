@@ -1,0 +1,52 @@
+name: Diagnose native Firefox file clipboard events
+on:
+  push:
+    branches: [diagnose/clipboard-file-events]
+    paths: ['.github/workflows/diagnose-file-clipboard.yml']
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps firefox
+      - name: Record real event targets and clipboard representations without changing production files
+        run: |
+          mkdir -p /tmp/clipboard-diagnostics
+          python - <<'PY'
+          from pathlib import Path
+          import json,threading,time
+          from functools import partial
+          from http.server import SimpleHTTPRequestHandler,ThreadingHTTPServer
+          from playwright.sync_api import sync_playwright
+          server=ThreadingHTTPServer(('127.0.0.1',0),partial(SimpleHTTPRequestHandler,directory=str(Path.cwd())))
+          threading.Thread(target=server.serve_forever,daemon=True).start()
+          out=Path('/tmp/clipboard-diagnostics')
+          with sync_playwright() as pw:
+              browser=pw.firefox.launch(headless=True);page=browser.new_page();page.set_default_timeout(10000)
+              page.goto('http://127.0.0.1:'+str(server.server_port));page.wait_for_function('window.Aster?.booted');page.locator('#boot').wait_for(state='detached')
+              page.evaluate('''async()=>{const OS=Aster;OS.settings.restore=false;OS.settings.motion=false;OS.settings.dnd=true;OS.applySettings();for(const w of [...OS.windows.values()])await w.close(true);await OS.fs.write('/Documents/Test clipboard.txt','native file bytes','text/plain');await OS.fs.mkdir('/Documents/Clipboard destination');window.w=OS.launch('files',{path:'/Documents'});await w.ready;window.events=[];for(const type of ['keydown','copy','cut','paste'])document.addEventListener(type,e=>{if(type==='keydown'&&!['c','v'].includes(e.key.toLowerCase()))return;events.push({type,key:e.key,target:e.target.tagName+'.'+e.target.className,active:document.activeElement.tagName+'.'+document.activeElement.className,types:[...(e.clipboardData?.types||[])],text:e.clipboardData?.getData('text/plain'),marker:e.clipboardData?.getData('application/x-aster-files'),trusted:e.isTrusted,prevented:e.defaultPrevented});},true);}''')
+              row=page.locator('.file-row[data-path="/Documents/Test clipboard.txt"]');row.click();row.press('Control+c');page.evaluate("w.navigate('/Documents/Clipboard destination')");page.locator('.explorer-main').click();page.keyboard.press('Control+v');page.wait_for_timeout(800)
+              result={'production':page.evaluate("async()=>({events,clipboard:Aster.clipboard,files:await Aster.fs.list('/Documents/Clipboard destination')})")}
+              page.evaluate("()=>{window.probe=document.createElement('textarea');probe.setAttribute('aria-label','Clipboard receiver control');w.body.prepend(probe);}")
+              page.get_by_label('Clipboard receiver control').click();page.keyboard.press('Control+v');page.wait_for_timeout(100)
+              result['editableControl']=page.evaluate('()=>({events,value:probe.value})')
+              page.evaluate('''()=>{probe.remove();window.received=null;window.proxyKey=e=>{if(e.ctrlKey&&e.key.toLowerCase()==='v'&&!Aster.input.editable(e.target)){const box=document.createElement('textarea');box.setAttribute('aria-label','Native paste receiver probe');box.setAttribute('data-private','true');box.style.cssText='position:fixed;width:1px;height:1px;left:0;top:0;opacity:.01';w.body.append(box);box.focus();box.onpaste=e=>{e.preventDefault();received={types:[...e.clipboardData.types],text:e.clipboardData.getData('text/plain'),marker:e.clipboardData.getData('application/x-aster-files'),trusted:e.isTrusted};box.remove();w.body.querySelector('.explorer-main').focus();};}};w.el.addEventListener('keydown',proxyKey);}''')
+              page.locator('.explorer-main').click();page.keyboard.press('Control+v');page.wait_for_timeout(500)
+              result['receiverProbeNotProduction']=page.evaluate('()=>({events,received,active:document.activeElement.outerHTML.slice(0,250)})')
+              (out/'result.json').write_text(json.dumps(result,indent=2));page.screenshot(path=str(out/'page.png'));browser.close()
+          server.shutdown()
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: firefox-native-file-clipboard-diagnostics
+          path: /tmp/clipboard-diagnostics/
+          retention-days: 7
