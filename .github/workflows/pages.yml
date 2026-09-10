@@ -1,7 +1,9 @@
-name: Deploy Aster to GitHub Pages
+name: GitHub Pages
 
 on:
-  push:
+  workflow_run:
+    workflows: [Tests]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -13,96 +15,123 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verified-commit:
+    name: Select successfully tested main commit
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository &&
+       (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      sha: ${{ steps.verify.outputs.sha }}
+      deploy: ${{ steps.verify.outputs.deploy }}
+    steps:
+      - uses: actions/github-script@v7
+        id: verify
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { data: main } = await github.rest.git.getRef({ owner, repo, ref: 'heads/main' });
+            const sha = main.object.sha;
+            let run = context.payload.workflow_run;
+            if (!run) {
+              if (context.ref !== 'refs/heads/main') throw new Error('Manual deployment is restricted to main.');
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                owner, repo, workflow_id: 'tests.yml', branch: 'main', head_sha: sha,
+                status: 'completed', per_page: 100
+              });
+              run = data.workflow_runs.find(r => r.conclusion === 'success' &&
+                ['push', 'workflow_dispatch'].includes(r.event) && r.head_sha === sha &&
+                r.head_repository?.full_name === `${owner}/${repo}`);
+              if (!run) throw new Error('Run Tests successfully on the current main commit before deploying.');
+            }
+            if (run.head_sha !== sha) {
+              core.notice('Skipping an older tested commit because main has advanced.');
+              core.setOutput('deploy', 'false');
+              return;
+            }
+            if (run.conclusion !== 'success' || run.head_branch !== 'main' ||
+                run.path !== '.github/workflows/tests.yml' ||
+                run.head_repository?.full_name !== `${owner}/${repo}` ||
+                !['push', 'workflow_dispatch'].includes(run.event)) {
+              throw new Error('Only successful Tests from this repository main branch may deploy.');
+            }
+            core.setOutput('sha', sha);
+            core.setOutput('deploy', 'true');
+            await core.summary.addHeading('Verified Pages source')
+              .addRaw(`Commit: ${sha}\n\nTests run: ${run.id}\n`).write();
+
   build:
-    runs-on: ubuntu-latest
+    name: Build tested public runtime
+    needs: verified-commit
+    if: needs.verified-commit.outputs.deploy == 'true'
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.verified-commit.outputs.sha }}
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Check source and build the standalone edition
+      - name: Reproduce the tested standalone
         run: |
-          test -f index.html
-          for file in src/*.js src/win32/*.js sw.js; do node --check "$file"; done
-          python3 -m py_compile build.py start.py tests/smoke.py
-          python3 build.py
-      - name: Prepare only the public runtime files
+          python build.py
+          git diff --exit-code -- Aster.html sdk/aster-files.js sdk/aster-clipboard.js
+      - name: Publish only public runtime files and their hashes
+        env:
+          TESTED_SHA: ${{ needs.verified-commit.outputs.sha }}
         run: |
           mkdir -p _site
           cp index.html Aster.html manifest.webmanifest sw.js LICENSE _site/
           cp -R sdk src assets third-party _site/
           touch _site/.nojekyll
-          python3 - <<'PY'
-          import hashlib, json, os
+          python - <<'PY'
+          import hashlib, json, os, subprocess
           from pathlib import Path
+          sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          assert sha == os.environ['TESTED_SHA'], 'Checkout differs from tested commit'
           root = Path('_site')
-          files = {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.rglob('*')) if p.is_file()}
-          (root / 'deployment.json').write_text(json.dumps({'commit': os.environ['GITHUB_SHA'], 'files': files}, indent=2) + '\n')
+          files = {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                   for p in sorted(root.rglob('*')) if p.is_file()}
+          (root / 'deployment.json').write_text(json.dumps({'commit': sha, 'files': files}, indent=2) + '\n')
           PY
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
 
   deploy:
-    needs: [build, browser-tests]
-    runs-on: ubuntu-latest
+    name: Deploy to GitHub Pages
+    needs: [verified-commit, build]
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Recheck main before publication
+        uses: actions/github-script@v7
+        id: current
+        env:
+          TESTED_SHA: ${{ needs.verified-commit.outputs.sha }}
+        with:
+          script: |
+            const { data } = await github.rest.git.getRef({ ...context.repo, ref: 'heads/main' });
+            const current = data.object.sha === process.env.TESTED_SHA;
+            if (!current) core.notice('Main advanced during the build; this publication is skipped.');
+            core.setOutput('deploy', String(current));
       - uses: actions/configure-pages@v5
-      - name: Deploy to GitHub Pages
+        if: steps.current.outputs.deploy == 'true'
+      - uses: actions/deploy-pages@v4
+        if: steps.current.outputs.deploy == 'true'
         id: deployment
-        uses: actions/deploy-pages@v4
-
-  browser-tests:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install the browser test runner
-        run: |
-          python3 -m pip install playwright
-          python3 -m playwright install --with-deps chromium
-      - name: Run the HTTP-served browser smoke suite
-        run: |
-          python3 start.py --no-browser --port 8765 > /tmp/aster-server.log 2>&1 &
-          python3 - <<'PY'
-          import time, urllib.request
-          for attempt in range(50):
-              try:
-                  with urllib.request.urlopen('http://localhost:8765/', timeout=2) as response:
-                      assert response.status == 200
-                  break
-              except Exception:
-                  time.sleep(0.2)
-          else:
-              raise SystemExit('Aster localhost server did not start')
-          PY
-          BROWSER="$(python3 - <<'PY'
-          from playwright.sync_api import sync_playwright
-          with sync_playwright() as p:
-              print(p.chromium.executable_path)
-          PY
-          )"
-          python3 tests/smoke.py --browser "$BROWSER"
-      - name: Retain browser reports and screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: aster-browser-test-results
-          path: |
-            tests/results.json
-            tests/*.png
-            /tmp/aster-server.log

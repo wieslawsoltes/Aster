@@ -35,3 +35,6 @@ tests/orbit/artifacts/
 
 # Clipboard browser evidence is retained as CI artifacts.
 tests/clipboard/artifacts/
+
+# Consolidated CI logs and one source archive per test run.
+tests/ci/artifacts/

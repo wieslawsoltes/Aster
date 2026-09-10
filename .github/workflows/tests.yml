@@ -1,0 +1,396 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source:
+    name: Source, models and reproducible build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install PyYAML
+      - run: bash .github/scripts/check-source.sh
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tested-source
+          path: tests/ci/artifacts/
+          retention-days: 14
+
+  chromium:
+    name: Chromium / ${{ matrix.group }}
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: shell
+            suites: desktop-features file-workflows integrated-shell shell-launch
+          - group: appearance
+            suites: desktop-refinement themes ui-refinement visual-materials
+          - group: files-and-apps
+            suites: app-library file-pickers web-io
+          - group: browser-and-clipboard
+            suites: orbit web-chrome web-apps clipboard
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python -m pip install playwright pillow
+          python -m playwright install --with-deps chromium
+      - run: bash .github/scripts/browser-tests.sh chromium $SUITES
+        env:
+          SUITES: ${{ matrix.suites }}
+      - name: Desktop smoke
+        if: ${{ !cancelled() && matrix.group == 'shell' }}
+        run: python tests/smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chromium-${{ matrix.group }}
+          path: |
+            tests/ci/artifacts/
+            tests/*/artifacts/
+            tests/results.json
+            tests/*.png
+          retention-days: 14
+
+  firefox:
+    name: Firefox / ${{ matrix.group }}
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: files-and-clipboard
+            suites: app-library clipboard file-pickers web-io
+          - group: browser-and-desktop
+            suites: orbit desktop-refinement ui-refinement
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python -m pip install playwright pillow
+          python -m playwright install --with-deps firefox
+      - run: bash .github/scripts/browser-tests.sh firefox $SUITES
+        env:
+          SUITES: ${{ matrix.suites }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: firefox-${{ matrix.group }}
+          path: |
+            tests/ci/artifacts/
+            tests/*/artifacts/
+          retention-days: 14
+
+  gpu:
+    name: WebGPU rendering and live catalog
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libvulkan1 mesa-vulkan-drivers xvfb xauth
+          python -m pip install playwright pillow
+          python -m playwright install --with-deps chromium
+      - name: Theme surfaces on production WebGPU
+        run: xvfb-run -a -s '-screen 0 1440x1000x24' python tests/themes/browser.py --gpu --headed --output tests/themes/artifacts/webgpu
+      - name: Optical fields and independent GPU/CPU equivalence
+        if: ${{ !cancelled() }}
+        run: xvfb-run -a -s '-screen 0 1440x1000x24' python tests/visual-materials/browser.py --gpu --headed --output tests/visual-materials/artifacts/webgpu
+      - name: All reviewed deployed applications
+        if: ${{ !cancelled() }}
+        run: xvfb-run -a -s '-screen 0 1440x1000x24' python tests/web-apps/browser.py --live --gpu --headed
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: webgpu-and-catalog
+          path: tests/*/artifacts/
+          retention-days: 14
+
+  live-web:
+    name: Live website and application integration
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Actual Google handoff
+        run: timeout --signal=TERM --kill-after=10s 180s python -u tests/orbit/browser.py --live --output tests/orbit/artifacts/live
+      - name: Unchanged compact applications
+        if: ${{ !cancelled() }}
+        run: python tests/web-chrome/browser.py --live --output tests/web-chrome/artifacts/live
+      - name: Actual file transfers with deployed applications
+        if: ${{ !cancelled() }}
+        run: python tests/web-io/live.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-web-integration
+          path: tests/*/artifacts/
+          retention-days: 14
+
+  macos:
+    name: macOS native clipboard and Command keys
+    needs: source
+    runs-on: macos-15-intel
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python -m pip install playwright
+          python -m playwright install chromium
+      - run: python -u tests/clipboard/browser.py --output tests/clipboard/artifacts/macos
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: clipboard-macos-evidence
+          path: tests/clipboard/artifacts/macos/
+          retention-days: 14
+
+  win32:
+    name: Win32 shipped and rebuilt CPU / WebGPU
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y clang-18 lld-18 llvm-18 libvulkan1 mesa-vulkan-drivers xvfb xauth
+          python -m pip install playwright pillow
+          python -m playwright install --with-deps chromium
+      - name: Shipped CPU and PE32 programs
+        run: |
+          mkdir -p tests/win32/artifacts
+          node tests/win32/unit.cjs
+          node tests/win32/exports.cjs --check
+          node tests/win32/compat.cjs
+          node tests/win32/backpressure.cjs
+          node tests/win32/gui.cjs
+          cp Aster.html tests/win32/artifacts/Aster-shipped.html
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/browser.py --gpu --headed
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/gui-browser.py --gpu --headed
+          cp tests/win32/artifacts/browser-results.json tests/win32/artifacts/browser-shipped-results.json
+          cp tests/win32/artifacts/unit-results.json tests/win32/artifacts/unit-shipped-results.json
+          cp -R tests/win32/artifacts/gui tests/win32/artifacts/gui-shipped
+          cp tests/win32/artifacts/compat/results.json tests/win32/artifacts/compat-shipped-results.json
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/apps-browser.py --gpu --headed
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/apps-browser.py --gpu --headed --standalone --output tests/win32/artifacts/standalone-apps
+      - name: Rebuild CPU and examples and repeat tests
+        env:
+          CLANG: clang-18
+          LLD_LINK: lld-link-18
+          LLVM_AR: llvm-ar-18
+        run: |
+          python native/win32/build.py
+          node tests/win32/unit.cjs
+          node tests/win32/exports.cjs --check
+          node tests/win32/compat.cjs
+          node tests/win32/backpressure.cjs
+          node tests/win32/gui.cjs
+          python build.py
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/browser.py --gpu --headed
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/win32/gui-browser.py --gpu --headed
+      - name: Rebuilt desktop smoke
+        run: python tests/smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-win32-evidence
+          path: |
+            tests/win32/artifacts/
+            tests/results.json
+            Aster.html
+          retention-days: 14
+
+  native-windows:
+    name: Windows native executable, GUI and format references
+    needs: source
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Identical PE32 executable on Windows
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force tests/win32/native-artifacts | Out-Null
+          $exe = (Resolve-Path src/win32/examples/compute.exe).Path
+          $directory = (Resolve-Path tests/win32/native-artifacts).Path
+          $process = Start-Process -FilePath $exe -WorkingDirectory $directory -PassThru -Wait
+          if ($process.ExitCode -ne 0) { throw "Native EXE exit code: $($process.ExitCode)" }
+          $text = [IO.File]::ReadAllText((Join-Path $directory 'checksum.txt'))
+          if ($text -ne "4248471154`n") { throw "Unexpected native checksum: $text" }
+          @{ executable = 'compute.exe'; sha256 = (Get-FileHash $exe -Algorithm SHA256).Hash; exitCode = $process.ExitCode; checksum = $text.Trim(); host = 'Native Windows' } | ConvertTo-Json | Set-Content (Join-Path $directory 'native-reference.json')
+      - name: Native WineMine menus and dialogs
+        if: ${{ !cancelled() }}
+        run: python tests/win32/native-gui.py
+      - name: Native CAB, MSZIP, CUR, ANI and WAV formats
+        if: ${{ !cancelled() }}
+        run: python tests/themes/native.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-windows-reference
+          path: |
+            tests/win32/native-artifacts/
+            tests/themes/artifacts/native/
+          retention-days: 14
+
+  native-cross-check:
+    name: Windows cross-check of browser-created output
+    needs: win32
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: browser-win32-evidence
+          path: _browser-evidence
+      - run: python tests/win32/native-apps.py --evidence _browser-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: upstream-win32-native-cross-check
+          path: tests/win32/native-artifacts/
+          retention-days: 14
+
+  reproducible-fixture:
+    name: Reproducible bundled Win32 fixture
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-i686 binutils-mingw-w64-i686
+      - name: Offline rebuild of bundled corresponding source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import zipfile
+          source = Path('/tmp/aster-winemine-source')
+          with zipfile.ZipFile('third-party/winemine/winemine-source.zip') as archive:
+              assert sum(i.file_size for i in archive.infolist()) < 2*1024*1024
+              for info in archive.infolist():
+                  p = PurePosixPath(info.filename)
+                  assert not p.is_absolute() and '..' not in p.parts and not info.is_dir()
+                  out = source/p
+                  out.parent.mkdir(parents=True, exist_ok=True)
+                  out.write_bytes(archive.read(info))
+          PY
+          python3 third-party/winemine/build.py --source /tmp/aster-winemine-source --output tests/win32/artifacts/winemine-rebuilt
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          original = Path('src/win32/third-party/winemine.exe').read_bytes()
+          rebuilt = Path('tests/win32/artifacts/winemine-rebuilt/winemine.exe').read_bytes()
+          assert original == rebuilt, 'WineMine differs from pinned source rebuild'
+          sha = hashlib.sha256(rebuilt).hexdigest()
+          assert sha == json.loads(Path('third-party/winemine/provenance.json').read_text())['sha256']['winemine.exe']
+          Path('tests/win32/artifacts/winemine-rebuilt/reproducibility.json').write_text(json.dumps({'status': 'PASS', 'binarySHA256': sha, 'byteIdentical': True}))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: win32-gui-rebuilt-source
+          path: tests/win32/artifacts/winemine-rebuilt/
+          retention-days: 14
+
+  test-result:
+    name: All tests passed
+    if: always()
+    needs: [source, chromium, firefox, gpu, live-web, macos, win32, native-windows, native-cross-check, reproducible-fixture]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require every suite, including cancelled or skipped dependencies
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          results = json.loads(os.environ['RESULTS'])
+          failed = {name: job['result'] for name, job in results.items() if job['result'] != 'success'}
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('## Tests\n\n' + '\n'.join(f"- {name}: {job['result']}" for name, job in results.items()) + '\n')
+          if failed:
+              raise SystemExit(f'Failed, skipped or cancelled test groups: {failed}')
+          PY
