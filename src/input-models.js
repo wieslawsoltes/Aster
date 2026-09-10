@@ -24,6 +24,28 @@
         if(e.ctrlKey&&e.altKey&&!e.metaKey&&!e.shiftKey)return ({f:'focus',w:'taskview',u:'accessibility',o:'run',r:'recorder',a:'quick',t:'terminal',n:'notepad',d:'desktop',l:'lock',arrowleft:'left',arrowright:'right',arrowup:'max',arrowdown:'min',tab:'taskview'})[key]||null;
         return null;}
     function transform(text,mode='plain'){if(typeof text!=='string'||text.length>LIMITS.text)throw Error('Text is limited to 1 Mi characters.');switch(mode){case'plain':return text;case'trim':return text.trim();case'line':return text.replace(/\s+/g,' ').trim();case'upper':return text.toLocaleUpperCase();case'lower':return text.toLocaleLowerCase();case'lf':return text.replace(/\r\n?/g,'\n');default:throw Error('Unknown text transformation.');}}
+    // Native clipboards may discard application-specific MIME types. Keep a
+    // token-bearing inert HTML representation too, without changing path text.
+    function fileReferenceFormats(record){
+        if(!record||typeof record.token!=='string'||!/^[a-z0-9-]{1,80}$/i.test(record.token)||!Array.isArray(record.paths)||!record.paths.length||record.paths.some(p=>typeof p!=='string'))throw Error('Invalid file clipboard reference.');
+        const text=transform(record.paths.join('\n'));
+        const escaped=text.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        return {'text/plain':text,'text/html':'<span data-aster-files="'+record.token+'">'+escaped+'</span>','application/x-aster-files':record.token};
+    }
+    function matchesFileReference(data,record){
+        if(!data||!record?.paths?.length)return false;
+        try{
+            const formats=fileReferenceFormats(record),text=data.getData('text/plain');
+            if(typeof text!=='string'||text.replace(/\r\n/g,'\n')!==formats['text/plain'])return false;
+            const custom=data.getData('application/x-aster-files');
+            if(custom)return custom===record.token;
+            const html=data.getData('text/html');
+            if(typeof html!=='string'||html.length>2*LIMITS.text)return false;
+            // Never parse guest clipboard markup into a document or fetch assets.
+            const marker=/<span\s+data-aster-files="([a-z0-9-]{1,80})">/i.exec(html);
+            return !!marker&&marker[1]===record.token;
+        }catch{return false;}
+    }
     class History {
         constructor(saved=[],p={}){this.entries=[];this.sequence=0;this.configure(p);for(const r of (Array.isArray(saved)?saved:[]).slice(0,this.limit).reverse())if(r&&typeof r.text==='string')this.add(r.text,true);}
         configure(p){p=preferences(p);this.limit=p.clipboardLimit;this.expire=p.clipboardExpire;this.prune();}
@@ -36,5 +58,5 @@
         saved(){return this.entries.filter(e=>e.pinned).map(e=>({text:e.text}));}
     }
     function unpack(value){if(!value||value.format!=='aster.clipboard'||value.version!==1||!Array.isArray(value.snippets)||value.snippets.length>LIMITS.items)throw Error('Invalid Aster clipboard package.');return value.snippets.map(e=>{if(!e||typeof e.text!=='string'||!e.text||e.text.length>LIMITS.historyText)throw Error('Invalid snippet text.');return {text:e.text,pinned:e.pinned===true};});}
-    return Object.freeze({LIMITS,DEFAULTS,preferences,platform,profile,blocked,primary,accelerator,shellAction,transform,History,unpack});
+    return Object.freeze({LIMITS,DEFAULTS,preferences,platform,profile,blocked,primary,accelerator,shellAction,transform,fileReferenceFormats,matchesFileReference,History,unpack});
 });

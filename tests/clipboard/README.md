@@ -97,3 +97,16 @@ The resulting focusout must not re-acquire its selection after lock invalidation
 Remember/capture/add reject while locked, including late asynchronous capture.
 Native macOS testing exposed this focus-order race; target validation and the
 separate visual-lock/non-authentication boundary remain intact.
+
+## Final Firefox native file-paste repair
+
+The retained native-event trace showed Paste targeting BODY while the Files list
+held focus. It also showed the custom MIME marker missing from the native
+clipboard. Files now routes body-targeted native events to its focused live owner,
+and writes a token-bearing inert HTML fallback alongside the custom format.
+Both token and exact path text must match the in-memory reference. The unchanged
+native Copy/Paste scenario still verifies actual copied bytes; an added identical-
+path external text copy must not authorize a stale file operation. Multiple live
+Files windows must not intercept paste into the focused search field. Unit tests
+cover missing/stale markers, changed text and escaped markup. No test clipboard
+object, forced permission, or weakened assertion is used for these checks.

@@ -54,9 +54,20 @@
             if(!copied)throw Error('Browser clipboard write was denied. Select the text in Clipboard utilities and use the browser’s Copy command.');
             if(history)await this.add(text);return true;
         },
+        writeFileReference(event,record){
+            if(!event?.clipboardData)return false;
+            const formats=M.fileReferenceFormats(record);
+            event.clipboardData.setData('text/plain',formats['text/plain']);
+            event.clipboardData.setData('text/html',formats['text/html']);
+            event.preventDefault();
+            // Some engines accept only the portable representations above.
+            try{event.clipboardData.setData('application/x-aster-files',record.token);}catch{}
+            return true;
+        },
+        matchesFileReference:(data,record=OS.clipboard)=>M.matchesFileReference(data,record),
         copyFileReference(record){
             const target=this.target,active=deepActive(),box=OS.el('textarea',{'data-private':'true',readonly:true});box.value=record.paths.join('\n');box.style.cssText='position:fixed;left:0;top:0;width:1px;height:1px;opacity:.01;';
-            const write=e=>{if(!e.clipboardData)return;e.clipboardData.setData('text/plain',box.value);e.clipboardData.setData('application/x-aster-files',record.token);e.preventDefault();};
+            const write=e=>this.writeFileReference(e,record);
             document.body.append(box);box.select();document.addEventListener('copy',write,true);inserting=true;
             try{return !!document.execCommand('copy');}catch{return false;}finally{inserting=false;document.removeEventListener('copy',write,true);box.remove();if(active?.isConnected)active.focus({preventScroll:true});this.target=target;}
         },

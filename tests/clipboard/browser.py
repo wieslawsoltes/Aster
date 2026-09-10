@@ -118,7 +118,16 @@ def main(args):
             check('Snippet editor and actual JSON import/export preserve Unicode and pin state',snippets)
             def files():
                 clean();js('await OS.fs.write("/Documents/Clipboard test.txt","file bytes Ω","text/plain");await OS.fs.mkdir("/Documents/Clipboard target");');launch('files',{'path':'/Documents'});row=page.locator('.file-row[data-path="/Documents/Clipboard test.txt"]');row.click();assert js('return document.activeElement===w.body.querySelector(".explorer-main");');row.press(primary+'+c');js('assert(OS.clipboard?.paths[0]==="/Documents/Clipboard test.txt","File-copy gesture did not publish its selection");await w.navigate("/Documents/Clipboard target");');page.wait_for_function('w.state.path==="/Documents/Clipboard target"');page.locator('.explorer-main').click();page.keyboard.press(primary+'+v');stored('/Documents/Clipboard target/Clipboard test.txt');js('assert(await OS.fs.text(await OS.fs.read("/Documents/Clipboard target/Clipboard test.txt"))==="file bytes Ω");');copy_external('external text is not an Aster file');page.locator('.explorer-main').click();page.keyboard.press(primary+'+v');js('assert(!(await OS.fs.list("/Documents/Clipboard target")).some(e=>e.path.endsWith("(1).txt")));')
+                # Even identical visible path text is not a file-copy capability.
+                copy_external('/Documents/Clipboard test.txt');page.locator('.explorer-main').click();page.keyboard.press(primary+'+v');js('assert((await OS.fs.list("/Documents/Clipboard target")).length===1);')
             check('Native file copy/paste copies actual bytes and rejects a stale internal file clipboard',files)
+            def file_focus_isolation():
+                # Leave two Files windows open. A native text paste must stay in
+                # the focused search field, never perform virtual file operations.
+                clean();launch('files',{'path':'/Documents'});js('window.firstFiles=w;');launch('files',{'path':'/Documents/Clipboard target'});js('window.secondFiles=w;');copy_external('search paste Ω')
+                field=page.locator('.window').last.get_by_role('textbox',name='Search this folder');field.click();field.press(primary+'+v');assert field.input_value()=='search paste Ω'
+                js('assert((await OS.fs.list("/Documents/Clipboard target")).length===1);')
+            check('Multiple Files windows cannot intercept native paste into a focused text field',file_focus_isolation)
             def paste_files():
                 # Synthetic DataTransfer is deliberately labeled; tests the actual byte
                 # importer, not native file-manager clipboard exposure on every OS.

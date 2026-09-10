@@ -52,7 +52,7 @@
                 throw Error('This name is already in use.'); if (!dir.startsWith('/Local/')) await OS.fileOps.execute({kind:'create',destination:dir,name,directory:kind==='directory'});
             else if(kind==='directory') await OS.fs.mkdir(p); else await OS.fs.write(p,'','text/plain'); selected = new Set([p]); await render(); };
             const copy = (cut,event=null) => { if (!selected.size)
-                return; OS.clipboard = { paths: [...selected], cut, token:OS.uid() }; if(event?.clipboardData){event.clipboardData.setData('text/plain',[...selected].join('\n'));event.clipboardData.setData('application/x-aster-files',OS.clipboard.token);} else OS.clipboardTools.copyFileReference(OS.clipboard); OS.notify(cut ? 'Ready to move' : 'Copied', `${selected.size} item${selected.size === 1 ? '' : 's'} on the Aster clipboard.`); updateCommandState(); };
+                return; OS.clipboard = { paths: [...selected], cut, token:OS.uid() }; if(event?.clipboardData){OS.clipboardTools.writeFileReference(event,OS.clipboard);} else OS.clipboardTools.copyFileReference(OS.clipboard); OS.notify(cut ? 'Ready to move' : 'Copied', `${selected.size} item${selected.size === 1 ? '' : 's'} on the Aster clipboard.`); updateCommandState(); };
             const paste = async () => {
                 if (!OS.clipboard?.paths.length) { selected=new Set(await OS.clipboardTools.pasteToFolder(targetDir()));await render();return; }
                 const clip = OS.clipboard, dir = targetDir();
@@ -445,14 +445,23 @@
                     OS.$$('[data-path]', main).find(el => el.dataset.path === next.path)?.scrollIntoView({ block: 'nearest' });
                 }
             } };
-            for(const kind of ['copy','cut','paste'])w.el.addEventListener(kind,e=>{
-                if(e.defaultPrevented||OS.input.editable(OS.input.target(e))||archiveActive||path==='/.Trash')return;
-                if(kind!=='paste'){if(!selected.size||!e.clipboardData)return;copy(kind==='cut',e);e.preventDefault();return;}
+            const fileClipboardEvent=e=>{
+                const target=OS.input.target(e),active=OS.input.deepActive();
+                // Firefox targets native Paste at BODY for a non-editable file
+                // list. Only the focused, live Files owner may receive it.
+                const bodyTarget=e.isTrusted&&(target===document.body||target===document.documentElement)&&w.el.contains(active);
+                if(!w.el.contains(target)&&!bodyTarget)return;
+                if(e.defaultPrevented||OS.focused!==w.id||w.closed||w.minimized||w.desktop!==OS.activeDesktop||OS.$('.lock-screen')||OS.$('#dialog-layer')?.children.length||OS.input.editable(target)||OS.input.editable(active)||archiveActive||path==='/.Trash')return;
+                if(e.type!=='paste'){if(!selected.size||!e.clipboardData)return;copy(e.type==='cut',e);e.preventDefault();return;}
                 const files=[...(e.clipboardData?.files||[])];
                 if(files.length){e.preventDefault();const dir=targetDir();OS.guard(async()=>{const paths=await OS.clipboardTools.importFiles(files,dir);selected=new Set(paths);await render();OS.notify('Pasted files',paths.length+' files imported to '+dir);})();}
-                else if(OS.clipboard?.paths?.length&&e.clipboardData?.getData('application/x-aster-files')===OS.clipboard.token){e.preventDefault();OS.guard(paste)();}
+                else if(OS.clipboardTools.matchesFileReference(e.clipboardData)){e.preventDefault();OS.guard(paste)();}
                 else OS.notify('No Aster files to paste','Use Paste on the toolbar to save clipboard text or an image as a new file.');
-            });
+            };
+            for(const kind of ['copy','cut','paste']){
+                document.addEventListener(kind,fileClipboardEvent,true);
+                w.addCleanup(()=>document.removeEventListener(kind,fileClipboardEvent,true));
+            }
             w.on('fs-change', () => { clearTimeout(w.refreshTimer); w.refreshTimer = setTimeout(() => OS.guard(render)(), 80); });
             w.on('settings', () => renderDetails());
             w.on('file-operations',updateCommandState);

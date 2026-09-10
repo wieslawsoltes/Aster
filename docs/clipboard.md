@@ -58,7 +58,12 @@ empty text; clearing Aster history alone does not change the OS clipboard.
 Files keeps file-reference copy/cut separate from text history. Native file-list
 Copy/Cut sets an opaque clipboard token and visible path text. Native Paste accepts
 Aster file references only when the token matches the current OS ClipboardEvent,
-so copying external text cannot accidentally paste stale Aster files. Toolbar and
+so copying external text cannot accidentally paste stale Aster files. A portable,
+escaped HTML representation carries the same token for browsers that discard the
+custom MIME type; readable plain path text is unchanged. Matching requires the
+current token and exact path text, never path text alone, and the HTML is not
+parsed or executed. Document-body paste events are routed only to the live,
+focused Files window; editable fields and open dialogs keep their native paste. Toolbar and
 menu Paste are explicit virtual file actions; without virtual references they offer
 text/PNG import with a manual fallback. File clipboard entries exposed by the
 browser are imported through one checked files transaction, with unique destination

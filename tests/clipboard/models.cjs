@@ -18,3 +18,21 @@ test('plain transformations preserve exact Unicode until explicitly transformed'
 test('packages contain allowlisted plain text, never commands or identity',()=>{assert.deepEqual(M.unpack({format:'aster.clipboard',version:1,snippets:[{text:'<script>never execute</script>',pinned:true,id:'override',url:'file:///secret'}]}),[{text:'<script>never execute</script>',pinned:true}]);assert.throws(()=>M.unpack({format:'other',snippets:[]}));assert.throws(()=>M.unpack({format:'aster.clipboard',version:1,snippets:[{text:25}]}));});
 test('packages and text have hard size bounds',()=>{assert.throws(()=>M.unpack({format:'aster.clipboard',version:1,snippets:Array(101).fill({text:'x'})}));assert.throws(()=>M.transform('x'.repeat(M.LIMITS.text+1)));});
 test('service does not redefine browser clipboard or poll clipboard contents',()=>{const fs=require('node:fs'),s=fs.readFileSync('src/clipboard-service.js','utf8');assert(!s.includes('setInterval'));assert(!/navigator\.clipboard\s*=/.test(s));assert(s.includes('e.isTrusted'));assert(s.includes('port===channel'));});
+
+test('file reference uses portable inert HTML and preserves readable Unicode paths',()=>{
+    const ref={token:'test-token-123',paths:['/Documents/<script>&".txt','/Documents/Ω.txt']},f=M.fileReferenceFormats(ref);
+    assert.equal(f['text/plain'],ref.paths.join('\n'));assert.equal(f['application/x-aster-files'],ref.token);
+    assert(!f['text/html'].includes('<script>'));assert(f['text/html'].includes('&lt;script&gt;'));
+    assert(M.matchesFileReference({getData:t=>f[t]||''},ref));
+    assert(M.matchesFileReference({getData:t=>t==='application/x-aster-files'?'':f[t]||''},ref));
+});
+test('portable file marker cannot authorize stale tokens or plain paths alone',()=>{
+    const ref={token:'new-token',paths:['/Documents/Ω.txt']},f=M.fileReferenceFormats(ref),data=f=>({getData:t=>f[t]||''});
+    assert(!M.matchesFileReference(data({'text/plain':f['text/plain']}),ref));
+    assert(!M.matchesFileReference(data({...f,'application/x-aster-files':'old-token'}),ref));
+    assert(!M.matchesFileReference(data({...f,'text/plain':'external copy'}),ref));
+    assert(!M.matchesFileReference(data({'text/plain':f['text/plain'],'text/html':f['text/html'].replace('new-token','old-token')}),ref));
+    assert(!M.matchesFileReference(data(f),null));
+    assert.throws(()=>M.fileReferenceFormats({token:'" onclick="bad',paths:['a']}));
+    assert.throws(()=>M.fileReferenceFormats({token:'safe',paths:['a'.repeat(M.LIMITS.text+1)]}));
+});
