@@ -1,0 +1,56 @@
+name: Finish clipboard privacy matching
+on:
+  push:
+    branches: [fix/clipboard-keyboard]
+    paths: ['.github/workflows/finish-clipboard-privacy.yml']
+permissions:
+  contents: write
+jobs:
+  finish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate complete privacy delta before writing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          changes=json.loads(r'''[{"path":"src/clipboard-service.js","before":"52f189d641fda9d19b3467e87ba98a9fdae408417de37a8a7e29f2b19c51e312","after":"727e146fa937c3fdee8c03114ec13f506972674902d7749ff2ad6bc7727bdb04","ops":[[280,382,"~=\"one-time-code\" i],[autocomplete*=\"cc-\" i],[autocomplete~=\"current-password\" i],[autocomplete~=\"new-password\" i"]]},{"path":"sw.js","before":"7c5ac2bab3dfe87660a43061b41f5cccf5f265a221495bb70307d461e8d34c70","after":"4818e5d657b5eeccb1c9bfec4af6dc4043d2afefe5bc91538fa4b639390e257e","ops":[[58,59,"3"]]},{"path":"tests/clipboard/README.md","before":"75be777f372da1b7f8d583943124f8a037bd0273d82c467c66becac687815a3b","after":"7001caa36d8762cbf969ae2420f650fe7416d9e07b6c630d423ee58184d61739","ops":[[4777,4777,"\nSensitive autocomplete matching includes multi-token, section-prefixed and\ncase-insensitive credit-card, password and one-time-code fields. The browser\nregression copies their actual text and verifies that no history or target survives.\n"]]},{"path":"tests/clipboard/browser.py","before":"c3e298bdae2031bd77550924be39b8fadecf6514d9acd2247e9a3b9a5e8f3b50","after":"dfd97b8572c3faeba03edddc95c58e378b1d44cc56c0a3e9985a472735597111","ops":[[8469,8469,"                for token in ['section-checkout billing cc-number','section-signin ONE-TIME-CODE','section-login current-password']:\n                    js('window.tokenField=OS.el(\"input\",{type:\"text\",\"aria-label\":\"Sensitive autocomplete\",autocomplete:arg});tokenField.value=\"sensitive autocomplete\";w.body.prepend(tokenField);window.retainedCount=C.model.entries.length;',token)\n                    q=page.get_by_label('Sensitive autocomplete');q.click();q.press(primary+'+a');q.press(primary+'+c');js('assert(C.model.entries.length===retainedCount);assert(!C.target);tokenField.remove();')\n"]]}]''')
+          assert len(changes)==4 and {c['path'] for c in changes}=={'src/clipboard-service.js','sw.js','tests/clipboard/README.md','tests/clipboard/browser.py'}
+          outputs=[]
+          for c in changes:
+              p=Path(c['path']);assert not p.is_symlink()
+              before=p.read_bytes();assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent change: '+str(p)
+              text=before.decode('utf-8');last=0
+              for a,b,value in c['ops']:
+                  assert isinstance(a,int) and isinstance(b,int) and last<=a<=b<=len(text) and isinstance(value,str);last=b
+              for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+              result=text.encode('utf-8');assert hashlib.sha256(result).hexdigest()==c['after'],'Output mismatch: '+str(p)
+              outputs.append((p,result))
+          for p,result in outputs:p.write_bytes(result)
+          PY
+      - name: Rebuild and verify source
+        run: |
+          for f in src/*.js sdk/*.js sw.js; do node --check "$f"; done
+          python3 -m py_compile tests/clipboard/browser.py
+          node --test tests/*/models.cjs tests/integrated-shell/contracts.cjs tests/web-apps/catalog.cjs
+          python3 build.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          b=Path('Aster.html').read_bytes()
+          assert len(b)==6082024 and hashlib.sha256(b).hexdigest()=='e9b4eedb24b38e26e2cabb4f6e92126ec6858522569657f03bb617b69d97ad65'
+          PY
+          git diff --exit-code -- sdk/aster-files.js sdk/aster-clipboard.js tests/results.json
+          git diff --check
+      - name: Commit verified privacy improvements
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Aster.html src/clipboard-service.js sw.js tests/clipboard/README.md tests/clipboard/browser.py
+          git commit -m 'Protect section-prefixed and case-insensitive sensitive fields from clipboard retention'
+          git push origin HEAD:fix/clipboard-keyboard
