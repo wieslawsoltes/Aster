@@ -4816,6 +4816,10 @@ struct Out { @builtin(position) pos:vec4f, @location(0) local:vec2f, @location(1
                 if((e.ctrlKey||e.metaKey)&&['t','w','Tab'].includes(e.key)){e.preventDefault();e.stopPropagation();if(e.key==='t')openTab(path);else if(e.key==='w')closeTab(activeTab);else switchTab((activeTab+(e.shiftKey?fileTabs.length-1:1))%fileTabs.length);return;}
                 if(OS.input.editable(OS.input.target(e)))return;
                 if(archiveActive && (['Delete','F2'].includes(e.key)||(e.ctrlKey||e.metaKey)&&['c','x','v'].includes(e.key.toLowerCase()))){e.preventDefault();return;}
+                // A file selection is not a DOM text selection. Request a real Copy
+                // transaction on the key gesture so engines that omit the empty-
+                // selection copy event still receive the paths and native marker.
+                if(OS.input.primary(e)&&!e.shiftKey&&['c','x'].includes(e.key.toLowerCase())&&path!=='/.Trash'){e.preventDefault();copy(e.key.toLowerCase()==='x');return;}
                 if (/INPUT|TEXTAREA/.test(e.target.tagName)||e.target.isContentEditable)
                 return; if((e.ctrlKey||e.metaKey)&&['z','y'].includes(e.key.toLowerCase())){e.preventDefault();e.stopPropagation();OS.guard(()=>e.key.toLowerCase()==='y'||e.shiftKey?OS.fileOps.redo():OS.fileOps.undo())();return;} if ((e.ctrlKey || e.metaKey) && ['a'].includes(e.key.toLowerCase())) {
                 e.preventDefault();

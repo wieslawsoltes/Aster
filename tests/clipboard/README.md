@@ -78,3 +78,10 @@ that otherwise intercepted a contrast-preset click; no forced click is used.
 Sensitive autocomplete matching includes multi-token, section-prefixed and
 case-insensitive credit-card, password and one-time-code fields. The browser
 regression copies their actual text and verifies that no history or target survives.
+
+File-list Copy/Cut starts a real native Copy transaction on the key gesture. A
+selected virtual file is not a DOM text selection; relying only on an otherwise
+empty browser Copy event left the file clipboard unset in hosted Firefox. Text
+inputs remain on the browser's native editing path. The cross-browser test still
+uses real Copy/Paste keys, requires actual bytes at the destination, and rejects
+stale internal paths after a different page changes the system clipboard.
