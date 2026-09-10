@@ -108,17 +108,25 @@
             keywords:[r.title,r.description,r.category,r.publisher,r.version].join(' '),mount:async w=>{
                 const current=lib.get(r.id)||r;
                 let alive=true;w.addCleanup(()=>{alive=false;});
+                w.installedRevision=current.revision;w.installedSource=current.path||current.url;
+                w.beforeClose=()=>OS.confirm('Close '+w.title+'?','Save your work inside the app first. Aster cannot inspect unsaved content in a sandboxed app.','Close app');
+                if(current.kind!=='html') {
+                    await OS.orbit.initialize();if(!alive||w.closed)return;
+                    const address=M.url(current.url),controls=OS.el('div',{class:'app-link-notice'}),container=OS.el('div',{class:'installed-webview'});
+                    controls.append(OS.el('span',{text:'Saved website · opening preference does not change sandbox permissions.'}),
+                        OS.el('button',{class:'secondary',text:'Open in Orbit',onclick:OS.guard(()=>OS.openURL(address))}));
+                    w.body.append(controls,container);
+                    // A saved link is never promoted to a trusted catalog application.
+                    const view=OS.webviews.create(container,{owner:w,appId:r.id,isolated:true});
+                    controls.append(OS.el('button',{class:'secondary',text:'Reload website',onclick:OS.guard(()=>view.reload())}));
+                    w.webview=view;await view.navigate(address,{mode:'auto',initial:true});return;
+                }
                 const frame=OS.el('iframe',{class:'app-frame',sandbox:'allow-scripts allow-forms allow-modals allow-downloads',title:current.title,referrerpolicy:'no-referrer'});
                 if(current.kind==='html') {
                     const f=await OS.fs.read(current.path),html=await OS.fs.text(f);if(!alive||w.closed)return;
                     if(new Blob([html]).size>M.LIMITS.html)throw Error('Installed HTML exceeds the 5 MiB package limit.');
                     frame.srcdoc=OS.webIO?OS.webIO.bootstrap(html):html;w.body.append(frame);OS.webIO?.attach(w,frame,r.id,'about:srcdoc',true);
-                } else {
-                    const address=M.url(current.url), bar=OS.el('div',{class:'app-link-notice'},OS.el('span',{text:'Sandboxed web link · sites may block embedding or require their own browser tab.'}),OS.el('a',{href:address,target:'_blank',rel:'noopener noreferrer',text:'Open in browser'}));
-                    w.body.append(bar,frame);frame.src=address;
                 }
-                w.installedRevision=current.revision;w.installedSource=current.path||current.url;
-                w.beforeClose=()=>OS.confirm('Close '+w.title+'?','Save your work inside the app first. Aster cannot inspect unsaved content in a sandboxed app.','Close app');
                 w.addCleanup(()=>{frame.remove();frame.srcdoc='';frame.src='about:blank';});
             }});
         // Editing metadata never remounts a document or changes its stored window state.

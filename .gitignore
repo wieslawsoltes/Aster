@@ -30,3 +30,5 @@ tests/web-io/artifacts/
 tests/file-pickers/artifacts/
 
 tests/app-library/artifacts/
+
+tests/orbit/artifacts/

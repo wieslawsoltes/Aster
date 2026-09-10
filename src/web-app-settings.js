@@ -3,12 +3,7 @@
 (() => {
     const OS = Aster, M = AsterWebNavigation;
     const isWeb = w => w.app.webApp || w.app.custom;
-    OS.openInBrowser = async input => {
-        const url = M.address(input, false);
-        const w = OS.openApp('browser', {url});
-        await w.ready;
-        return w;
-    };
+    OS.openInBrowser = (input, options = {}) => OS.orbit.open(input, options);
     OS.applyWebAppChrome = w => {
         if (!isWeb(w) || w.closed) return;
         if (!w.webChrome) {
@@ -45,9 +40,11 @@
     OS.on('window-ready', OS.applyWebAppChrome);
     OS.on('settings', () => {for (const w of OS.windows.values()) OS.applyWebAppChrome(w);});
     OS.integrations.navigation.push(['webapps','globe','Web apps','web app windows title bars address toolbar chrome embedded browser','apps']);
+    OS.integrations.navigation.push(['orbit','globe','Orbit Browser','browser webview bookmarks history search engine website opening','apps']);
     const previous = OS.integrations.renderSettings;
     OS.integrations.renderSettings = async function(w, section, main, navigate) {
         const row = (title, text, control) => OS.el('div',{class:'setting-row'},OS.el('div',{class:'setting-label'},OS.el('strong',{text:title}),OS.el('small',{text})),control);
+        if (section === 'orbit') { await OS.orbit.initialize(); if (w.closed) return true; const dispose=OS.renderOrbitSettings(main); w.integrationView={dispose}; return true; }
         if (section === 'apps' || section === 'webapps') main.append(row('Installed app library','Install HTML apps and HTTPS links, edit descriptions and manage packages.',OS.el('button',{class:'secondary',text:'Manage installed apps',onclick:()=>OS.openApp('store',{mode:'installed'})})));
         if (section === 'apps') main.append(row('Web app windows','Choose title bars and navigation controls for embedded apps.',OS.el('button',{class:'secondary',text:'Manage',onclick:()=>navigate('webapps')})));
         if (section !== 'webapps') return previous.call(this,w,section,main,navigate);
@@ -63,7 +60,7 @@
         const off = OS.on('settings',()=>inputs.forEach(([key,i])=>i.checked=OS.settings[key]===true));
         w.integrationView = {dispose:off};
         main.append(OS.el('p',{class:'muted',text:'Changes apply immediately to open and future app windows without reloading their pages. Built-in apps and Orbit Browser keep their normal title bars. Website-owned toolbars are not modified.'}),
-            row('Orbit Browser','Open websites inside Aster. Sites can still block embedding; Open in browser remains available for those sites.',OS.el('button',{class:'secondary',text:'Open Aster Browser',onclick:()=>OS.openApp('browser')})));
+            row('Orbit Browser','Open ordinary websites in browser tabs and compatible apps in embedded webviews. Manage bookmarks, history and site-opening preferences.',OS.el('button',{class:'secondary',text:'Open Aster Browser',onclick:()=>OS.openApp('browser')})), row('Orbit preferences','Search engine, optional browsing history and website-opening choices.',OS.el('button',{class:'secondary',text:'Browser settings',onclick:()=>navigate('orbit')})));
         return true;
     };
 })();

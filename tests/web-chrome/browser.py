@@ -43,7 +43,7 @@ def main(args):
             url=(ROOT/'Aster.html').as_uri() if args.standalone else origin+'/'
             if args.inject:page.set_content((ROOT/'Aster.html').read_text())
             else:page.goto(url)
-            page.wait_for_function('Aster.booted && !!Aster.openInBrowser');js('await OS.ready;OS.settings.restore=false;OS.settings.motion=false;OS.settings.dnd=true;OS.applySettings();');clean()
+            page.wait_for_function('Aster.booted && !!Aster.openInBrowser');js('await OS.ready;OS.settings.restore=false;OS.settings.motion=false;OS.settings.dnd=true;OS.applySettings();await OS.orbit.initialize();await OS.orbit.preferences({confirmLeave:false});');clean()
             if args.inject:
                 page.evaluate('''html=>{const d=Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype,'src');Object.defineProperty(HTMLIFrameElement.prototype,'src',{get:d.get,configurable:true,set(value){if(/^https?:/.test(value)){this.setAttribute('src',value);this.srcdoc=html;}else d.set.call(this,value);}});}''',FIXTURE)
             if args.live:
@@ -86,21 +86,31 @@ def main(args):
                 assert page.locator('.window[data-app="browser"] > .titlebar').is_visible();assert page.locator('.browser-address').input_value()=='https://wieslawsoltes.github.io/Forma/';assert page.locator('.browser-iframe').get_attribute('data-browser-policy')=='reviewed-app';js('assert(web.webFrame===originalFrame);');return 'Explicit URL now opens in a normal Orbit window, not Home or an external tab.'
             check('Open in Aster Browser routes the canonical website to a real browser tab',internal)
             def navigation():
-                b=page.locator('.window[data-app="browser"]');address=b.get_by_label('Address or search');address.fill(origin+'/fixture/one');address.press('Enter');fixture(b.frame_locator('.browser-iframe'));assert b.locator('.browser-iframe').get_attribute('data-browser-policy')=='isolated'
+                b=page.locator('.window[data-app="browser"]');b.get_by_label('Open pages in').select_option('webview');address=b.get_by_label('Address or search');address.fill(origin+'/fixture/one');address.press('Enter');fixture(b.frame_locator('.browser-iframe'));assert b.locator('.browser-iframe').get_attribute('data-browser-policy')=='isolated'
                 address.fill(origin+'/fixture/two');address.press('Enter');page.wait_for_function('(url)=>document.querySelector(".browser-iframe").getAttribute("src")===url',arg=origin+'/fixture/two');b.get_by_role('button',name='Back',exact=True).click();page.wait_for_function('(url)=>document.querySelector(".browser-address").value===url',arg=origin+'/fixture/one');b.get_by_role('button',name='Forward',exact=True).click();page.wait_for_function('(url)=>document.querySelector(".browser-address").value===url',arg=origin+'/fixture/two')
-                b.get_by_role('button',name='New tab',exact=True).click();assert b.locator('.browser-tab').count()==2;address.fill(origin+'/fixture/three');address.press('Enter');b.locator('.browser-tab').first.click();assert address.input_value()==origin+'/fixture/two';assert b.locator('.browser-content[hidden]').count()==1;return 'Browser-originated HTTP navigation, back/forward and distinct tab state.'
+                b.get_by_role('button',name='New tab',exact=True).click();assert b.locator('.browser-tab').count()==2;b.get_by_label('Open pages in').select_option('webview');address.fill(origin+'/fixture/three');address.press('Enter');b.locator('.browser-tab').first.click();assert address.input_value()==origin+'/fixture/two';assert b.locator('.browser-content[hidden]').count()==1;return 'Browser-originated HTTP navigation, back/forward and distinct tab state.'
             check('Orbit opens entered websites internally and keeps bounded per-tab history',navigation)
             def search():
-                b=page.locator('.window[data-app="browser"]');address=b.get_by_label('Address or search');address.fill('aster web search');address.press('Enter');page.wait_for_function('document.querySelector(".browser-address").value==="https://duckduckgo.com/?q=aster%20web%20search"');assert len(context.pages)==1;fixture(b.frame_locator('.browser-content:not([hidden]) > .browser-iframe'));return 'Search provider URL stays in Orbit (provider response is a labeled fixture).'
-            check('Address search no longer opens a host-browser tab automatically',search)
+                b=page.locator('.window[data-app="browser"]');b.get_by_label('Open pages in').select_option('browser');address=b.get_by_label('Address or search')
+                if args.inject:
+                    js('const b=[...OS.windows.values()].find(w=>w.appId==="browser");await b.navigate("aster web search");')
+                else:
+                    address.fill('aster web search')
+                    with context.expect_page() as pop:address.press('Enter')
+                    remote=pop.value;fixture(remote);assert remote.evaluate('opener===null');remote.close()
+                assert address.input_value()=='https://duckduckgo.com/?q=aster%20web%20search'
+                assert not b.locator('.orbit-pane:not([hidden]) iframe').count()
+                b.get_by_role('heading',name='Open this website in your browser').wait_for()
+                return 'Search uses a top-level browser tab; injected mode verifies only the handoff.'
+            check('Search opens a real provider tab instead of attempting a prohibited iframe',search)
             def local():
                 js("await OS.fs.write('/Documents/isolation.html','<!doctype html><h1>Local isolated document</h1>','text/html');const b=[...OS.windows.values()].find(w=>w.appId==='browser');await b.navigate('aster://file/Documents/isolation.html');")
-                f=page.locator('.browser-content:not([hidden]) > .browser-iframe');child=f.element_handle().content_frame();child.get_by_role('heading',name='Local isolated document').wait_for();assert 'allow-same-origin' not in f.get_attribute('sandbox');assert child.evaluate("()=>{try{return !parent.Aster}catch(e){return e.name==='SecurityError'}}")
+                f=page.locator('.orbit-pane:not([hidden]) .browser-iframe');child=f.element_handle().content_frame();child.get_by_role('heading',name='Local isolated document').wait_for();assert 'allow-same-origin' not in f.get_attribute('sandbox');assert child.evaluate("()=>{try{return !parent.Aster}catch(e){return e.name==='SecurityError'}}")
                 address=page.get_by_label('Address or search');address.fill('javascript:alert(1)');address.press('Enter');page.wait_for_function('Aster.notifications.some(n=>n.message.includes("Only HTTP"))');assert child.get_by_role('heading',name='Local isolated document').is_visible();return 'Local HTML cannot read parent.Aster; active scheme rejection does not replace its page.'
             check('Local HTML isolation and unsafe-address rejection are preserved',local)
             def stale_navigation():
                 js("await OS.fs.write('/Documents/slow.html','<!doctype html><h1>Old navigation</h1>','text/html');window.releaseRead=null;const read=OS.fs.read.bind(OS.fs);OS.fs.read=async function(path,...args){const data=await read(path,...args);if(path==='/Documents/slow.html')await new Promise(resolve=>window.releaseRead=resolve);return data;};window.restoreRead=()=>OS.fs.read=read;const b=[...OS.windows.values()].find(w=>w.appId==='browser');window.pendingRead=b.navigate('aster://file/Documents/slow.html');")
-                page.wait_for_function('!!window.releaseRead');js("const b=[...OS.windows.values()].find(w=>w.appId==='browser');await b.navigate('aster://home');releaseRead();await pendingRead;restoreRead();assert(b.body.querySelector('.browser-content:not([hidden]) > .browser-home'));assert(!b.body.querySelector('.browser-content:not([hidden]) > .browser-iframe'));")
+                page.wait_for_function('!!window.releaseRead');js("const b=[...OS.windows.values()].find(w=>w.appId==='browser');await b.navigate('aster://home');releaseRead();await pendingRead;restoreRead();assert(b.body.querySelector('.orbit-pane:not([hidden]) > .browser-home'));assert(!b.body.querySelector('.orbit-pane:not([hidden]) .browser-iframe'));")
                 return 'A deliberately delayed genuine filesystem read cannot replace a newer browser navigation.'
             check('Late local file reads cannot overwrite a newer tab navigation',stale_navigation)
             def custom():
@@ -108,12 +118,12 @@ def main(args):
             check('Custom installed web apps also receive compact controls',custom)
             if not args.inject:
                 def denied():
-                    js('const b=[...OS.windows.values()].find(w=>w.appId==="browser");await b.navigate(arg);',origin+'/fixture/denied');b=page.locator('.window[data-app="browser"]');f=b.locator('.browser-content:not([hidden]) > .browser-iframe').element_handle().content_frame();f.wait_for_load_state();assert f.get_by_role('heading',name='Embedded site verification fixture').count()==0;assert 'forbid embedding' in b.locator('.browser-content:not([hidden]) > .browser-note').inner_text()
-                    with context.expect_page() as pop:b.get_by_role('button',name='Open in browser ↗',exact=True).click()
+                    js('const b=[...OS.windows.values()].find(w=>w.appId==="browser");await b.navigate(arg,false,{mode:"webview"});',origin+'/fixture/denied');b=page.locator('.window[data-app="browser"]');f=b.locator('.orbit-pane:not([hidden]) .browser-iframe').element_handle().content_frame();f.wait_for_load_state();assert f.get_by_role('heading',name='Embedded site verification fixture').count()==0;assert 'forbid embedding' in b.locator('.orbit-pane:not([hidden]) .browser-note').inner_text()
+                    with context.expect_page() as pop:b.get_by_role('link',name='Open in browser ↗',exact=True).click()
                     external=pop.value;external.wait_for_load_state();external.get_by_role('heading',name='Embedded site verification fixture').wait_for();external.close();return 'CSP/X-Frame-Options denial remains enforced. Explicit external fallback loads a top-level page.'
                 check('Sites that forbid frames stay blocked, with working explicit external fallback',denied)
                 def persistence():
-                    clean();js('await OS.setSetting("webAppTitleBars",true);await OS.setSetting("webAppToolbars",false);const b=await OS.openInBrowser(arg);await b.navigate("aster://home",true);OS.settings.restore=true;await OS.db.set("settings",OS.settings);OS.cancelSessionSave();await OS.persistSessionNow();',origin+'/fixture/persist')
+                    clean();js('await OS.orbit.preferences({restoreTabs:true});await OS.setSetting("webAppTitleBars",true);await OS.setSetting("webAppToolbars",false);const b=await OS.openInBrowser(arg);await b.navigate("aster://home",true);OS.settings.restore=true;await OS.db.set("settings",OS.settings);OS.cancelSessionSave();await OS.persistSessionNow();',origin+'/fixture/persist')
                     page.reload();page.wait_for_function('Aster.booted && !!Aster.openInBrowser');js('await OS.ready;assert(!OS.db.memory);assert(OS.settings.webAppTitleBars===true);assert(OS.settings.webAppToolbars===false);');page.wait_for_selector('.browser-tab');assert page.locator('.browser-tab').count()==2;assert page.get_by_label('Address or search').input_value()=='aster://home';new=app();assert new.locator('.titlebar').is_visible() and new.locator('.web-app-toolbar').is_hidden();js('await OS.setSetting("webAppTitleBars",false);');return 'Settings and two distinct browser tabs/active selection survive a full IndexedDB reload.'
                 check('Preferences and Orbit tabs persist across a full browser reload',persistence)
             def mobile():
