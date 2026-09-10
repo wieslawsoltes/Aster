@@ -1327,6 +1327,12 @@ body.theme-managed.theme-contrast .aster-adaptive-icon[data-icon-family] .art-pl
  .orbit-browser .orbit-view-toolbar button,.orbit-browser .orbit-view-toolbar a{flex-shrink:0}
 }
 
+/* Native views are OS surfaces, not DOM iframes. Only the unobscured foreground
+   slot is presented; other live pages are retained without covering shell UI. */
+.orbit-native-slot { position:relative; flex:1; min-height:60px; min-width:0; display:grid; place-items:center; padding:16px; background:var(--surface,#fff); color:var(--text-secondary,#596579); text-align:center; }
+.orbit-native-slot:focus-visible { outline:2px solid var(--accent,#176ae6); outline-offset:-3px; }
+.orbit-view-toolbar input[type=search] { min-width:80px; max-width:180px; flex:1; }
+
 </style>
   <style>
 /* Clipboard utilities use the active desktop profile's native Aster tokens. */
@@ -1371,7 +1377,7 @@ body.theme-managed.theme-contrast .aster-adaptive-icon[data-icon-family] .art-pl
 'use strict';
 (() => {
     const OS = window.Aster = {
-        version: '2.4', apps: new Map(), windows: new Map(), mounts: new Map(),
+        version: '2.5', apps: new Map(), windows: new Map(), mounts: new Map(),
         events: new EventTarget(), clipboard: null, started: performance.now(),
         metrics: { fps: 0, frameMs: 0, drawCalls: 0, mode: 'Starting', frames: [] },
         settings: { theme: 'light', accent: '#176ae6', wallpaper: 'bloom', transparency: true, motion: true,
@@ -8926,21 +8932,28 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
         for (const entry of Array.isArray(r.routes) ? r.routes.slice(0, LIMITS.routes) : []) {
             try {
                 const origin = new URL(webURL(entry.origin)).origin;
-                if (seen.has(origin) || !['browser','webview'].includes(entry.mode)) continue;
+                if (seen.has(origin) || !['browser','webview','native'].includes(entry.mode)) continue;
                 seen.add(origin);routes.push({origin,mode:entry.mode});
             } catch { }
         }
         return {version:1,preferences:preferences(r.preferences),bookmarks,history,routes};
     }
-    function route(url, mode = 'auto', routes = [], catalog = [], hostProtocol = 'https:') {
+    function route(url, mode = 'auto', routes = [], catalog = [], hostProtocol = 'https:', nativeAvailable = false) {
         url = N.address(url, false);
         if (url.startsWith('aster:')) return {mode:'internal',reason:'Aster page or local file'};
-        if (!['auto','webview','browser'].includes(mode)) throw Error('Unknown opening mode.');
+        if (!['auto','webview','browser','native'].includes(mode)) throw Error('Unknown opening mode.');
         const origin = new URL(url).origin;
         let selected = mode === 'auto' ? routes.find(r=>r.origin===origin)?.mode : mode;
-        if (!selected || !['browser','webview'].includes(selected)) selected = N.catalogApp(url, catalog) ? 'webview' : 'browser';
+        if (selected === 'native') return {mode:nativeAvailable?'native':'native-required',reason:'A real Chromium view inside Aster Desktop, not an iframe.'};
+        if (nativeAvailable && selected !== 'browser' && (selected === 'webview' || !N.catalogApp(url,catalog))) return {mode:'native',reason:'Native Chromium top-level document inside Aster.'};
+        if (!selected || !['browser','webview','native'].includes(selected)) selected = N.catalogApp(url, catalog) ? 'webview' : 'browser';
+        if (selected === 'webview' && knownFrameRestriction(url)) return {mode:'native-required',reason:'This Google page is not an embeddable application. Aster Desktop supplies a real browser engine.'};
         if (selected === 'webview' && hostProtocol === 'https:' && url.startsWith('http:')) return {mode:'browser',reason:'HTTPS desktops cannot embed insecure HTTP pages. Use a real browser tab.'};
         return {mode:selected,reason:selected === 'browser' ? 'Ordinary sites open in a real browser tab so framing policies and sign-in can work normally.' : 'Embedded webview. The website must permit framing; this does not bypass its policies.'};
+    }
+    // Only known search/login documents; deliberately do not match Maps embed endpoints.
+    function knownFrameRestriction(value) {
+        try {const u=new URL(value);return u.hostname==='accounts.google.com'||/^(www\.)?google\.(com|pl)$/.test(u.hostname)&&['/','/search','/webhp'].includes(u.pathname);}catch{return false;}
     }
     function shortcut(raw) {
         if (typeof raw !== 'string' || raw.length > LIMITS.shortcut) throw Error('Website shortcuts must be under 64 KiB.');
@@ -8960,7 +8973,7 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
         if (!enabled) return {tabs:[{url:'aster://home',mode:'auto',zoom:1}],active:0};
         const saved=[];
         for(const t of (Array.isArray(tabs)?tabs:[]).slice(0,LIMITS.tabs)) {
-            try { saved.push({url:N.address(t.url,false),mode:['auto','webview','browser'].includes(t.mode)?t.mode:'auto',zoom:zoom(t.zoom)}); }
+            try { saved.push({url:N.address(t.url,false),mode:['auto','webview','browser','native'].includes(t.mode)?t.mode:'auto',zoom:zoom(t.zoom)}); }
             catch { saved.push({url:'aster://home',mode:'auto',zoom:1}); }
         }
         if(!saved.length)saved.push({url:'aster://home',mode:'auto',zoom:1});
@@ -8971,7 +8984,7 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
         const next=history.slice(0,index+1);if(next.at(-1)!==url)next.push(url);
         return next.slice(-LIMITS.navigation);
     }
-    const api=Object.freeze({LIMITS,ENGINES,text,address,webURL,preferences,normalize,route,shortcut,session,zoom,push});
+    const api=Object.freeze({LIMITS,ENGINES,text,address,webURL,preferences,normalize,route,shortcut,session,zoom,push,knownFrameRestriction});
     root.AsterOrbitModels=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(globalThis);
 
@@ -9004,7 +9017,7 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
         removeBookmark(url){return this.mutate(d=>{d.bookmarks=d.bookmarks.filter(b=>b.url!==url);});},
         record(url,title){if(!/^https?:/.test(url))return Promise.resolve();url=M.webURL(url);return this.mutate(d=>{if(d.preferences.recordHistory)d.history=[{url,title,time:Date.now()},...d.history.filter(h=>h.url!==url)].slice(0,M.LIMITS.history);});},
         clearHistory(){return this.mutate(d=>{d.history=[];});},
-        siteRoute(url,mode){const origin=new URL(M.webURL(url)).origin;return this.mutate(d=>{d.routes=d.routes.filter(r=>r.origin!==origin);if(mode!=='auto'){if(!['browser','webview'].includes(mode))throw Error('Unknown site opening preference.');if(d.routes.length>=M.LIMITS.routes)throw Error('Remove a site preference first (100 maximum).');d.routes.push({origin,mode});}});},
+        siteRoute(url,mode){const origin=new URL(M.webURL(url)).origin;return this.mutate(d=>{d.routes=d.routes.filter(r=>r.origin!==origin);if(mode!=='auto'){if(!['browser','webview','native'].includes(mode))throw Error('Unknown site opening preference.');if(d.routes.length>=M.LIMITS.routes)throw Error('Remove a site preference first (100 maximum).');d.routes.push({origin,mode});}});},
         async exportBookmarks(){await this.initialize();OS.download(new Blob([JSON.stringify({format:'aster.bookmarks',version:1,bookmarks:data.bookmarks},null,2)],{type:'application/json'}),'Orbit-bookmarks.json');},
         async importBookmarks(){const [file]=await OS.readFile('.json,application/json');if(!file)return;if(file.size>1024*1024)throw Error('Bookmark imports are limited to 1 MiB.');const raw=JSON.parse(await file.text());if(raw.format!=='aster.bookmarks'||raw.version!==1||!Array.isArray(raw.bookmarks)||raw.bookmarks.length>M.LIMITS.bookmarks)throw Error('Not a supported Orbit bookmarks file.');for(const r of raw.bookmarks)M.webURL(r.url);const entries=M.normalize(raw).bookmarks;if(!await OS.confirm('Import bookmarks?',entries.length+' links will be added locally. No website will be opened.','Import'))return;return this.mutate(d=>{const merged=new Map(d.bookmarks.map(b=>[b.url,b]));for(const b of entries)merged.set(b.url,b);if(merged.size>M.LIMITS.bookmarks)throw Error('The merged bookmarks exceed 200 entries.');d.bookmarks=[...merged.values()];});},
         async saveShortcut(url,title){url=M.webURL(url);const name=M.text(title,80).replace(/[\\/:*?"<>|]/g,'_')||'Website';const path=await OS.prompt('Save website shortcut','/Documents/'+name+'.asterlink','Save');if(path===null)return;if(!/\.asterlink$/i.test(path))throw Error('Use the .asterlink extension.');if(await OS.fs.stat(path)&&!await OS.confirm('Replace shortcut?',path,'Replace',true))return;await OS.fs.write(path,JSON.stringify({format:'aster.link',version:1,url,title:M.text(title,160)},null,2),'application/x-aster-link+json');OS.notify('Website shortcut saved',path);return path;},
@@ -9029,6 +9042,65 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
 
 </script>
 <script>
+/* src/native-browser.js */
+/* Native surface adapter. In ordinary browsers no privileged bridge is installed. MIT. */
+'use strict';
+(() => {
+    const OS=Aster,bridge=window.AsterNativeBrowser;
+    const available=!!(bridge?.version===1&&typeof bridge.create==='function'&&typeof bridge.subscribe==='function');
+    const live=new Map();let lastLayout='',lastSent=0,frame=0;
+    function layout() {
+        frame=0;if(!available||!live.size)return;
+        const overlay=!!document.querySelector('.lock-screen,.dialog-backdrop,#context-menu:not([hidden])') || [...document.querySelectorAll('#panel-layer > *,#toast-layer > *')].some(n=>!n.hidden&&n.getBoundingClientRect().height>0);
+        let target=null;
+        if(!overlay&&document.visibilityState!=='hidden')for(const surface of live.values()) {
+            const owner=surface.owner,slot=surface.slot;
+            if(surface.disposed||!surface.ready||!slot.isConnected||slot.closest('[hidden]')||owner.closed||owner.minimized||owner.desktop!==OS.activeDesktop||OS.focused!==owner.id||owner.el.classList.contains('dragging'))continue;
+            const r=slot.getBoundingClientRect();if(r.width<20||r.height<20||r.x<0||r.y<0||r.right>innerWidth||r.bottom>innerHeight)continue;
+            const points=[[2,2],[r.width-2,2],[r.width/2,r.height/2],[2,r.height-2],[r.width-2,r.height-2]];
+            if(!points.every(([x,y])=>slot.contains(document.elementFromPoint(r.x+x,r.y+y))))continue;
+            target={id:surface.id,bounds:{x:Math.ceil(r.x),y:Math.ceil(r.y),width:Math.floor(r.width)-1,height:Math.floor(r.height)-1}};break;
+        }
+        const encoded=JSON.stringify(target),now=performance.now();
+        if(encoded!==lastLayout||now-lastSent>500){lastLayout=encoded;lastSent=now;bridge.layout(target);}
+        frame=requestAnimationFrame(layout);
+    }
+    function sync(){if(available&&!frame&&live.size)frame=requestAnimationFrame(layout);}
+    class NativeSurface {
+        constructor(slot,owner,onState,onPopup) {
+            this.slot=slot;this.owner=owner;this.onState=onState;this.onPopup=onPopup;this.id=OS.uid();this.disposed=false;this.ready=false;
+            this.state={url:'',title:'Website',loading:true,canBack:false,canForward:false,zoom:1,error:null};
+            live.set(this.id,this);this.started=bridge.create({id:this.id}).then(()=>{if(this.disposed)return bridge.destroy(this.id);this.ready=true;sync();}).catch(e=>{if(!this.disposed)this.onState({...this.state,error:e.message,loading:false});throw e;});
+            slot.onclick=()=>{owner.focus(false);sync();setTimeout(()=>this.command('focus').catch(()=>{}),40);};
+            slot.tabIndex=0;slot.setAttribute('role','group');slot.setAttribute('aria-label','Native Chromium website');
+            slot.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();this.command('focus').catch(()=>{});}};
+            sync();
+        }
+        async navigate(url){await this.started;if(!this.disposed)return bridge.navigate(this.id,url);return false;}
+        async command(action,value){await this.started;if(!this.disposed)return bridge.command(this.id,action,value);return false;}
+        dispose(){if(this.disposed)return;this.disposed=true;live.delete(this.id);this.started.then(()=>bridge.destroy(this.id)).catch(()=>{});if(!live.size){cancelAnimationFrame(frame);frame=0;lastLayout='';bridge.layout(null);}else sync();}
+    }
+    if(available){
+        bridge.subscribe(event=>{
+            const s=live.get(event?.id);if(!s||s.disposed)return;
+            if(event.type==='state'){s.state={...s.state,...event};s.onState(s.state);}
+            if(event.type==='popup')OS.guard(()=>s.onPopup?.(event.url))();
+            if(event.type==='shortcut'){
+                s.owner.focus(false);const e=new KeyboardEvent('keydown',{key:event.key,ctrlKey:OS.input.platform()!=='macos',metaKey:OS.input.platform()==='macos',shiftKey:event.shift,bubbles:true,cancelable:true});
+                if(event.key==='f'){const input=s.slot.parentElement.querySelector('input[type=search]');input?.focus();input?.select();}else s.owner.onKey?.(e);
+            }
+            if(event.type==='closed'){s.dispose();s.onState({...s.state,loading:false,error:'Website session cleared. Reload to start a new page.'});}
+            if(event.type==='notice')OS.notify('Orbit Browser',event.message);
+        });
+        new MutationObserver(()=>{if(live.size){cancelAnimationFrame(frame);layout();}}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','class']});
+        OS.on('clipboard-lock',()=>{bridge.layout(null);lastLayout='';});
+        window.addEventListener('pagehide',()=>{for(const s of [...live.values()])s.dispose();});
+    }
+    OS.nativeBrowser=Object.freeze({available,create:(...args)=>{if(!available)throw Error('Launch Aster Desktop to use the native browser engine.');return new NativeSurface(...args);},clearSession:()=>available?bridge.clearSession():Promise.resolve(false),sync});
+})();
+
+</script>
+<script>
 /* src/webviews.js */
 /* Reusable, lifecycle-scoped browser webviews. Cross-origin pages remain isolated. MIT. */
 'use strict';
@@ -9048,12 +9120,12 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
             this.offline=()=>{if(this.message?.isConnected)this.message.textContent='Offline · remote pages may require a connection. Local HTML remains available.';};
             window.addEventListener('offline',this.offline);
         }
-        get snapshot(){return Object.freeze({...this.state,canBack:this.index>0,canForward:this.index>=0&&this.index<this.history.length-1,hasFrame:!!this.frame});}
+        get snapshot(){return Object.freeze({...this.state,canBack:this.index>0,canForward:this.index>=0&&this.index<this.history.length-1,hasFrame:!!this.frame||!!this.native,engine:this.native?'native':'iframe',...(this.native?{canBack:this.native.state.canBack,canForward:this.native.state.canForward}:{})});}
         on(name,fn){const listener=e=>fn(e.detail);this.events.addEventListener(name,listener);return()=>this.events.removeEventListener(name,listener);}
         emit(name){const detail=this.snapshot;this.events.dispatchEvent(new CustomEvent(name,{detail}));this.events.dispatchEvent(new CustomEvent('change',{detail}));}
         currentURL(){return this.state.reportedURL||this.state.url;}
         async canLeave(reason='Leave this page?') {
-            if(!this.frame||this.disposed)return true;
+            if((!this.frame&&!this.native)||this.disposed)return true;
             if(this.state.dirty===false||this.state.dirty===null&&!OS.orbit.data.preferences.confirmLeave)return true;
             if(!this.leavePending){
                 this.leaveController=new AbortController();
@@ -9071,15 +9143,16 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
             return this.load(url,options);
         }
         async travel(delta){const i=this.index+delta;if(i<0||i>=this.history.length)return false;const request=++this.request;if(!await this.canLeave()||this.disposed||request!==this.request)return false;this.index=i;return this.load(this.history[i],{mode:this.state.mode,history:false});}
-        back(){return this.travel(-1);}forward(){return this.travel(1);}
-        async reload(){const request=++this.request;if(!await this.canLeave('Reload this page?')||this.disposed||request!==this.request)return false;return this.load(this.state.url,{mode:this.state.mode,history:false});}
+        back(){return this.native?this.native.command('back'):this.travel(-1);}forward(){return this.native?this.native.command('forward'):this.travel(1);}
+        async reload(){if(this.native&&!this.native.disposed)return this.native.command('reload');const request=++this.request;if(!await this.canLeave('Reload this page?')||this.disposed||request!==this.request)return false;return this.load(this.state.url,{mode:this.state.mode,history:false});}
         clearPage() {
+            this.native?.dispose();this.native=null;
             ++this.generation;clearTimeout(this.timer);this.timer=null;this.detachIO?.();this.detachIO=null;this.detachClipboard?.();this.detachClipboard=null;this.detachChild?.();this.detachChild=null;
             if(this.port){this.port.onmessage=null;this.port.close();this.port=null;}
             if(this.frame){const f=this.frame;this.frame=null;f.remove();f.removeAttribute('srcdoc');f.src='about:blank';}
             this.element.replaceChildren();this.message=null;
         }
-        async stop(){const request=++this.request;if(!await this.canLeave('Stop and unload this page?')||this.disposed||request!==this.request)return false;this.clearPage();this.state.status='stopped';this.state.dirty=null;this.card('Page stopped','The embedded document was unloaded. Reload to request it again.');this.emit('stop');return true;}
+        async stop(){if(this.native){await this.native.command('stop');return true;}const request=++this.request;if(!await this.canLeave('Stop and unload this page?')||this.disposed||request!==this.request)return false;this.clearPage();this.state.status='stopped';this.state.dirty=null;this.card('Page stopped','The embedded document was unloaded. Reload to request it again.');this.emit('stop');return true;}
         external(kind='tab') {
             const url=M.webURL(this.currentURL());
             // noopener deliberately makes the result unavailable: null does NOT prove blocking.
@@ -9097,14 +9170,20 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
         card(title,description) {
             const card=el('div',{class:'orbit-handoff'},el('span',{class:'orbit-handoff-icon',html:OS.icon('globe',36)}),el('div',{class:'orbit-eyebrow',text:'ORBIT · WEBSITE HANDOFF'}),el('h2',{text:title}),el('p',{text:description}));
             const url=el('code',{class:'orbit-handoff-url',text:this.state.url}),actions=el('div',{class:'orbit-handoff-actions'});this.externalLinks(actions);
-            if(/^https?:/.test(this.state.url))actions.append(btn('Try embedded webview',()=>this.load(this.state.url,{mode:'webview'})));
+            if(/^https?:/.test(this.state.url)&&this.state.route!=='native-required')actions.append(btn('Try embedded webview',()=>this.load(this.state.url,{mode:'webview'})));
+            if(this.state.route==='native-required') {
+                card.querySelector('.orbit-eyebrow').textContent='ORBIT · REAL BROWSER ENGINE';
+                actions.append(el('a',{class:'secondary',href:'https://github.com/wieslawsoltes/Aster/blob/main/docs/native-browser.md',target:'_blank',rel:'noopener noreferrer',text:'Get Aster Desktop'}));
+                card.append(el('p',{text:'Inside Aster Desktop this page uses its own sandboxed Chromium view. A normal browser tab or GitHub Pages cannot create that native view. The standalone HTML alone does not contain Chromium.'}));
+            }
             this.message=el('p',{class:'orbit-view-status',role:'status',text:'Browser tabs run outside Aster. Use the browser’s own navigation, sign-in and downloads there.'});
             card.append(url,actions,this.message);this.element.append(card);
         }
         async load(input,options={}) {
             const url=N.address(input,false);if(this.disposed)return false;
             if(options.history!==false){this.history=M.push(this.history,this.index,url);this.index=this.history.length-1;}
-            const mode=options.mode||this.state.mode||'auto', route=M.route(url,mode,OS.orbit.data.routes,OS.webCatalog?.apps||[],location.protocol);
+            const mode=options.mode||this.state.mode||'auto', route=M.route(url,mode,OS.orbit.data.routes,OS.webCatalog?.apps||[],location.protocol,OS.nativeBrowser?.available===true);
+            if(route.mode==='native'&&this.native&&!this.native.disposed&&!options.restored){this.state={...this.state,url,reportedURL:'',mode,route:'native',status:'loading'};this.emit('navigation');return this.native.navigate(url);}
             this.clearPage();const generation=this.generation, valid=()=>!this.disposed&&generation===this.generation;
             this.state={...this.state,url,reportedURL:'',title:url.startsWith('aster:')?'Local document':new URL(url).hostname,mode,route:route.mode,status:'loading',dirty:null};
             this.emit('navigation');
@@ -9113,6 +9192,8 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
                 this.card(options.restored?'Your saved address is ready':'Open this website in your browser',options.restored?'Restoring a session does not contact saved websites or open pop-ups. Choose how to open this page.':route.reason+' Google, sign-in pages and other sites may forbid embedding.');
                 if(options.external===true)this.external();this.emit('status');return true;
             }
+            if(route.mode==='native-required') {this.state.status='engine-required';this.card('Use Aster Desktop to open this page inside Orbit',route.reason);this.emit('status');return true;}
+            if(route.mode==='native')return this.loadNative(url,generation);
             const note=el('div',{class:'orbit-view-toolbar browser-note'}),content=el('div',{class:'orbit-frame-viewport'});
             this.message=el('span',{class:'orbit-view-status',role:'status',text:'Loading embedded document…'});note.append(this.message);
             this.externalLinks(note);
@@ -9157,6 +9238,26 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
                 this.emit('status');return true;
             }catch(e){if(!valid())return false;this.clearPage();this.state.status='error';this.state.dirty=null;this.card('Unable to open this document',e.message);this.emit('error');return false;}
         }
+        async loadNative(url,generation) {
+            const toolbar=el('div',{class:'orbit-view-toolbar'}),slot=el('div',{class:'orbit-native-slot'});
+            this.message=el('span',{class:'orbit-view-status',role:'status',text:'Starting native Chromium…'});
+            const find=el('input',{type:'search',placeholder:'Find in page','aria-label':'Find in native page',maxlength:512});
+            find.oninput=OS.guard(()=>this.native?.command('find',find.value));find.onkeydown=e=>{if(e.key==='Escape'){find.value='';this.native?.command('stopFind');}};
+            const mute=btn('Mute',async()=>{const muted=!this.native.state.muted;await this.native.command('mute',muted);mute.textContent=muted?'Unmute':'Mute';});
+            toolbar.append(this.message,find,mute,btn('Print',()=>this.native?.command('print')));
+            slot.append(el('span',{text:'Native Chromium website · bring this window to the front to interact. Background pages keep their session.'}));
+            this.element.append(toolbar,slot);
+            this.native=OS.nativeBrowser.create(slot,this.owner,s=>{
+                if(this.disposed||generation!==this.generation)return;
+                if(/^https?:/.test(s.url)){this.state.reportedURL=M.webURL(s.url);this.state.url=this.state.reportedURL;}
+                this.state.title=M.text(s.title,160)||new URL(url).hostname;
+                this.state.zoom=M.zoom(s.zoom);this.state.status=s.error?'error':s.loading?'loading':'native-ready';
+                this.message.textContent=s.error?'Native page error: '+s.error:s.loading?'Loading in Chromium…':'Native Chromium · website is running inside Aster';
+                slot.dataset.nativeState=this.state.status;
+                this.emit('presentation');
+            },next=>this.owner.openTab?this.owner.openTab(next,{mode:'native'}):OS.openURL(next,{mode:'native'}));
+            try{await this.native.navigate(url);return true;}catch(e){if(!this.disposed&&generation===this.generation){this.clearPage();this.state.status='error';this.card('Native engine unavailable',e.message);this.emit('error');}return false;}
+        }
         attachPresentation(frame,url,generation) {
             if(this.port){this.port.close();this.port=null;}
             const channel=new MessageChannel();this.port=channel.port1;
@@ -9175,7 +9276,7 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
             };
             try{frame.contentWindow.postMessage({type:'aster-webview-init',version:1},'*',[channel.port2]);}catch{channel.port1.close();channel.port2.close();this.port=null;}
         }
-        setZoom(value){this.state.zoom=M.zoom(value);if(this.frame){const z=this.state.zoom;this.frame.style.width=(100/z)+'%';this.frame.style.height=(100/z)+'%';this.frame.style.transform=`scale(${z})`;this.frame.style.transformOrigin='0 0';}this.emit('zoom');return this.state.zoom;}
+        setZoom(value){this.state.zoom=M.zoom(value);if(this.native)this.native.command('zoom',this.state.zoom).catch(e=>OS.notify('Orbit zoom',e.message));if(this.frame){const z=this.state.zoom;this.frame.style.width=(100/z)+'%';this.frame.style.height=(100/z)+'%';this.frame.style.transform=`scale(${z})`;this.frame.style.transformOrigin='0 0';}this.emit('zoom');return this.state.zoom;}
         dispose(){if(this.disposed)return;this.disposed=true;this.request++;this.leaveController?.abort();this.clearPage();clearTimeout(this.focusTimer);window.removeEventListener('blur',this.blur);window.removeEventListener('offline',this.offline);this.element.remove();live.delete(this);if(!this.owner.closed){const i=this.owner.cleanups.indexOf(this.ownerCleanup);if(i>=0)this.owner.cleanups.splice(i,1);}this.state.status='disposed';this.emit('dispose');}
     }
     // The API takes no user-supplied sandbox, scripts, headers, credentials or native bridge.
@@ -9195,16 +9296,18 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
     OS.renderOrbitSettings=(container)=>{
         const fields=[],root=el('section',{class:'orbit-settings'}),row=(title,description,control)=>el('label',{class:'orbit-setting'},el('span',{},el('strong',{text:title}),el('small',{text:description})),control);
         const engine=el('select',{'aria-label':'Search engine'});for(const [value,label] of [['duckduckgo','DuckDuckGo'],['google','Google'],['bing','Bing']])engine.append(el('option',{value,text:label}));
-        root.append(row('Search engine','Searches open in a real browser tab by default. No proxy or remote page rewriting is used.',engine));fields.push(['engine',engine]);
+        root.append(row('Search engine',OS.nativeBrowser?.available?'Websites run in isolated Chromium views inside Aster.':'Ordinary browsers use external tabs. Aster Desktop supplies a native engine for internal browsing.',engine));fields.push(['engine',engine]);
         engine.onchange=OS.guard(()=>S.preferences({engine:engine.value}));
         for(const [key,label,description] of [
             ['recordHistory','Remember browsing history','Off by default. Stores up to 200 addresses requested in Orbit, including URL query strings; it cannot track other browser tabs.'],
             ['restoreTabs','Restore Orbit addresses with desktop sessions','Off by default. Restored remote addresses wait for your click before loading. Does not restore live pages, credentials, grants or browser-window sessions.'],
             ['confirmLeave','Confirm before unloading embedded pages','Protect unknown unsaved documents when closing, reloading or navigating. Cooperating pages can explicitly report whether they are dirty.']
         ]){const control=el('input',{type:'checkbox','aria-label':label});control.onchange=OS.guard(()=>S.preferences({[key]:control.checked}));fields.push([key,control]);root.append(row(label,description,control));}
-        root.append(el('p',{class:'orbit-help',text:'Automatic mode opens ordinary websites in your real browser. Choose Embedded webview explicitly for sites that allow it. Site preferences change opening location only—not sandbox permissions.'}));
+        root.append(el('p',{class:'orbit-help',text:OS.nativeBrowser?.available?'Automatic mode uses native Chromium for ordinary websites. Reviewed catalog apps keep their existing file-connected iframe. Explicit Browser tab overrides still open outside Aster.':'Automatic mode opens ordinary websites externally. Native Chromium mode requires Aster Desktop. Iframe mode is limited to compatible sites; no setting disables their framing policy.'}));
+        if(OS.nativeBrowser?.available)root.append(action('Clear native website session',()=>OS.nativeBrowser.clearSession()),el('p',{class:'orbit-help',text:'Native website cookies/storage are kept separately from Aster and discarded when the desktop app exits. Clearing them closes native pages, not Aster files.'}));
+        root.append(el('a',{href:'https://github.com/wieslawsoltes/Aster/blob/main/docs/native-browser.md',target:'_blank',rel:'noopener noreferrer',text:'Native browser setup and capabilities'}));
         const routes=el('div',{class:'orbit-site-routes'});root.append(el('h3',{text:'Saved site-opening preferences'}),routes);
-        const render=()=>{if(!root.isConnected)return;const d=S.data;for(const [key,node]of fields){if(node.type==='checkbox')node.checked=d.preferences[key];else node.value=d.preferences[key];}routes.replaceChildren();for(const r of d.routes)routes.append(el('div',{class:'orbit-list-row'},el('code',{text:r.origin}),el('span',{text:r.mode==='webview'?'Webview':'Browser tab'}),action('Reset',()=>S.siteRoute(r.origin,'auto'))));if(!d.routes.length)routes.append(el('p',{class:'muted',text:'No overrides. Use Remember for this site in Orbit’s menu.'}));};
+        const render=()=>{if(!root.isConnected)return;const d=S.data;for(const [key,node]of fields){if(node.type==='checkbox')node.checked=d.preferences[key];else node.value=d.preferences[key];}routes.replaceChildren();for(const r of d.routes)routes.append(el('div',{class:'orbit-list-row'},el('code',{text:r.origin}),el('span',{text:r.mode==='native'?'Native Chromium':r.mode==='webview'?'Webview':'Browser tab'}),action('Reset',()=>S.siteRoute(r.origin,'auto'))));if(!d.routes.length)routes.append(el('p',{class:'muted',text:'No overrides. Use Remember for this site in Orbit’s menu.'}));};
         const cleanup=OS.on('orbit-data',render);container.append(root);render();return cleanup;
     };
     OS.register('browser',{title:'Orbit Browser',description:'Browse websites, manage bookmarks and embed compatible web apps.',category:'Essentials',width:1080,height:730,minWidth:320,minHeight:300,
@@ -9219,7 +9322,7 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
             const current=()=>tabs.find(t=>t.id===active);
             const back=button('back','Back',()=>travel(-1)),forward=button('forward','Forward',()=>travel(1)),reload=button('refresh','Reload',()=>navigate(current().url,false,{replace:true})),stop=button('stop','Stop and unload',async()=>{await current()?.view?.stop();refresh();}),home=button('home','Home',()=>navigate('aster://home'));
             const address=el('input',{class:'browser-address','aria-label':'Address or search',placeholder:'Search or enter a website address',autocomplete:'off',spellcheck:false});
-            const mode=el('select',{'aria-label':'Open pages in',class:'orbit-mode'});for(const [value,label] of [['auto','Automatic'],['browser','Browser tab'],['webview','Embedded webview']])mode.append(el('option',{value,text:label}));
+            const mode=el('select',{'aria-label':'Open pages in',class:'orbit-mode'});for(const [value,label] of [['auto','Automatic'],['browser','Browser tab'],['webview',OS.nativeBrowser?.available?'In Aster (Chromium)':'Embedded webview'],['native','Native Chromium (desktop)']])mode.append(el('option',{value,text:label}));
             const bookmark=button('star','Bookmark this address',()=>editBookmark()),more=button('more','Browser menu',e=>menu(e));
             const stateLabel=el('span',{role:'status',class:'orbit-context-status'});
             context.append(stateLabel,action('Bookmarks',()=>navigate('aster://bookmarks')),action('History',()=>navigate('aster://history')));
@@ -9227,8 +9330,8 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
             const externalURL=()=>{const t=current();return t?.view?.currentURL()||t?.url;};
             function chrome(){tabbar.hidden=w.state.webview;nav.hidden=context.hidden=w.state.compact;compact.hidden=!w.state.compact;root.classList.toggle('orbit-single-view',w.state.webview);}
             function persist(){if(!alive||!tabs.length)return;Object.assign(w.state,M.session(tabs,tabs.findIndex(t=>t.id===active),S.data.preferences.restoreTabs));OS.saveSession();}
-            function refresh(){const t=current();if(!t)return;const s=t.view?.snapshot;address.value=t.addressDraft??(s?.reportedURL||t.url);address.title=s?.reportedURL?'Page-reported address, limited to the requested origin.':'Last address requested in Orbit (not a complete record of in-page navigation).';mode.value=t.mode;back.disabled=t.index<=0;forward.disabled=t.index>=t.history.length-1;stop.disabled=!s?.hasFrame;reload.disabled=internal.has(t.url);bookmark.disabled=!/^https?:/.test(externalURL());bookmark.setAttribute('aria-pressed',String(S.data.bookmarks.some(b=>b.url===externalURL())));
-                stateLabel.textContent=s?.reportedURL?'Page-reported address · '+(s.route==='webview'?'Webview':'Browser'):s?.route==='browser'?'Real browser tab · Orbit retains the requested address':s?.hasFrame?'Embedded webview · '+(s.status==='cooperative'?'cooperating page':'visibility may be restricted'):'Local to Aster · '+OS.db.mode;
+            function refresh(){const t=current();if(!t)return;const s=t.view?.snapshot;address.value=t.addressDraft??(s?.reportedURL||t.url);address.title=s?.engine==='native'?'Actual browser-engine address, including redirects and page navigation.':s?.reportedURL?'Page-reported address, limited to the requested origin.':'Last address requested in Orbit (not a complete record of in-page navigation).';mode.value=t.mode;back.disabled=s?.engine==='native'?!(s.canBack||(t.nativeStart??0)>0):t.index<=0;forward.disabled=s?.engine==='native'?!s.canForward:t.index>=t.history.length-1;stop.disabled=!s?.hasFrame;stop.title=s?.engine==='native'?'Stop loading':'Stop and unload';stop.setAttribute('aria-label',stop.title);reload.disabled=internal.has(t.url);bookmark.disabled=!/^https?:/.test(externalURL());bookmark.setAttribute('aria-pressed',String(S.data.bookmarks.some(b=>b.url===externalURL())));
+                stateLabel.textContent=s?.engine==='native'?'Native Chromium · inside Aster':s?.route==='native-required'?'Desktop browser engine required':s?.reportedURL?'Page-reported address · '+(s.route==='webview'?'Webview':'Browser'):s?.route==='browser'?'Real browser tab · Orbit retains the requested address':s?.hasFrame?'Embedded webview · '+(s.status==='cooperative'?'cooperating page':'visibility may be restricted'):'Local to Aster · '+OS.db.mode;
                 if(t.tabLabel)t.tabLabel.textContent=t.title||'New tab';if(t.tabIcon){const icon=t.url.startsWith('aster:')?'spark':'globe';if(t.tabIcon.dataset.orbitIcon!==icon){t.tabIcon.innerHTML=OS.icon(icon,14);t.tabIcon.dataset.orbitIcon=icon;}}if(t.tabNode)t.tabNode.title=t.title+'\n'+t.url;const title=(t.title||'Orbit')+(w.state.webview?' — Webview':' — Orbit Browser');if(w.title!==title)w.setTitle(title);w.dirty=tabs.some(tab=>tab.view?.state.dirty===true);chrome();}
             function renderTabs(){tabbar.replaceChildren();for(const t of tabs){const selected=t.id===active,node=el('div',{class:'browser-tab'+(selected?' active':''),role:'tab',tabindex:selected?'0':'-1','aria-selected':String(selected),'aria-controls':t.id,title:(t.title||'New tab')+'\n'+t.url});
                 const label=el('span',{text:t.title||'New tab'}),close=button('close','Close tab',()=>{});node.append(el('i',{html:OS.icon(t.url.startsWith('aster:')?'spark':'globe',14)}),label,close);t.tabNode=node;t.tabLabel=label;t.tabIcon=node.firstElementChild;
@@ -9241,16 +9344,17 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
             async function closeTab(t){if(!tabs.includes(t))return;if(t.closing)return;t.closing=true;try{if(t.view&&!await t.view.canLeave('Close this tab?'))return;if(!alive||!tabs.includes(t))return;closedTabs.unshift({url:t.url,mode:t.mode,zoom:t.zoom});closedTabs=closedTabs.slice(0,M.LIMITS.closed);const i=tabs.indexOf(t);disposeTab(t);tabs=tabs.filter(x=>x!==t);if(!tabs.length){await addTab();return;}activate(active===t.id?tabs[Math.max(0,i-1)].id:active);}finally{t.closing=false;}}
             async function reopen(){if(!closedTabs.length)return;const last=closedTabs.shift();await addTab(last.url,{...last,restored:true});}
             async function addTab(url='aster://home',opts={}){url=N.address(url,false);if(!alive)return;if(tabs.length>=M.LIMITS.tabs)throw Error('Close a tab first (20 maximum).');if(tabs.length&&w.state.webview)w.state.webview=false;const t={id:'orbit-'+OS.uid(),url,title:'New tab',mode:opts.mode||'auto',zoom:M.zoom(opts.zoom),history:[url],index:0,request:0,pane:el('div',{class:'browser-content orbit-pane',role:'tabpanel'})};t.pane.id=t.id;tabs.push(t);holder.append(t.pane);activate(t.id);await renderContent(t,opts);return t;}
-            async function navigate(input,newTab=false,opts={}){const url=M.address(input,S.data.preferences.engine);if(newTab)return addTab(url,opts);const t=current();if(!t||!alive)return false;const request=++t.request,draft=t.addressDraft;
+            async function navigate(input,newTab=false,opts={}){if(opts.replace&&!opts.mode&&current()?.view?.native)return current().view.reload();const url=M.address(input,S.data.preferences.engine);if(newTab)return addTab(url,opts);const t=current();if(!t||!alive)return false;const request=++t.request,draft=t.addressDraft;
                 if(t.view&&!await t.view.canLeave(opts.replace?'Reload this page?':'Leave the embedded page?'))return false;if(!alive||!tabs.includes(t)||request!==t.request)return false;
                 if(t.addressDraft===draft)delete t.addressDraft;
                 if(!opts.replace){t.history=M.push(t.history,t.index,url);t.index=t.history.length-1;}t.url=url;if(opts.mode)t.mode=opts.mode;const result=await renderContent(t,opts);if(alive&&tabs.includes(t)&&request===t.request){if(active===t.id)refresh();persist();}return result;}
-            async function travel(delta){const t=current(),i=t.index+delta;if(i<0||i>=t.history.length)return;const request=++t.request;if(t.view&&!await t.view.canLeave())return;if(!alive||request!==t.request)return;delete t.addressDraft;t.index=i;t.url=t.history[i];await renderContent(t);if(alive&&active===t.id)refresh();persist();}
+            async function travel(delta){const t=current();if(t.view?.native){const s=t.view.snapshot;if(delta<0&&s.canBack)return t.view.back();if(delta>0&&s.canForward)return t.view.forward();if(delta>0)return;}const i=t.view?.native?(t.nativeStart??t.index)-1:t.index+delta;if(i<0||i>=t.history.length)return;const request=++t.request;if(t.view&&!await t.view.canLeave())return;if(!alive||request!==t.request)return;delete t.addressDraft;t.index=i;t.url=t.history[i];await renderContent(t);if(alive&&active===t.id)refresh();persist();}
             async function renderContent(t,opts={}){
                 if(!alive||!tabs.includes(t))return;const version=t.request,target=t.url;const valid=()=>alive&&tabs.includes(t)&&version===t.request&&target===t.url;
-                if(internal.has(target)){t.offView?.();t.offView=null;t.view?.dispose();t.view=null;t.internalCleanup?.();t.internalCleanup=null;t.pane.replaceChildren();renderInternal(t);if(active===t.id)refresh();return true;}
+                if(internal.has(target)){delete t.nativeStart;t.offView?.();t.offView=null;t.view?.dispose();t.view=null;t.internalCleanup?.();t.internalCleanup=null;t.pane.replaceChildren();renderInternal(t);if(active===t.id)refresh();return true;}
                 t.internalCleanup?.();t.internalCleanup=null;
-                if(!t.view){t.pane.replaceChildren();t.view=OS.webviews.create(t.pane,{owner:w});t.offView=t.view.on('change',s=>{t.title=s.title;t.zoom=s.zoom;t.mode=s.mode;if(s.url!==t.url){t.url=s.url;t.history=M.push(t.history,t.index,s.url);t.index=t.history.length-1;}if(active===t.id)refresh();});}
+                if(!t.view){t.pane.replaceChildren();t.view=OS.webviews.create(t.pane,{owner:w});t.offView=t.view.on('change',s=>{t.title=s.title;t.zoom=s.zoom;t.mode=s.mode;if(s.url!==t.url){t.url=s.url;if(s.engine!=='native'){t.history=M.push(t.history,t.index,s.url);t.index=t.history.length-1;}}if(active===t.id)refresh();});}
+                if(t.nativeStart===undefined)t.nativeStart=t.index;
                 await t.view.load(target,{mode:t.mode,external:opts.external===true,restored:opts.restored===true});
                 if(!valid())return false;t.title=t.view.state.title;t.view.setZoom(t.zoom);if(active===t.id)refresh();persist();if(/^https?:/.test(target)&&!opts.restored&&S.data.preferences.recordHistory)await S.record(target,t.title);return true;
             }
@@ -9272,10 +9376,10 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
                 form.onsubmit=e=>{e.preventDefault();if(!apps)OS.guard(navigate)(search.value,false,{external:e.isTrusted});};
                 if(apps){const render=()=>{const query=search.value.toLowerCase();links.replaceChildren();for(const a of OS.webCatalog?.apps||[])if((a.title+' '+a.description).toLowerCase().includes(query))links.append(el('button',{class:'orbit-app-link',html:OS.appIcon(a.id,32),onclick:OS.guard(()=>navigate(a.url))},el('span',{},el('strong',{text:a.title}),el('small',{text:a.description}))));};search.oninput=render;render();}
                 else {for(const [id,label,url]of [['store','Your web apps','aster://apps'],['star','Bookmarks','aster://bookmarks'],['clock','History','aster://history'],['settings','Browser settings','aster://settings']])links.append(el('button',{class:'browser-link',onclick:OS.guard(()=>navigate(url)),html:OS.icon(id,28)},el('span',{text:label})));
-                    page.append(action('Open App Center',()=>OS.openApp('store',{mode:'installed'})),el('p',{class:'orbit-help',text:'Automatic mode avoids broken frames by opening ordinary sites in a real tab. Select Embedded webview for sites that permit framing. No browsing history is recorded unless you enable it.'}));}
+                    page.append(action('Open App Center',()=>OS.openApp('store',{mode:'installed'})),el('p',{class:'orbit-help',text:OS.nativeBrowser?.available?'Websites run in native Chromium views inside Orbit. Cookies last for this desktop session; browsing history is opt-in.':'For unrestricted internal page rendering, launch Aster Desktop. This browser-hosted edition can only iframe compatible sites or open external tabs.'}));}
             }
             async function editBookmark(){const url=M.webURL(externalURL()),entry=S.data.bookmarks.find(b=>b.url===url),title=await OS.prompt(entry?'Edit bookmark title':'Bookmark this address',entry?.title||current().title,'Save');if(title!==null)await S.bookmark(url,title);}
-            function menu(e){const t=current(),url=externalURL(),remote=/^https?:/.test(url),embedded=!!t.view?.frame;
+            function menu(e){const t=current(),url=externalURL(),remote=/^https?:/.test(url),embedded=!!t.view?.snapshot.hasFrame;
                 OS.context(e,[{text:'Open in browser tab',icon:'external',disabled:!remote,action:()=>t.view.external('tab')},{text:'Open browser window',icon:'external',disabled:!remote,action:()=>t.view.external('window')},{text:'Try embedded webview',icon:'globe',disabled:!remote,action:()=>navigate(url,false,{mode:'webview'})},
                     {text:'Remember browser tab for this site',icon:'external',disabled:!remote,action:()=>S.siteRoute(url,'browser')},{text:'Remember webview for this site',icon:'globe',disabled:!remote,action:()=>S.siteRoute(url,'webview')},{text:'Use automatic mode for this site',icon:'refresh',disabled:!remote,action:()=>S.siteRoute(url,'auto')},null,
                     {text:'Open address as app webview',icon:'max',disabled:!remote&&!t.url.startsWith('aster://file/'),action:()=>OS.openWebview(url)},
@@ -9292,7 +9396,7 @@ OS.register('win32',{title:'Win32 Lab',description:'Run a limited set of real x8
             w.onKey=e=>{const ctrl=e.ctrlKey||e.metaKey,k=e.key.toLowerCase();if(e.altKey&&!ctrl&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){e.preventDefault();OS.guard(travel)(e.key==='ArrowLeft'?-1:1);return;}if(!ctrl||e.altKey)return;
                 if(['l','t','w','d','h','r'].includes(k)){e.preventDefault();e.stopPropagation();}
                 if(k==='l'){w.state.compact=false;chrome();address.focus();address.select();}else if(k==='t'){if(e.shiftKey)OS.guard(reopen)();else OS.guard(addTab)();}else if(k==='w')OS.guard(closeTab)(current());else if(k==='d'&&!bookmark.disabled)OS.guard(editBookmark)();else if(k==='h')OS.guard(navigate)('aster://history');else if(k==='r')OS.guard(navigate)(current().url,false,{replace:true});};
-            w.beforeClose=async()=>{const risky=tabs.filter(t=>t.view?.frame&&(t.view.state.dirty===true||t.view.state.dirty===null&&S.data.preferences.confirmLeave));return !risky.length||await OS.confirm('Close Orbit Browser?',risky.length+' embedded page(s) may contain unsaved work. External browser tabs are independent and will stay open.','Close browser');};
+            w.beforeClose=async()=>{const risky=tabs.filter(t=>t.view?.snapshot.hasFrame&&(t.view.state.dirty===true||t.view.state.dirty===null&&S.data.preferences.confirmLeave));return !risky.length||await OS.confirm('Close Orbit Browser?',risky.length+' embedded page(s) may contain unsaved work. External browser tabs are independent and will stay open.','Close browser');};
             w.extraTitleMenu=()=>[{text:'Orbit settings',icon:'settings',action:()=>navigate('aster://settings')},{text:w.state.compact?'Show navigation':'Hide navigation',icon:'list',action:()=>{w.state.compact=!w.state.compact;chrome();persist();}}];
             w.addCleanup(()=>{alive=false;for(const t of tabs)disposeTab(t);tabs=[];closedTabs=[];});w.on('orbit-data',()=>{refresh();persist();});
             w.navigate=navigate;w.openTab=addTab;w.browser=Object.freeze({navigate,back:()=>travel(-1),forward:()=>travel(1),reload:()=>navigate(current().url,false,{replace:true}),newTab:addTab,reopenClosed:reopen,current:()=>current()?.view?.snapshot||{url:current()?.url}});w.getTabs=()=>tabs.map(t=>({id:t.id,url:t.url,title:t.title,mode:t.mode,zoom:t.zoom,active:t.id===active,state:t.view?.snapshot||null}));w.getWebview=()=>current()?.view||null;

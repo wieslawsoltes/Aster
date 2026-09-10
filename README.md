@@ -1,5 +1,14 @@
 ## Aster 2.4 — native clipboard and keyboard handling
 
+## Native website browsing in Aster 2.5
+
+**To display ordinary websites inside Orbit, run Aster Desktop with its real
+Chromium engine.** From source: `cd desktop && npm ci && npm start`. The web-hosted
+GitHub Pages/standalone edition cannot turn an iframe into a full browser. Native
+pages run as sandboxed top-level Chromium views inside Aster, without stripping
+website security headers. [Setup, desktop builds, security and limitations](docs/native-browser.md).
+
+
 Copy/paste no longer conflicts with desktop shortcuts. Command editing follows
 macOS even under Windows or Ubuntu themes; AltGr, IME composition, dead keys,
 claimed events and held launch keys do not trigger desktop commands.

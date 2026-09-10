@@ -1,0 +1,19 @@
+{
+  "name": "aster-desktop",
+  "productName": "Aster Desktop",
+  "version": "2.5.0",
+  "description": "Aster desktop with isolated native Chromium views inside Orbit",
+  "license": "MIT",
+  "author": "Aster contributors",
+  "main": "main.cjs",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "start": "electron .",
+    "test": "electron ../tests/native-browser/integration.cjs",
+    "package": "node package.cjs"
+  },
+  "devDependencies": {
+    "electron": "44.3.0",
+    "@electron/packager": "20.0.4"
+  }
+}

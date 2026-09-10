@@ -61,3 +61,9 @@
  .orbit-browser .orbit-view-toolbar .orbit-view-status{flex:1 1 100px;min-width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  .orbit-browser .orbit-view-toolbar button,.orbit-browser .orbit-view-toolbar a{flex-shrink:0}
 }
+
+/* Native views are OS surfaces, not DOM iframes. Only the unobscured foreground
+   slot is presented; other live pages are retained without covering shell UI. */
+.orbit-native-slot { position:relative; flex:1; min-height:60px; min-width:0; display:grid; place-items:center; padding:16px; background:var(--surface,#fff); color:var(--text-secondary,#596579); text-align:center; }
+.orbit-native-slot:focus-visible { outline:2px solid var(--accent,#176ae6); outline-offset:-3px; }
+.orbit-view-toolbar input[type=search] { min-width:80px; max-width:180px; flex:1; }

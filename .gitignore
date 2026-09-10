@@ -35,3 +35,9 @@ tests/orbit/artifacts/
 
 # Clipboard browser evidence is retained as CI artifacts.
 tests/clipboard/artifacts/
+
+# Native desktop development and build output.
+desktop/node_modules/
+desktop/.stage/
+desktop/dist/
+tests/native-browser/artifacts/

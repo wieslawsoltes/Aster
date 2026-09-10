@@ -1,5 +1,12 @@
 # Orbit Browser and reusable webviews (Aster 2.3)
 
+> **Native desktop edition:** Aster 2.5 adds real Chromium views inside Orbit.
+> See [native browser setup](native-browser.md). The iframe/external-tab behavior
+> described below remains the behavior of the browser-hosted edition. Selecting
+> Native Chromium requires the desktop runtime; a PWA or standalone HTML is not
+> that runtime.
+
+
 ## Opening websites
 
 Automatic mode opens ordinary HTTP(S) addresses and searches in a **real browser

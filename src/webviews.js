@@ -16,12 +16,12 @@
             this.offline=()=>{if(this.message?.isConnected)this.message.textContent='Offline · remote pages may require a connection. Local HTML remains available.';};
             window.addEventListener('offline',this.offline);
         }
-        get snapshot(){return Object.freeze({...this.state,canBack:this.index>0,canForward:this.index>=0&&this.index<this.history.length-1,hasFrame:!!this.frame});}
+        get snapshot(){return Object.freeze({...this.state,canBack:this.index>0,canForward:this.index>=0&&this.index<this.history.length-1,hasFrame:!!this.frame||!!this.native,engine:this.native?'native':'iframe',...(this.native?{canBack:this.native.state.canBack,canForward:this.native.state.canForward}:{})});}
         on(name,fn){const listener=e=>fn(e.detail);this.events.addEventListener(name,listener);return()=>this.events.removeEventListener(name,listener);}
         emit(name){const detail=this.snapshot;this.events.dispatchEvent(new CustomEvent(name,{detail}));this.events.dispatchEvent(new CustomEvent('change',{detail}));}
         currentURL(){return this.state.reportedURL||this.state.url;}
         async canLeave(reason='Leave this page?') {
-            if(!this.frame||this.disposed)return true;
+            if((!this.frame&&!this.native)||this.disposed)return true;
             if(this.state.dirty===false||this.state.dirty===null&&!OS.orbit.data.preferences.confirmLeave)return true;
             if(!this.leavePending){
                 this.leaveController=new AbortController();
@@ -39,15 +39,16 @@
             return this.load(url,options);
         }
         async travel(delta){const i=this.index+delta;if(i<0||i>=this.history.length)return false;const request=++this.request;if(!await this.canLeave()||this.disposed||request!==this.request)return false;this.index=i;return this.load(this.history[i],{mode:this.state.mode,history:false});}
-        back(){return this.travel(-1);}forward(){return this.travel(1);}
-        async reload(){const request=++this.request;if(!await this.canLeave('Reload this page?')||this.disposed||request!==this.request)return false;return this.load(this.state.url,{mode:this.state.mode,history:false});}
+        back(){return this.native?this.native.command('back'):this.travel(-1);}forward(){return this.native?this.native.command('forward'):this.travel(1);}
+        async reload(){if(this.native&&!this.native.disposed)return this.native.command('reload');const request=++this.request;if(!await this.canLeave('Reload this page?')||this.disposed||request!==this.request)return false;return this.load(this.state.url,{mode:this.state.mode,history:false});}
         clearPage() {
+            this.native?.dispose();this.native=null;
             ++this.generation;clearTimeout(this.timer);this.timer=null;this.detachIO?.();this.detachIO=null;this.detachClipboard?.();this.detachClipboard=null;this.detachChild?.();this.detachChild=null;
             if(this.port){this.port.onmessage=null;this.port.close();this.port=null;}
             if(this.frame){const f=this.frame;this.frame=null;f.remove();f.removeAttribute('srcdoc');f.src='about:blank';}
             this.element.replaceChildren();this.message=null;
         }
-        async stop(){const request=++this.request;if(!await this.canLeave('Stop and unload this page?')||this.disposed||request!==this.request)return false;this.clearPage();this.state.status='stopped';this.state.dirty=null;this.card('Page stopped','The embedded document was unloaded. Reload to request it again.');this.emit('stop');return true;}
+        async stop(){if(this.native){await this.native.command('stop');return true;}const request=++this.request;if(!await this.canLeave('Stop and unload this page?')||this.disposed||request!==this.request)return false;this.clearPage();this.state.status='stopped';this.state.dirty=null;this.card('Page stopped','The embedded document was unloaded. Reload to request it again.');this.emit('stop');return true;}
         external(kind='tab') {
             const url=M.webURL(this.currentURL());
             // noopener deliberately makes the result unavailable: null does NOT prove blocking.
@@ -65,14 +66,20 @@
         card(title,description) {
             const card=el('div',{class:'orbit-handoff'},el('span',{class:'orbit-handoff-icon',html:OS.icon('globe',36)}),el('div',{class:'orbit-eyebrow',text:'ORBIT · WEBSITE HANDOFF'}),el('h2',{text:title}),el('p',{text:description}));
             const url=el('code',{class:'orbit-handoff-url',text:this.state.url}),actions=el('div',{class:'orbit-handoff-actions'});this.externalLinks(actions);
-            if(/^https?:/.test(this.state.url))actions.append(btn('Try embedded webview',()=>this.load(this.state.url,{mode:'webview'})));
+            if(/^https?:/.test(this.state.url)&&this.state.route!=='native-required')actions.append(btn('Try embedded webview',()=>this.load(this.state.url,{mode:'webview'})));
+            if(this.state.route==='native-required') {
+                card.querySelector('.orbit-eyebrow').textContent='ORBIT · REAL BROWSER ENGINE';
+                actions.append(el('a',{class:'secondary',href:'https://github.com/wieslawsoltes/Aster/blob/main/docs/native-browser.md',target:'_blank',rel:'noopener noreferrer',text:'Get Aster Desktop'}));
+                card.append(el('p',{text:'Inside Aster Desktop this page uses its own sandboxed Chromium view. A normal browser tab or GitHub Pages cannot create that native view. The standalone HTML alone does not contain Chromium.'}));
+            }
             this.message=el('p',{class:'orbit-view-status',role:'status',text:'Browser tabs run outside Aster. Use the browser’s own navigation, sign-in and downloads there.'});
             card.append(url,actions,this.message);this.element.append(card);
         }
         async load(input,options={}) {
             const url=N.address(input,false);if(this.disposed)return false;
             if(options.history!==false){this.history=M.push(this.history,this.index,url);this.index=this.history.length-1;}
-            const mode=options.mode||this.state.mode||'auto', route=M.route(url,mode,OS.orbit.data.routes,OS.webCatalog?.apps||[],location.protocol);
+            const mode=options.mode||this.state.mode||'auto', route=M.route(url,mode,OS.orbit.data.routes,OS.webCatalog?.apps||[],location.protocol,OS.nativeBrowser?.available===true);
+            if(route.mode==='native'&&this.native&&!this.native.disposed&&!options.restored){this.state={...this.state,url,reportedURL:'',mode,route:'native',status:'loading'};this.emit('navigation');return this.native.navigate(url);}
             this.clearPage();const generation=this.generation, valid=()=>!this.disposed&&generation===this.generation;
             this.state={...this.state,url,reportedURL:'',title:url.startsWith('aster:')?'Local document':new URL(url).hostname,mode,route:route.mode,status:'loading',dirty:null};
             this.emit('navigation');
@@ -81,6 +88,8 @@
                 this.card(options.restored?'Your saved address is ready':'Open this website in your browser',options.restored?'Restoring a session does not contact saved websites or open pop-ups. Choose how to open this page.':route.reason+' Google, sign-in pages and other sites may forbid embedding.');
                 if(options.external===true)this.external();this.emit('status');return true;
             }
+            if(route.mode==='native-required') {this.state.status='engine-required';this.card('Use Aster Desktop to open this page inside Orbit',route.reason);this.emit('status');return true;}
+            if(route.mode==='native')return this.loadNative(url,generation);
             const note=el('div',{class:'orbit-view-toolbar browser-note'}),content=el('div',{class:'orbit-frame-viewport'});
             this.message=el('span',{class:'orbit-view-status',role:'status',text:'Loading embedded document…'});note.append(this.message);
             this.externalLinks(note);
@@ -125,6 +134,26 @@
                 this.emit('status');return true;
             }catch(e){if(!valid())return false;this.clearPage();this.state.status='error';this.state.dirty=null;this.card('Unable to open this document',e.message);this.emit('error');return false;}
         }
+        async loadNative(url,generation) {
+            const toolbar=el('div',{class:'orbit-view-toolbar'}),slot=el('div',{class:'orbit-native-slot'});
+            this.message=el('span',{class:'orbit-view-status',role:'status',text:'Starting native Chromium…'});
+            const find=el('input',{type:'search',placeholder:'Find in page','aria-label':'Find in native page',maxlength:512});
+            find.oninput=OS.guard(()=>this.native?.command('find',find.value));find.onkeydown=e=>{if(e.key==='Escape'){find.value='';this.native?.command('stopFind');}};
+            const mute=btn('Mute',async()=>{const muted=!this.native.state.muted;await this.native.command('mute',muted);mute.textContent=muted?'Unmute':'Mute';});
+            toolbar.append(this.message,find,mute,btn('Print',()=>this.native?.command('print')));
+            slot.append(el('span',{text:'Native Chromium website · bring this window to the front to interact. Background pages keep their session.'}));
+            this.element.append(toolbar,slot);
+            this.native=OS.nativeBrowser.create(slot,this.owner,s=>{
+                if(this.disposed||generation!==this.generation)return;
+                if(/^https?:/.test(s.url)){this.state.reportedURL=M.webURL(s.url);this.state.url=this.state.reportedURL;}
+                this.state.title=M.text(s.title,160)||new URL(url).hostname;
+                this.state.zoom=M.zoom(s.zoom);this.state.status=s.error?'error':s.loading?'loading':'native-ready';
+                this.message.textContent=s.error?'Native page error: '+s.error:s.loading?'Loading in Chromium…':'Native Chromium · website is running inside Aster';
+                slot.dataset.nativeState=this.state.status;
+                this.emit('presentation');
+            },next=>this.owner.openTab?this.owner.openTab(next,{mode:'native'}):OS.openURL(next,{mode:'native'}));
+            try{await this.native.navigate(url);return true;}catch(e){if(!this.disposed&&generation===this.generation){this.clearPage();this.state.status='error';this.card('Native engine unavailable',e.message);this.emit('error');}return false;}
+        }
         attachPresentation(frame,url,generation) {
             if(this.port){this.port.close();this.port=null;}
             const channel=new MessageChannel();this.port=channel.port1;
@@ -143,7 +172,7 @@
             };
             try{frame.contentWindow.postMessage({type:'aster-webview-init',version:1},'*',[channel.port2]);}catch{channel.port1.close();channel.port2.close();this.port=null;}
         }
-        setZoom(value){this.state.zoom=M.zoom(value);if(this.frame){const z=this.state.zoom;this.frame.style.width=(100/z)+'%';this.frame.style.height=(100/z)+'%';this.frame.style.transform=`scale(${z})`;this.frame.style.transformOrigin='0 0';}this.emit('zoom');return this.state.zoom;}
+        setZoom(value){this.state.zoom=M.zoom(value);if(this.native)this.native.command('zoom',this.state.zoom).catch(e=>OS.notify('Orbit zoom',e.message));if(this.frame){const z=this.state.zoom;this.frame.style.width=(100/z)+'%';this.frame.style.height=(100/z)+'%';this.frame.style.transform=`scale(${z})`;this.frame.style.transformOrigin='0 0';}this.emit('zoom');return this.state.zoom;}
         dispose(){if(this.disposed)return;this.disposed=true;this.request++;this.leaveController?.abort();this.clearPage();clearTimeout(this.focusTimer);window.removeEventListener('blur',this.blur);window.removeEventListener('offline',this.offline);this.element.remove();live.delete(this);if(!this.owner.closed){const i=this.owner.cleanups.indexOf(this.ownerCleanup);if(i>=0)this.owner.cleanups.splice(i,1);}this.state.status='disposed';this.emit('dispose');}
     }
     // The API takes no user-supplied sandbox, scripts, headers, credentials or native bridge.

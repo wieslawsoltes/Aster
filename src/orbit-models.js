@@ -42,21 +42,28 @@
         for (const entry of Array.isArray(r.routes) ? r.routes.slice(0, LIMITS.routes) : []) {
             try {
                 const origin = new URL(webURL(entry.origin)).origin;
-                if (seen.has(origin) || !['browser','webview'].includes(entry.mode)) continue;
+                if (seen.has(origin) || !['browser','webview','native'].includes(entry.mode)) continue;
                 seen.add(origin);routes.push({origin,mode:entry.mode});
             } catch { }
         }
         return {version:1,preferences:preferences(r.preferences),bookmarks,history,routes};
     }
-    function route(url, mode = 'auto', routes = [], catalog = [], hostProtocol = 'https:') {
+    function route(url, mode = 'auto', routes = [], catalog = [], hostProtocol = 'https:', nativeAvailable = false) {
         url = N.address(url, false);
         if (url.startsWith('aster:')) return {mode:'internal',reason:'Aster page or local file'};
-        if (!['auto','webview','browser'].includes(mode)) throw Error('Unknown opening mode.');
+        if (!['auto','webview','browser','native'].includes(mode)) throw Error('Unknown opening mode.');
         const origin = new URL(url).origin;
         let selected = mode === 'auto' ? routes.find(r=>r.origin===origin)?.mode : mode;
-        if (!selected || !['browser','webview'].includes(selected)) selected = N.catalogApp(url, catalog) ? 'webview' : 'browser';
+        if (selected === 'native') return {mode:nativeAvailable?'native':'native-required',reason:'A real Chromium view inside Aster Desktop, not an iframe.'};
+        if (nativeAvailable && selected !== 'browser' && (selected === 'webview' || !N.catalogApp(url,catalog))) return {mode:'native',reason:'Native Chromium top-level document inside Aster.'};
+        if (!selected || !['browser','webview','native'].includes(selected)) selected = N.catalogApp(url, catalog) ? 'webview' : 'browser';
+        if (selected === 'webview' && knownFrameRestriction(url)) return {mode:'native-required',reason:'This Google page is not an embeddable application. Aster Desktop supplies a real browser engine.'};
         if (selected === 'webview' && hostProtocol === 'https:' && url.startsWith('http:')) return {mode:'browser',reason:'HTTPS desktops cannot embed insecure HTTP pages. Use a real browser tab.'};
         return {mode:selected,reason:selected === 'browser' ? 'Ordinary sites open in a real browser tab so framing policies and sign-in can work normally.' : 'Embedded webview. The website must permit framing; this does not bypass its policies.'};
+    }
+    // Only known search/login documents; deliberately do not match Maps embed endpoints.
+    function knownFrameRestriction(value) {
+        try {const u=new URL(value);return u.hostname==='accounts.google.com'||/^(www\.)?google\.(com|pl)$/.test(u.hostname)&&['/','/search','/webhp'].includes(u.pathname);}catch{return false;}
     }
     function shortcut(raw) {
         if (typeof raw !== 'string' || raw.length > LIMITS.shortcut) throw Error('Website shortcuts must be under 64 KiB.');
@@ -76,7 +83,7 @@
         if (!enabled) return {tabs:[{url:'aster://home',mode:'auto',zoom:1}],active:0};
         const saved=[];
         for(const t of (Array.isArray(tabs)?tabs:[]).slice(0,LIMITS.tabs)) {
-            try { saved.push({url:N.address(t.url,false),mode:['auto','webview','browser'].includes(t.mode)?t.mode:'auto',zoom:zoom(t.zoom)}); }
+            try { saved.push({url:N.address(t.url,false),mode:['auto','webview','browser','native'].includes(t.mode)?t.mode:'auto',zoom:zoom(t.zoom)}); }
             catch { saved.push({url:'aster://home',mode:'auto',zoom:1}); }
         }
         if(!saved.length)saved.push({url:'aster://home',mode:'auto',zoom:1});
@@ -87,6 +94,6 @@
         const next=history.slice(0,index+1);if(next.at(-1)!==url)next.push(url);
         return next.slice(-LIMITS.navigation);
     }
-    const api=Object.freeze({LIMITS,ENGINES,text,address,webURL,preferences,normalize,route,shortcut,session,zoom,push});
+    const api=Object.freeze({LIMITS,ENGINES,text,address,webURL,preferences,normalize,route,shortcut,session,zoom,push,knownFrameRestriction});
     root.AsterOrbitModels=api;if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(globalThis);
