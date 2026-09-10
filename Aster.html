@@ -2256,8 +2256,9 @@ body.theme-managed.theme-contrast .aster-adaptive-icon[data-icon-family] .art-pl
     const C=OS.clipboardTools=OS.clipboardText={target:null,model:new M.History(),current:null,
         initialize(pins){this.model=new M.History(OS.settings.clipboardHistory&&OS.settings.clipboardPersistPins?pins:[],OS.settings);lastHistory=OS.settings.clipboardHistory;initialized=true;},
         async save(){await OS.featureSave('clipboard-pins',OS.settings.clipboardHistory&&OS.settings.clipboardPersistPins?this.model.saved():[]);OS.featureChange('clipboard');},
-        async add(text){if(!OS.settings.clipboardHistory)return false;const entry=this.model.add(text);if(entry)await this.save();return entry;},
+        async add(text){if(!OS.settings.clipboardHistory||OS.$(".lock-screen"))return false;const entry=this.model.add(text);if(entry)await this.save();return entry;},
         remember(element=deepActive()){
+            if(OS.$(".lock-screen")){this.target=null;return null;}
             if(ownUI(element))return this.target;
             if(privateField(element)){this.target=null;return null;}
             if(element?.tagName==='IFRAME'){this.target=null;return null;}
@@ -2337,7 +2338,7 @@ body.theme-managed.theme-contrast .aster-adaptive-icon[data-icon-family] .art-pl
         async export(){const data={format:'aster.clipboard',version:1,snippets:this.model.prune().map(({text,pinned})=>({text,pinned}))};OS.download(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),'Aster-clipboard.json');},
         async import(value){const entries=M.unpack(value);if(!OS.settings.clipboardHistory)throw Error('Turn on clipboard history before importing snippets.');let count=0;for(const e of entries)if(this.model.add(e.text,e.pinned))count++;await this.save();return count;}
     };
-    function capture(e){if(inserting||e.defaultPrevented||!e.isTrusted||!OS.settings.clipboardHistory)return;const t=OS.input.target(e);if(privateField(t)||ownUI(t)||!t?.isConnected||privateSelection(t.ownerDocument))return;
+    function capture(e){if(inserting||e.defaultPrevented||!e.isTrusted||!OS.settings.clipboardHistory||OS.$('.lock-screen'))return;const t=OS.input.target(e);if(privateField(t)||ownUI(t)||!t?.isConnected||privateSelection(t.ownerDocument))return;
         let text='';if(e.type==='paste'){if(!OS.settings.clipboardCapturePaste)return;text=e.clipboardData?.getData('text/plain')||'';}else if(t.matches?.('textarea,input')){if(typeof t.selectionStart!=='number')return;text=t.value.slice(t.selectionStart,t.selectionEnd);}else text=t.ownerDocument?.getSelection()?.toString()||'';
         C.add(text).catch(console.warn);
     }

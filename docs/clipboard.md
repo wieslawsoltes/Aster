@@ -159,3 +159,7 @@ previous editor remains a separate explicit action. Lock revokes guest clipboard
 channels and pending requests; resuming the visual desktop reconnects enabled
 helpers without reloading their documents. Disabled helpers do not handshake on
 new frame loads, and reconnecting never grants clipboard contents automatically.
+
+Lock-triggered editor blur cannot re-acquire an insertion target. Captures and
+late history additions are ignored while the visual desktop is locked. This is
+clipboard lifecycle protection, not host-OS authentication or clipboard erasure.

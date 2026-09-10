@@ -85,3 +85,15 @@ empty browser Copy event left the file clipboard unset in hosted Firefox. Text
 inputs remain on the browser's native editing path. The cross-browser test still
 uses real Copy/Paste keys, requires actual bytes at the destination, and rejects
 stale internal paths after a different page changes the system clipboard.
+
+Committed file assertions explicitly await each IndexedDB read until the file
+exists, with a failing deadline. A Promise-valued wait_for_function predicate was
+truthy before its storage result and could race the native paste transaction in
+Firefox. All exact-byte, image-representation and stale-reference assertions are
+retained; no in-memory seeding or transaction is substituted for native paste.
+
+The lock regression explicitly focuses the real document editor before locking.
+The resulting focusout must not re-acquire its selection after lock invalidation.
+Remember/capture/add reject while locked, including late asynchronous capture.
+Native macOS testing exposed this focus-order race; target validation and the
+separate visual-lock/non-authentication boundary remain intact.
