@@ -1,0 +1,57 @@
+name: Verify the focused file paste fixture
+on:
+  push:
+    branches: [fix/clipboard-keyboard]
+    paths: ['.github/workflows/verify-file-paste-fixture.yml']
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Strengthen fixture focus and data preconditions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          p=Path('tests/clipboard/browser.py');raw=p.read_bytes()
+          assert hashlib.sha256(raw).hexdigest()=='f0d033bce2e507b99031cb2f033d77906dffcc00d7670eee54fe7bfeacc2b94c'
+          lines=raw.decode().splitlines(keepends=True)
+          indices=[i for i,line in enumerate(lines) if line.startswith("                clean();launch('files',{'path':'/Downloads'});js('const data=new DataTransfer();")]
+          assert len(indices)==1
+          lines[indices[0]]='''                clean();launch('files',{'path':'/Downloads'});page.locator('.explorer-main').click()
+                          report['fileFixture']=js('const list=w.body.querySelector(".explorer-main");assert(document.activeElement===list,"File fixture must begin with focused list");assert(OS.focused===w.id,"File fixture must own the focused window");const data=new DataTransfer();data.items.add(new File(["pasted actual fixture bytes Ω"],"Pasted fixture.txt",{type:"text/plain"}));assert(data.files.length===1,"File fixture DataTransfer omitted its File");const event=new ClipboardEvent("paste",{bubbles:true,cancelable:true,clipboardData:data});assert(event.clipboardData?.files.length===1,"Synthetic ClipboardEvent omitted its File");list.dispatchEvent(event);return {trusted:event.isTrusted,prevented:event.defaultPrevented,files:event.clipboardData.files.length,types:[...event.clipboardData.types],active:document.activeElement.tagName,focused:OS.focused,owner:w.id};')
+                          (out/'progress.json').write_text(json.dumps(report,indent=2))
+                          assert report['fileFixture']['prevented'],'Supplied-file paste was not handled by Files'
+                          stored('/Downloads/Pasted fixture.txt');js('assert(await OS.fs.text(await OS.fs.read("/Downloads/Pasted fixture.txt"))==="pasted actual fixture bytes Ω");')
+          '''.replace('\n                          ','\n                ')
+          result=''.join(lines).encode()
+          assert hashlib.sha256(result).hexdigest()=='44baf6699487b3a1c3c0f36bdbcb55d0266a020457b6e959049d6d0f987f7169'
+          p.write_bytes(result)
+          PY
+          python3 -m py_compile tests/clipboard/browser.py
+          git diff --check
+      - name: Install independent Firefox
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps firefox
+      - name: Run unchanged native clipboard scenarios and focused importer fixture
+        run: timeout 300s python -u tests/clipboard/browser.py --engine firefox --output tests/clipboard/artifacts/firefox-fixture
+      - name: Commit only after full Firefox suite passes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tests/clipboard/browser.py
+          git commit -m 'Require focused Files owner and intact supplied File in synthetic importer coverage'
+          git push origin HEAD:fix/clipboard-keyboard
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: focused-file-paste-verification
+          path: tests/clipboard/artifacts/firefox-fixture/
+          retention-days: 7
