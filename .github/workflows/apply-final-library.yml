@@ -1,0 +1,63 @@
+name: Apply exact reviewed app library delta
+on:
+  push:
+    branches: [feat/local-app-library]
+    paths: ['.github/workflows/apply-final-library.yml']
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate original source hashes and exact reviewed output
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import hashlib, json
+          staged=Path('.github/workflows/finalize-app-library.yml').read_text()
+          raw=staged.split("changes=json.loads(r'''",1)[1].split("''')",1)[0]
+          changes=json.loads(raw)
+          # Correct the one transcribed test operator. Output hashes stay unchanged.
+          old='assert(originalCaptionIcon.style.getPropertyValue("--art-base")=="#258980");'
+          new='assert(originalCaptionIcon.style.getPropertyValue("--art-base")==="#258980");'
+          assert sum(value.count(old) for c in changes for _,_,value in c['ops'])==1
+          for c in changes:
+              for op in c['ops']:op[2]=op[2].replace(old,new)
+          allowed={'src/app-library.js','src/profile-artwork.js','sw.js','tests/app-library/README.md','tests/app-library/browser.py','tests/smoke.py'}
+          assert len(changes)==6 and {c['path'] for c in changes}==allowed
+          outputs=[]
+          for c in changes:
+              path=PurePosixPath(c['path']);p=Path(path)
+              assert not path.is_absolute() and '..' not in path.parts and not p.is_symlink()
+              before=p.read_bytes();assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent source change: '+str(p)
+              text=before.decode('utf-8');last=0
+              for a,b,value in c['ops']:
+                  assert isinstance(a,int) and isinstance(b,int) and last<=a<=b<=len(text) and isinstance(value,str)
+                  last=b
+              for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+              result=text.encode('utf-8');assert hashlib.sha256(result).hexdigest()==c['after'],'Output mismatch: '+str(p)
+              outputs.append((p,result))
+          for p,result in outputs:p.write_bytes(result)
+          print('Every output matches its unchanged reviewed checksum.')
+          PY
+      - name: Build and verify the reviewed standalone and source
+        run: |
+          for f in src/*.js sw.js; do node --check "$f"; done
+          python3 -m py_compile tests/app-library/browser.py tests/smoke.py
+          node --test tests/*/models.cjs tests/integrated-shell/contracts.cjs tests/web-apps/catalog.cjs
+          python3 build.py
+          echo 'f9d32482c5fa91a9b8078b2de22d8a6b5d7e7bbdbc8660f975220edfc806d48a  Aster.html' | sha256sum --check
+          git diff --exit-code -- sdk/aster-files.js
+          git diff --check
+      - name: Commit only verified source and tests
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Aster.html src/app-library.js src/profile-artwork.js sw.js tests/app-library/README.md tests/app-library/browser.py tests/smoke.py
+          git commit -m 'Refresh edited caption artwork in place and exercise the real installer in desktop smoke tests'
+          git push origin HEAD:feat/local-app-library
