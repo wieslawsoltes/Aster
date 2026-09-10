@@ -1,0 +1,57 @@
+name: Finalize clipboard regressions
+on:
+  push:
+    branches: [fix/clipboard-keyboard]
+    paths: ['.github/workflows/finalize-clipboard.yml']
+permissions:
+  contents: write
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate all input and output hashes before writing source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          changes=json.loads(r'''[{"path":"docs/clipboard.md","before":"cc134f0379b40b1ad186374772f09010bf931a7bbf2f29c8a94c148e2e337b28","after":"4fb92e5b307edea9a306b20e406601db85c814f4851a68ab0a095029ef0a8b72","ops":[[9723,9723,"\n### Manual workbench paste and lock lifecycle\n\nThe workbench's Manual paste action fills its preview only. Insertion into a\nprevious editor remains a separate explicit action. Lock revokes guest clipboard\nchannels and pending requests; resuming the visual desktop reconnects enabled\nhelpers without reloading their documents. Disabled helpers do not handshake on\nnew frame loads, and reconnecting never grants clipboard contents automatically.\n"]]},{"path":"src/apps-files.js","before":"26e6786b0d5e99b7bd811bafbbbe8a7e41d7ed4dbac556aeacc0c52ecabce74c","after":"9cbdd6bfca56607bfc987bc770259f0858872e8680921013ad2923c845dded52","ops":[[24111,24111,"main.focus({preventScroll:true}); "],[45745,45749,"el"]]},{"path":"src/clipboard-service.js","before":"071f6d2f8c8f905d5daf24d0b73241a1aac01bd772198694e1c15511fed49b0b","after":"52f189d641fda9d19b3467e87ba98a9fdae408417de37a8a7e29f2b19c51e312","ops":[[17293,17293,"||!OS.settings.clipboardBridge||OS.$('.lock-screen')"],[20941,21013,",unlock=OS.on('clipboard-unlock',cancel);\n        const dispose=()=>{if(!alive)return;alive=false;reset();off();lock();un"]]},{"path":"src/clipboard-ui.js","before":"673721140c19bc197cd65c27bed53242201a9cd5dec8e39f0f29885b1a8650db","after":"7c3c7dc365fb564fdb74d564a54b5d4562f2f334ecd8344048f73e00d1e54fb7","ops":[[10118,10118,"null"]]},{"path":"src/shell.js","before":"50cc23442d4e265d4a9ab3e68725693e185c2ce9bfd959329e2de7529c0a5cde","after":"491f6c155f527064ebaf5807b162467f9009a73e1f736d26496852c4af28fcdc","ops":[[2868,2868,"OS.emit('clipboard-unlock'); "]]},{"path":"sw.js","before":"d55d86b6d1344c28cfc4dc3200234dd358148f22ff560e8a62c5b972df9d696a","after":"7c5ac2bab3dfe87660a43061b41f5cccf5f265a221495bb70307d461e8d34c70","ops":[[58,59,"2"]]},{"path":"tests/clipboard/README.md","before":"b5249049df9099d0b83651d77608060214dff122b4657b9d067b367fc04d87df","after":"75be777f372da1b7f8d583943124f8a037bd0273d82c467c66becac687815a3b","ops":[[3550,3550,"\n## Hosted continuation regressions\n\nThe snippet-edit assertion now waits for the actual rendered edited text after the\nIndexedDB-backed save rather than checking the previous card in the same event\nturn. The exact text, export and import assertions remain. Native Cut and undo are\nalso checked with history off. Workbench Manual paste deliberately updates only\nits preview; it never implicitly inserts into the remembered editor. An isolated\nguest's helper is revoked on lock and reconnects after explicit Resume without\nreloading or losing its draft. Every subsequent request still needs approval.\n\nFirefox exposed a real Files focus bug: clicking a non-focusable table row could\nleave focus on the window rather than the file list. Row selection now focuses\nthe list, and clipboard events are scoped to the owning window so caption focus\nworks too. The native test asserts actual list focus before Copy; no synthetic\ncopy event or fake clipboard is used for the file-reference transfer.\n\nThe inherited theme helper moves the pointer off the dock and uses Escape before\nprogrammatic Settings navigation. This dismisses a real taskbar hover preview\nthat otherwise intercepted a contrast-preset click; no forced click is used.\n"]]},{"path":"tests/clipboard/browser.py","before":"0177ac72f971ba0eb0b5b967a99c9e40b2f9daa48e87daf3e51412764d3291a3","after":"c3e298bdae2031bd77550924be39b8fadecf6514d9acd2247e9a3b9a5e8f3b50","ops":[[615,615,",expect"],[5031,5031,"                e.evaluate('e=>e.setSelectionRange(7,12)');e.press(primary+'+x');assert e.input_value()=='Before ';e.press(primary+'+z');assert e.input_value()=='Before AFTER';assert not js('return C.model.entries.length;')\n"],[10259,10259,"            def manual_workbench():\n                e=editor();e.fill('Original must stay');e.click();e.press(end);copy_external('manual workbench Ω');u=utilities();u.get_by_role('button',name='Manual paste…',exact=True).click();d=page.get_by_role('dialog',name='Paste from your clipboard');d.get_by_label('Paste text here').click();d.get_by_label('Paste text here').press(primary+'+v');d.get_by_role('button',name='Use text',exact=True).click();expect(u.get_by_role('textbox',name='Clipboard text')).to_have_value('manual workbench Ω');assert e.input_value()=='Original must stay'\n            check('Workbench manual paste updates only its preview, never the remembered editor',manual_workbench)\n"],[13842,13842,"expect(u.locator('.clipboard-snippet')).to_have_text('New editable Ω');"],[15323,15323,"assert js('return document.activeElement===w.body.querySelector(\".explorer-main\");');"],[19078,19078,"                js('OS.lock();');f.wait_for_function('!AsterClipboard.connected');page.get_by_role('button',name='Resume your session').click();f.wait_for_function('AsterClipboard.connected');assert f.get_by_label('Guest draft').input_value()=='approved guest text Ω'\n"]]},{"path":"tests/themes/browser.py","before":"a309a06abbeb2798e34af3f649505e8ed4a2d5b48acddd9cc0d6e9aa6988f5d3","after":"61f19c9226cc394b7bdaec1c59e672a04f4bc960689466f09215962c2726983a","ops":[[2259,2259,"            # Leave the dock and dismiss its hover preview before programmatic navigation.\n            page.mouse.move(5,80);page.keyboard.press('Escape')\n"]]}]''')
+          allowed={'docs/clipboard.md','src/apps-files.js','src/clipboard-service.js','src/clipboard-ui.js','src/shell.js','sw.js','tests/clipboard/README.md','tests/clipboard/browser.py','tests/themes/browser.py'}
+          assert len(changes)==9 and {c['path'] for c in changes}==allowed
+          outputs=[]
+          for c in changes:
+              p=Path(c['path']);assert not p.is_symlink()
+              before=p.read_bytes();assert hashlib.sha256(before).hexdigest()==c['before'],'Concurrent change: '+str(p)
+              text=before.decode('utf-8');last=0
+              for a,b,value in c['ops']:
+                  assert isinstance(a,int) and isinstance(b,int) and last<=a<=b<=len(text) and isinstance(value,str);last=b
+              for a,b,value in reversed(c['ops']):text=text[:a]+value+text[b:]
+              result=text.encode('utf-8');assert hashlib.sha256(result).hexdigest()==c['after'],'Output mismatch: '+str(p)
+              outputs.append((p,result))
+          for p,result in outputs:p.write_bytes(result)
+          PY
+      - name: Rebuild and verify all source and models
+        run: |
+          for f in src/*.js sdk/*.js sw.js; do node --check "$f"; done
+          python3 -m py_compile tests/clipboard/browser.py tests/themes/browser.py
+          node --test tests/*/models.cjs tests/integrated-shell/contracts.cjs tests/web-apps/catalog.cjs
+          python3 build.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          b=Path('Aster.html').read_bytes()
+          assert len(b)==6082013 and hashlib.sha256(b).hexdigest()=='38584e11f4d608eca9a12975161eda3965e09d7038dc1efd2d3cba5aab461d42'
+          PY
+          git diff --exit-code -- sdk/aster-files.js sdk/aster-clipboard.js tests/results.json
+          git diff --check
+      - name: Commit only the reviewed source and tests
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Aster.html docs/clipboard.md src/apps-files.js src/clipboard-service.js src/clipboard-ui.js src/shell.js sw.js tests/clipboard/README.md tests/clipboard/browser.py tests/themes/browser.py
+          git commit -m 'Fix file-list clipboard focus, manual workbench destination and helper resume lifecycle'
+          git push origin HEAD:fix/clipboard-keyboard
