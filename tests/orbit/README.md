@@ -52,3 +52,14 @@ heading alone could match the previous catalog frame during asynchronous navigat
 The Orbit harness also bounds JavaScript test operations to 30 seconds (Playwright
 evaluate promises otherwise have no deadline) and preserves the current scenario
 and failure DOM. A timeout is a failure, never a passing or skipped scenario.
+
+### Cross-engine frame-policy regression
+
+A Firefox run reached the real denied frame but stalled while trying to inspect
+the browser-generated error document. Denial verification now requires the
+browser's actual `requestfailed` navigation event and exact policy error, then
+checks that the unmodified response opens through the external link with no opener.
+CSP frame-ancestors and X-Frame-Options-only responses are exercised independently;
+ordinary allowed HTTP webviews still prove real rendering, isolation and SDK updates.
+No browser, policy or fallback assertion is skipped. The complete driver process is
+bounded separately from in-page promises, and failures preserve their report first.

@@ -15,7 +15,9 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith('/orbit-fixture/'):
             body=HTML.encode();self.send_response(200)
-            if '/denied' in self.path:
+            if '/denied-xfo' in self.path:
+                self.send_header('X-Frame-Options','DENY')
+            elif '/denied' in self.path:
                 self.send_header('Content-Security-Policy',"frame-ancestors 'none'");self.send_header('X-Frame-Options','DENY')
             self.send_header('Content-Type','text/html; charset=utf-8');self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)
         else: super().do_GET()
@@ -40,6 +42,7 @@ def main(args):
                 detail=fn();report['checks'].append({'name':name,'status':'PASS','detail':detail,'ms':round(1000*(time.monotonic()-start))});print('PASS',name,flush=True)
             except Exception as e:
                 report['checks'].append({'name':name,'status':'FAIL','error':str(e)})
+                report['status']='FAIL';(out/'results.json').write_text(json.dumps(report,indent=2))
                 (out/'failure-dom.html').write_text(page.content())
                 page.screenshot(path=str(out/'failure.png'));raise
         def boot():page.wait_for_function('window.Aster?.booted');page.locator('#boot').wait_for(state='detached');js('await OS.ready;await OS.orbit.initialize();')
@@ -154,10 +157,34 @@ def main(args):
                         w=launch({'url':origin+'/orbit-fixture/allowed','mode':'webview'});f=w.locator('iframe').element_handle().content_frame();f.get_by_role('heading',name='Orbit fixture document').wait_for();assert f.evaluate('(()=>{try{return !!parent.Aster}catch{return false}})()') is False;page.wait_for_function('b.getWebview().snapshot.status==="cooperative"');f.evaluate('location.hash="updated"');page.wait_for_function('b.getWebview().snapshot.reportedURL.endsWith("#updated")');assert w.get_by_label('Address or search').input_value().endswith('#updated');assert 'allow-same-origin' not in w.locator('iframe').get_attribute('sandbox')
                     check('A real HTTP webview renders with opaque isolation and scoped SDK address updates',real_webview)
                     def denied():
-                        w=launch({'url':origin+'/orbit-fixture/denied','mode':'webview'});page.wait_for_function('b.getWebview().snapshot.status==="unverified"');f=w.locator('iframe').element_handle().content_frame();assert not f.get_by_role('heading',name='Orbit fixture document').count();assert w.get_by_role('button',name='Page not visible?').is_visible()
-                        with ctx.expect_page() as popup:w.get_by_role('link',name='Open in browser ↗').click()
-                        remote=popup.value;remote.get_by_role('heading',name='Orbit fixture document').wait_for();remote.close()
-                    check('Real CSP/XFO denial stays enforced while external fallback displays the same document',denied)
+                        evidence=[]
+                        for endpoint,firefox_error,header,value in [
+                            ('denied','NS_ERROR_CSP_FRAME_ANCESTOR_VIOLATION','content-security-policy',"frame-ancestors 'none'"),
+                            ('denied-xfo','NS_ERROR_XFO_VIOLATION','x-frame-options','DENY')
+                        ]:
+                            target=origin+'/orbit-fixture/'+endpoint
+                            # A denied Firefox document may have no usable automation execution
+                            # context. Require the browser's actual navigation-refusal event;
+                            # never evaluate a locator inside its privileged error document.
+                            with ctx.expect_event('requestfailed',predicate=lambda r:r.url==target and r.is_navigation_request(),timeout=15000) as refused:
+                                w=launch({'url':target,'mode':'webview'})
+                            failure=refused.value.failure
+                            expected=firefox_error if args.engine=='firefox' else 'net::ERR_BLOCKED_BY_RESPONSE'
+                            assert failure and failure.startswith(expected),(target,failure)
+                            page.wait_for_function('b.getWebview().snapshot.status==="unverified"')
+                            assert js('return b.getWebview().snapshot.reportedURL;')==''
+                            assert 'allow-same-origin' not in w.locator('iframe').get_attribute('sandbox')
+                            assert w.get_by_role('button',name='Page not visible?').is_visible()
+                            with ctx.expect_event('response',predicate=lambda r:r.url==target,timeout=15000) as response:
+                                with ctx.expect_page() as popup:w.get_by_role('link',name='Open in browser ↗').click()
+                            remote=popup.value;remote.get_by_role('heading',name='Orbit fixture document').wait_for()
+                            assert remote.evaluate('opener===null')
+                            assert response.value.status==200 and response.value.headers.get(header)==value
+                            if endpoint=='denied-xfo':assert 'content-security-policy' not in response.value.headers
+                            evidence.append({'policy':header,'value':value,'browserRefusal':failure,'externalTitle':remote.title()})
+                            remote.close()
+                        return evidence
+                    check('Real CSP and independent XFO denial stay enforced while external fallback displays each document',denied)
                     def persistence():
                         launch();js('assert(!OS.db.memory);await OS.orbit.preferences({restoreTabs:true,recordHistory:true,engine:"bing"});await OS.orbit.bookmark("https://example.org/persist","Durable Ω");await OS.orbit.siteRoute("https://example.net","webview");await b.navigate("https://example.org/restored");await b.openTab("aster://bookmarks");OS.settings.restore=true;await OS.db.set("settings",OS.settings);OS.cancelSessionSave();await OS.persistSessionNow();');before=len(requests);page.reload();boot();page.wait_for_function('[...Aster.windows.values()].some(w=>w.appId==="browser"&&w.getTabs)');js('window.b=[...OS.windows.values()].find(w=>w.appId==="browser");await b.ready;assert(b.getTabs().length===2);assert(OS.orbit.data.preferences.engine==="bing");assert(OS.orbit.data.bookmarks.some(b=>b.title==="Durable Ω"));assert(OS.orbit.data.routes.some(r=>r.origin==="https://example.net"));assert(!b.body.querySelector("iframe"));');assert not any('example.org/restored' in u for u in requests[before:]);page.locator('.window[data-app="browser"]').get_by_role('tab').first.click();page.get_by_role('heading',name='Your saved address is ready').wait_for()
                     check('Full IndexedDB reload restores metadata and addresses but does not contact saved sites',persistence)
