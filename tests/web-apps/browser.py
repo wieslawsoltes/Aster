@@ -64,6 +64,11 @@ def main(args):
                         embedded.wait_for_url('https://wieslawsoltes.github.io/'+app['repo']+'/**',timeout=30000)
                         embedded.wait_for_load_state('domcontentloaded',timeout=30000)
                         embedded.wait_for_function('!!document.body && (document.body.innerText.trim().length>40 || document.querySelectorAll("canvas,button,input").length>3)',timeout=20000)
+                        # New catalog apps must expose an actionable UI, not just a loading screen.
+                        ready={'Velsign':'Upload a document','Folio':'Share','MirevaStudio':'Preview','Orivane':'Workspace','Velora':'Present'}
+                        if app['repo'] in ready:
+                            embedded.get_by_role('button',name=ready[app['repo']],exact=False).first.click(trial=True,timeout=45000)
+                            row['actionableControl']=ready[app['repo']]
                         info=embedded.evaluate('({title:document.title,url:location.href,elements:document.body.querySelectorAll("*").length,textLength:document.body.innerText.trim().length,canvases:document.querySelectorAll("canvas").length,controls:document.querySelectorAll("button,input,textarea,select").length})')
                         assert not info['title'].startswith('Site not found'),info
                         row.update(status='PASS',ms=round((time.perf_counter()-begin)*1000),document=info)
