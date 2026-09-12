@@ -24,3 +24,8 @@ Path('tests/ci/artifacts/provenance.json').write_text(json.dumps({
     'files': manifest,
 }, indent=2) + '\n')
 PY
+# The compatibility target is acquired only in CI, independently of application
+# startup. Verify it byte-for-byte against the supplied executable before tests.
+if [[ "${GITHUB_ACTIONS:-}" == true ]]; then
+  python tests/win32/mfc-fixture.py --output tests/ci/artifacts/mfc-fixture
+fi
