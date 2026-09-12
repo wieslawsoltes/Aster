@@ -1,3 +1,12 @@
+## Catalog update — 84 web apps
+
+Added **Velsign**, **Folio**, **Mireva Studio**, **Orivane** and **Velora Design Studio**
+to **Start → Your web apps** and **App Center → Discover**. Search by title,
+repository name or purpose; existing pinning, favorites and window actions apply.
+Velsign, Folio and Orivane are in Office & Productivity; Mireva and Velora are in
+Design & Graphics. These launch the public, local-first Pages editions, not a
+silently connected cloud service. [Catalog, provenance and hosting limits](docs/web-apps.md).
+
 ## Aster 2.4 — native clipboard and keyboard handling
 
 Copy/paste no longer conflicts with desktop shortcuts. Command editing follows

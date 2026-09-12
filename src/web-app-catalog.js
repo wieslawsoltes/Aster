@@ -2,7 +2,7 @@
 'use strict';
 (() => {
     const data = {
-  "version": 3,
+  "version": 4,
   "owner": "wieslawsoltes",
   "timezone": "Europe/Warsaw",
   "startInclusive": "2026-09-06T00:00:00+02:00",
@@ -791,9 +791,64 @@
       "documentTitle": "Aureon Studio — Orbit study",
       "selection": "explicit-request",
       "addedAt": "2026-09-10T09:52:21.024534+00:00"
+    },
+    {
+      "repo": "Velsign",
+      "title": "Velsign",
+      "description": "Prepare agreements, place signature fields and manage browser-local signing demos",
+      "category": "office",
+      "createdAt": "2026-09-12T11:05:51Z",
+      "url": "https://wieslawsoltes.github.io/Velsign/",
+      "documentTitle": "Velsign — Browser-local signing workspace",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-12T11:58:34.208018+00:00"
+    },
+    {
+      "repo": "Folio",
+      "title": "Folio",
+      "description": "Local-first documents, knowledge pages, project databases and notes",
+      "category": "office",
+      "createdAt": "2026-09-12T09:21:45Z",
+      "url": "https://wieslawsoltes.github.io/Folio/",
+      "documentTitle": "Folio",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-12T11:58:34.208018+00:00"
+    },
+    {
+      "repo": "MirevaStudio",
+      "title": "Mireva Studio",
+      "description": "Interface design, multi-screen prototypes, vector editing and local projects",
+      "category": "design",
+      "createdAt": "2026-09-10T19:12:39Z",
+      "url": "https://wieslawsoltes.github.io/MirevaStudio/",
+      "documentTitle": "Mireva Studio · Design something wonderful",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-12T11:58:34.208018+00:00"
+    },
+    {
+      "repo": "Orivane",
+      "title": "Orivane",
+      "description": "Local-first whiteboards, sticky notes, diagrams and presentations",
+      "category": "office",
+      "createdAt": "2026-09-10T19:14:15Z",
+      "url": "https://wieslawsoltes.github.io/Orivane/",
+      "documentTitle": "Orivane — Think better, together.",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-12T11:58:34.208018+00:00"
+    },
+    {
+      "repo": "Velora",
+      "title": "Velora Design Studio",
+      "description": "Presentations, social graphics, posters and multipage visual designs",
+      "category": "design",
+      "createdAt": "2026-09-12T11:06:44Z",
+      "url": "https://wieslawsoltes.github.io/Velora/",
+      "documentTitle": "Velora — Design Studio",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-12T11:58:34.208018+00:00"
     }
   ],
-  "updatedAt": "2026-09-10T09:52:21.024534+00:00"
+  "updatedAt": "2026-09-12T11:58:34.208018+00:00"
 };
     for (const app of data.apps) {
         app.id = 'web-' + app.repo.toLowerCase();

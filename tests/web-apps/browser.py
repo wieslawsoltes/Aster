@@ -48,7 +48,7 @@ def main(args):
                 report['tests'].append({'name':name,'status':'FAIL','error':str(e)});print('FAIL',name,str(e),flush=True)
                 page.screenshot(path=str(out/'failure.png'));raise
         def start():page.evaluate('Aster.closePanels(); Aster.toggleStart();')
-        def web_index():start();page.get_by_role('button',name='Web apps, 79 projects',exact=True).click()
+        def web_index():start();page.get_by_role('button',name='Web apps, 84 projects',exact=True).click()
         def current_frame():return page.frame_locator('.web-app-frame')
         def close_all():page.evaluate('async()=>{for(const w of [...Aster.windows.values()])await w.close(true);}')
         try:
@@ -64,10 +64,17 @@ def main(args):
                         embedded.wait_for_url('https://wieslawsoltes.github.io/'+app['repo']+'/**',timeout=30000)
                         embedded.wait_for_load_state('domcontentloaded',timeout=30000)
                         embedded.wait_for_function('!!document.body && (document.body.innerText.trim().length>40 || document.querySelectorAll("canvas,button,input").length>3)',timeout=20000)
+                        # New catalog apps must expose an actionable UI, not just a loading screen.
+                        ready={'Velsign':'Upload a document','Folio':'Share','MirevaStudio':'Preview','Orivane':'Workspace','Velora':'Present'}
+                        if app['repo']=='Orivane':
+                            embedded.get_by_text('A shared space for better ideas.',exact=True).wait_for(state='hidden',timeout=45000)
+                        if app['repo'] in ready:
+                            embedded.get_by_role('button',name=ready[app['repo']],exact=False).first.click(trial=True,timeout=45000)
+                            row['actionableControl']=ready[app['repo']]
                         info=embedded.evaluate('({title:document.title,url:location.href,elements:document.body.querySelectorAll("*").length,textLength:document.body.innerText.trim().length,canvases:document.querySelectorAll("canvas").length,controls:document.querySelectorAll("button,input,textarea,select").length})')
                         assert not info['title'].startswith('Site not found'),info
                         row.update(status='PASS',ms=round((time.perf_counter()-begin)*1000),document=info)
-                        if app['repo'] in ['PaintXP','Vellum','Gridline','AxiomCAD','VeyraWorkspace','AsterionEDA','TwinForge','Branchglass','NotepadXP','Formalyth','Jailbreak','VoltWeaveCircuitStudio','StratumIntelligence','Veldra3D','AvolithStudio','AureonStudio']:page.screenshot(path=str(out/(app['repo']+'-live.png')))
+                        if app['repo'] in ['PaintXP','Vellum','Gridline','AxiomCAD','VeyraWorkspace','AsterionEDA','TwinForge','Branchglass','NotepadXP','Formalyth','Jailbreak','VoltWeaveCircuitStudio','StratumIntelligence','Veldra3D','AvolithStudio','AureonStudio','Velsign','Folio','MirevaStudio','Orivane','Velora']:page.screenshot(path=str(out/(app['repo']+'-live.png')))
                     except Exception as e:row.update(status='FAIL',error=str(e))
                     finally:close_all()
                     results.append(row);print(row['status'],app['repo'],row.get('error',''),flush=True)
@@ -75,10 +82,10 @@ def main(args):
                 assert report['passed']==len(apps),[r for r in results if r['status']!='PASS']
                 return
             def registration():
-                assert len(apps)==79 and len(categories)==10
+                assert len(apps)==84 and len(categories)==10
                 assert page.locator('.web-app-frame').count()==0
                 assert not any(u.startswith('https://wieslawsoltes.github.io/') for u in requests)
-                return '79 registrations; no external app requested at boot'
+                return '84 registrations; no external app requested at boot'
             check('Catalog registration is lazy and complete',registration)
             def folders():
                 web_index();assert page.locator('[data-web-category]').count()==10
@@ -88,10 +95,10 @@ def main(args):
                     members=page.locator('[data-web-app]').evaluate_all('(nodes)=>nodes.map(n=>n.dataset.webApp)')
                     assert sorted(members)==sorted(a['id'] for a in apps if a['category']==cat['id']);seen+=members
                     page.get_by_role('button',name='Back to web app categories').click()
-                assert len(set(seen))==79
+                assert len(set(seen))==84
                 page.screenshot(path=str(out/'start-categories.png'))
                 return 'Every project reached through its category submenu'
-            check('Ten category submenus contain all 79 projects exactly once',folders)
+            check('Ten category submenus contain all 84 projects exactly once',folders)
             def keys():
                 first=page.locator('[data-web-category]').first;first.focus();first.press('ArrowRight');assert page.get_by_role('button',name='Back to web app categories').count()==1
                 page.locator('[data-web-app]').first.press('Escape');assert page.locator('[data-web-category]').count()==10
@@ -99,6 +106,21 @@ def main(args):
                 page.locator('.web-start-entry').press('Enter');assert page.locator('[data-web-category]').count()==10
                 return 'Enter, ArrowRight and Escape navigate folders without closing Start prematurely'
             check('Submenu navigation works with keyboard and back controls',keys)
+            def requested_apps():
+                for repo in ['Velsign','Folio','MirevaStudio','Orivane','Velora']:
+                    app=next(a for a in apps if a['repo']==repo)
+                    category=next(c['title'] for c in categories if c['id']==app['category'])
+                    start();page.get_by_role('textbox',name='Search apps and files').fill(repo)
+                    page.get_by_role('button',name=app['title']+' App · '+category,exact=False).click()
+                    current_frame().get_by_role('heading',name='Window behavior fixture').wait_for()
+                    frame=page.locator('.web-app-frame')
+                    assert frame.get_attribute('src')==app['url']
+                    assert page.locator('.window').get_attribute('data-app')==app['id']
+                    assert not any(permission in (frame.get_attribute('allow') or '') for permission in ['camera','microphone','display-capture','geolocation'])
+                    close_all()
+                web_index()
+                return 'All five search results launch their canonical frames; inert fixtures, not live application verification'
+            check('Requested workspace and design apps launch from Start without extra permissions',requested_apps)
             def search():
                 query=page.get_by_role('textbox',name='Search apps and files');query.fill('CAD & Manufacturing')
                 page.wait_for_function('document.querySelectorAll(".start-main .search-result").length===11')
@@ -183,7 +205,7 @@ def main(args):
                 close_all();return 'All seven requested apps have categorized/searchable entries, canonical frames, titlebars and scoped media delegation'
             check('Requested apps launch from Start with correct chrome and permissions',requested_apps)
             def standalone():
-                boot(True);assert page.evaluate('Aster.webCatalog.apps.length')==79
+                boot(True);assert page.evaluate('Aster.webCatalog.apps.length')==84
                 page.evaluate('async()=>{window.web=Aster.launch("web-gridline");await web.ready;}');current_frame().get_by_role('heading').wait_for()
                 page.evaluate('web.close(true)');assert page.locator('.web-app-frame').count()==0
                 return 'Single-file edition includes catalog and host; close removes its iframe'

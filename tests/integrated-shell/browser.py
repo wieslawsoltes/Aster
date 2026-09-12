@@ -46,7 +46,7 @@ def main(args):
                 report['tests'].append({'name':name,'status':'FAIL','error':str(e)});print('FAIL',name,str(e),flush=True);shot('failure');raise
         try:
             boot()
-            check('Features are integrated destinations, not entries in All apps', lambda: js('assert(OS.webCatalog.apps.length===79);for(const id of Object.keys(OS.integratedFeatures))assert(OS.apps.get(id).hidden&&OS.apps.get(id).systemFeature);assert(OS.activeIntegratedViews.size===0);return {version:OS.version,legacyEndpoints:Object.keys(OS.integratedFeatures).length};'))
+            check('Features are integrated destinations, not entries in All apps', lambda: js('assert(OS.webCatalog.apps.length===84);for(const id of Object.keys(OS.integratedFeatures))assert(OS.apps.get(id).hidden&&OS.apps.get(id).systemFeature);assert(OS.activeIntegratedViews.size===0);return {version:OS.version,legacyEndpoints:Object.keys(OS.integratedFeatures).length};'))
             def start_menu():
                 page.locator('#start-button').click()
                 page.locator('.start-menu').wait_for()

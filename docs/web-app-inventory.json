@@ -1786,7 +1786,132 @@
           "checkedAt": "2026-09-10T09:52:21.024534+00:00"
         }
       ]
+    },
+    {
+      "name": "Velsign",
+      "createdAt": "2026-09-12T11:05:51Z",
+      "createdLocal": "2026-09-12T13:05:51+02:00",
+      "repository": "https://github.com/wieslawsoltes/Velsign",
+      "readmeSHA": "43f7713ccade187b401836500c5f26f4bc8c12a1",
+      "included": true,
+      "selection": "explicit-request",
+      "addedAt": "2026-09-12T11:58:34.208018+00:00",
+      "reason": "Explicit user request for Velsign, Folio, Mireva Studio, Orivane and Velora; outside the original date-window selection.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Velsign/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Velsign/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 690,
+          "sha256": "93c39f71808185dd5e1f2daff06a6648bf49d815cbed7cd50ca90fe45b868e97",
+          "title": "Velsign — Browser-local signing workspace",
+          "checkedAt": "2026-09-12T11:58:34.208018+00:00"
+        }
+      ]
+    },
+    {
+      "name": "Folio",
+      "createdAt": "2026-09-12T09:21:45Z",
+      "createdLocal": "2026-09-12T11:21:45+02:00",
+      "repository": "https://github.com/wieslawsoltes/Folio",
+      "readmeSHA": "970cf8c3dbefd676c8ad6fcaeedeefa46f376943",
+      "included": true,
+      "selection": "explicit-request",
+      "addedAt": "2026-09-12T11:58:34.208018+00:00",
+      "reason": "Explicit user request for Velsign, Folio, Mireva Studio, Orivane and Velora; outside the original date-window selection.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Folio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Folio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 567,
+          "sha256": "a3f7154e814b9a5d235be6dfdc495728e01e4f084f19fccda6b7caf5ea7cf7a5",
+          "title": "Folio",
+          "checkedAt": "2026-09-12T11:58:34.208018+00:00"
+        }
+      ]
+    },
+    {
+      "name": "MirevaStudio",
+      "createdAt": "2026-09-10T19:12:39Z",
+      "createdLocal": "2026-09-10T21:12:39+02:00",
+      "repository": "https://github.com/wieslawsoltes/MirevaStudio",
+      "readmeSHA": "61217e6759576e1b21be34ba75561b6ea05db251",
+      "included": true,
+      "selection": "explicit-request",
+      "addedAt": "2026-09-12T11:58:34.208018+00:00",
+      "reason": "Explicit user request for Velsign, Folio, Mireva Studio, Orivane and Velora; outside the original date-window selection.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/MirevaStudio/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/MirevaStudio/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 394122,
+          "sha256": "e1e225052b67b6cd7d99c14aa7c48803a7db730288f49c1cbdbde70d07b749c9",
+          "title": "Mireva Studio · Design something wonderful",
+          "checkedAt": "2026-09-12T11:58:34.208018+00:00"
+        }
+      ]
+    },
+    {
+      "name": "Orivane",
+      "createdAt": "2026-09-10T19:14:15Z",
+      "createdLocal": "2026-09-10T21:14:15+02:00",
+      "repository": "https://github.com/wieslawsoltes/Orivane",
+      "readmeSHA": "39174782b857db5d82c2088133e2fa0d24530b48",
+      "included": true,
+      "selection": "explicit-request",
+      "addedAt": "2026-09-12T11:58:34.208018+00:00",
+      "reason": "Explicit user request for Velsign, Folio, Mireva Studio, Orivane and Velora; outside the original date-window selection.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Orivane/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Orivane/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 6302,
+          "sha256": "d3b12317b920e9c3228cd613c9f3e9cb4628647e32b5e1ccabaff353a22a2344",
+          "title": "Orivane — Think better, together.",
+          "checkedAt": "2026-09-12T11:58:34.208018+00:00"
+        }
+      ]
+    },
+    {
+      "name": "Velora",
+      "createdAt": "2026-09-12T11:06:44Z",
+      "createdLocal": "2026-09-12T13:06:44+02:00",
+      "repository": "https://github.com/wieslawsoltes/Velora",
+      "readmeSHA": "525f5cf170d134c24da40449261282896d050c1e",
+      "included": true,
+      "selection": "explicit-request",
+      "addedAt": "2026-09-12T11:58:34.208018+00:00",
+      "reason": "Explicit user request for Velsign, Folio, Mireva Studio, Orivane and Velora; outside the original date-window selection.",
+      "deployments": [
+        {
+          "requestedUrl": "https://wieslawsoltes.github.io/Velora/",
+          "status": 200,
+          "finalUrl": "https://wieslawsoltes.github.io/Velora/",
+          "headers": {
+            "content-type": "text/html; charset=utf-8"
+          },
+          "bytes": 813,
+          "sha256": "9eec7db20212bca1c88e6f0e88fd1f4bc34bb2cdd26c454e3ef454883e9cc2da",
+          "title": "Velora — Design Studio",
+          "checkedAt": "2026-09-12T11:58:34.208018+00:00"
+        }
+      ]
     }
   ],
-  "updatedAt": "2026-09-10T09:52:21.024534+00:00"
+  "updatedAt": "2026-09-12T11:58:34.208018+00:00"
 }

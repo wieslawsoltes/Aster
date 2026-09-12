@@ -50,7 +50,7 @@ async def main(args):
         async def launch(app,options=None):
             await clean()
             return await page.evaluate('async ([app,o])=>{const w=Aster.launch(app,o);await w.ready;window.testWindow=w;if(w.body.querySelector(".app-error"))throw Error(w.body.innerText);return w.id}',[app,options or {}])
-        await check('Boot with 29 built-in apps and 79 lazy web app entries',lambda:js("assert([...OS.apps.values()].filter(a=>!a.webApp).length===29);assert([...OS.apps.values()].filter(a=>a.webApp).length===79);assert(OS.windows.size===1);assert(document.querySelector('#taskbar button'));return OS.metrics.mode;"))
+        await check('Boot with 29 built-in apps and 84 lazy web app entries',lambda:js("assert([...OS.apps.values()].filter(a=>!a.webApp).length===29);assert([...OS.apps.values()].filter(a=>a.webApp).length===84);assert(OS.windows.size===1);assert(document.querySelector('#taskbar button'));return OS.metrics.mode;"))
         await check('Virtual file CRUD, subtree copy, move, recycle, restore',lambda:js("""
             assert(OS.fs.normalize('/Documents/../Projects/./a')==='/Projects/a');
             await OS.fs.mkdir('/Documents/Test Suite');await OS.fs.mkdir('/Documents/Test Suite/nested');
