@@ -22,7 +22,7 @@ test('Local file paths retain reserved characters and reject traversal',()=>{
  for(const input of ['aster://file/Documents/a%20b.html','aster://file/Documents/a%23b%3F.html']) assert.equal(M.address(input),input);
  for(const input of ['aster://file/%2e%2e/foo','aster://file/../foo','aster://file/a%5Cb','aster://file/%00bad']) assert.throws(()=>M.address(input));
 });
-test('All 79 exact catalog sites retain same-origin execution needed by Workers and storage',()=>{
+test('All 84 exact catalog sites retain same-origin execution needed by Workers and storage',()=>{
  for(const app of catalog.apps){assert.equal(M.catalogApp(app.url,catalog.apps).id,app.id);assert.match(M.framePolicy(app.url,catalog.apps).sandbox,/allow-same-origin/);}
 });
 test('Unreviewed websites, altered paths and the desktop remain opaque-origin',()=>{
