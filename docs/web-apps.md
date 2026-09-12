@@ -1,6 +1,6 @@
 # Your web apps in Aster
 
-Open **Start → Your web apps → a category → an app**. All 79 reviewed external
+Open **Start → Your web apps → a category → an app**. All 84 reviewed external
 projects have an entry. Search by app name, repository name, purpose or category
 from the normal Start search field. Category submenus have Back navigation,
 keyboard controls and a single-column touch layout on narrow screens.
@@ -28,7 +28,7 @@ future repositories will be discovered automatically.
 The original audit found 68 candidate repositories and included 67 external apps.
 Veyra Workspace and Asterion EDA were subsequently added at the owner's request,
 followed by TwinForge, Branchglass, Notepad XP, Formalyth and Jailbreak.
-The reviewed inventory now contains 75 repositories and the collection 79 apps.
+The reviewed inventory now contains 85 repositories and the collection 84 apps.
 Their individual audit timestamps and live response evidence are retained. **Aster
 itself is intentionally excluded**, rather than recursively embedding the host
 desktop. No other candidate was dropped. Every app's deployed entry point returned
@@ -45,13 +45,13 @@ The catalog does not contact GitHub or preload any remote site when Aster starts
 
 | Submenu | Apps |
 | --- | ---: |
-| Design & Graphics | 8 |
-| 3D & Animation | 7 |
-| CAD & Manufacturing | 9 |
-| Science & Simulation | 9 |
-| Process & Automation | 10 |
+| Design & Graphics | 10 |
+| 3D & Animation | 8 |
+| CAD & Manufacturing | 11 |
+| Science & Simulation | 10 |
+| Process & Automation | 11 |
 | Buildings & Maps | 5 |
-| Office & Productivity | 11 |
+| Office & Productivity | 14 |
 | Development & Data | 8 |
 | Audio & Video | 4 |
 | Games | 3 |
@@ -82,12 +82,35 @@ All entries are searchable by their app titles and repository names. They use
 Aster's existing window controls, taskbar entries, Reload, Source and Open in
 browser actions. Launching an app does not preload the other sites.
 
+## Workspace and design additions
+
+| App | Category | GitHub Pages edition |
+| --- | --- | --- |
+| Velsign | Office & Productivity | Browser-local agreement preparation and signing demos |
+| Folio | Office & Productivity | Documents, knowledge pages and project databases |
+| Mireva Studio | Design & Graphics | Interface design, vectors and multi-screen prototypes |
+| Orivane | Office & Productivity | Whiteboards, notes, diagrams and presentations |
+| Velora Design Studio | Design & Graphics | Presentations, social graphics and multipage designs |
+
+These are explicit additions, not a change to the original date-window audit.
+The previous VoltWeave, Stratum Intelligence, Veldra, Avolith and Aureon entries
+remain present. The inventory retains the actual HTTPS response, document title,
+response hash and inspected README hash for each new entry.
+
+All five launch their public Pages edition and store local work in their own
+browser storage. Server-backed accounts, cross-device collaboration and connected
+AI require each project's separately deployed backend; Aster does not supply or
+silently connect those services. Velsign's local signing demo does not establish
+verified identities or certified signatures. Export important work from the app
+before clearing its site data. These additions receive no camera, microphone,
+screen-capture or geolocation delegation.
+
 ## Hosting, permissions and trust
 
 These are independently hosted applications, not copies bundled with Aster and
 not Windows EXEs. The existing browser-only Win32 runtime remains separate.
 Loading an app needs its live site or that app's own offline cache. The standalone
-Aster HTML embeds the catalog and window host, **not all 79 application payloads**.
+Aster HTML embeds the catalog and window host, **not all 84 application payloads**.
 
 All catalog entries are fixed HTTPS URLs on `wieslawsoltes.github.io`. The host
 rejects arbitrary schemes, origins, credentials, query strings and altered launch

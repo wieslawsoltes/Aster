@@ -15,9 +15,9 @@ function register(c = catalog) {
     return {apps, OS};
 }
 test('Every audited web project appears exactly once; only Aster itself is excluded', () => {
-    assert.equal(inventory.repositories.length, 80);
-    assert.equal(catalog.apps.length, 79);
-    assert.equal(new Set(catalog.apps.map(a => a.id)).size, 79);
+    assert.equal(inventory.repositories.length, 85);
+    assert.equal(catalog.apps.length, 84);
+    assert.equal(new Set(catalog.apps.map(a => a.id)).size, 84);
     assert.deepEqual(catalog.apps.map(a => a.repo).sort(), inventory.repositories.filter(r => r.included).map(r => r.name).sort());
     assert.deepEqual(inventory.repositories.filter(r => !r.included).map(r => r.name), ['Aster']);
 });
@@ -60,7 +60,7 @@ test('Catalog objects and collections are immutable', () => {
 });
 test('All projects register real mounts without DOM, network or eager iframe creation', () => {
     const {apps} = register();
-    assert.equal(apps.size, 79);
+    assert.equal(apps.size, 84);
     for (const [id, app] of apps) {
         assert.equal(app.webApp, true); assert.equal(typeof app.mount, 'function');
         assert(app.category && app.keywords && app.icon && app.color);
@@ -128,7 +128,7 @@ test('The five requested tools are unique, categorized and searchable without ad
 test('September 10 requested additions remain unique, searchable, scoped and explicitly audited', () => {
     const {apps} = register();
     const expected = [["VoltWeaveCircuitStudio", "VoltWeave Circuit Studio", "simulation"], ["StratumIntelligence", "Stratum Intelligence", "industrial"], ["Veldra3D", "Veldra 3D + Weave", "cad"], ["AvolithStudio", "Avolith Studio", "cad"], ["AureonStudio", "Aureon Studio", "animation"]];
-    assert.equal(catalog.apps.filter(a => a.selection === "explicit-request").length, 5);
+    assert.equal(catalog.apps.filter(a => a.selection === "explicit-request").length, 10);
     for (const [repo,title,category] of expected) {
         const matches=catalog.apps.filter(a=>a.repo===repo);assert.equal(matches.length,1);
         const app=matches[0];assert.equal(app.title,title);assert.equal(app.category,category);
@@ -136,4 +136,42 @@ test('September 10 requested additions remain unique, searchable, scoped and exp
         assert(apps.get(app.id).keywords.includes(repo));
         assert(!launcher.match(/const recordingApps = new Set\(\[([^\]]+)\]\)/)[1].includes("\'"+repo+"\'"));
     }
+});
+
+
+test('Requested workspace and design apps are unique, searchable and do not gain media access', () => {
+    const {apps} = register();
+    const requested = [
+        ['Velsign', 'Velsign', 'office'], ['Folio', 'Folio', 'office'],
+        ['MirevaStudio', 'Mireva Studio', 'design'], ['Orivane', 'Orivane', 'office'],
+        ['Velora', 'Velora Design Studio', 'design']
+    ];
+    assert.equal(catalog.version, 4);
+    const recording = launcher.match(/const recordingApps = new Set\(\[([^\]]+)\]\)/)[1];
+    for (const [repo, title, category] of requested) {
+        const matches = catalog.apps.filter(a => a.repo === repo);
+        assert.equal(matches.length, 1);
+        const app = matches[0], audit = inventory.repositories.find(r => r.name === repo);
+        assert.equal(app.title, title); assert.equal(app.category, category);
+        assert.equal(app.selection, 'explicit-request'); assert.equal(audit.selection, app.selection);
+        assert.equal(audit.addedAt, app.addedAt);
+        assert.equal(audit.deployments[0].title, app.documentTitle);
+        assert.match(audit.readmeSHA, /^[a-f0-9]{40}$/);
+        assert.match(audit.deployments[0].sha256, /^[a-f0-9]{64}$/);
+        assert(audit.deployments[0].bytes > 0);
+        assert(apps.get(app.id).keywords.includes(repo));
+        assert(!recording.includes("'" + repo + "'"));
+    }
+});
+
+test('The standalone embeds the exact same catalog, including all five additions', () => {
+    const standalone = fs.readFileSync(root + '/Aster.html', 'utf8');
+    const marker = '/* src/web-app-catalog.js */';
+    const begin = standalone.indexOf(marker);
+    assert(begin >= 0);
+    const end = standalone.indexOf('</script>', begin);
+    assert(end > begin);
+    const context = {};
+    vm.runInNewContext(standalone.slice(begin, end), context, {timeout: 1000});
+    assert.deepEqual(JSON.parse(JSON.stringify(context.AsterWebCatalog)), JSON.parse(JSON.stringify(catalog)));
 });

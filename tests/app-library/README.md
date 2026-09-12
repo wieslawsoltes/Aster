@@ -21,7 +21,7 @@ iframe identity, filesystem bytes, stale revisions, real transaction abort,
 legacy entries, touch-capable layout, six themes, and keyboard focus loops.
 A minimal HTTPS response fixture tests generic-link isolation only; it is not
 used to claim the external catalog applications were live-tested. The separate
-inherited web-app workflow visits the actual 79 catalog sites.
+inherited web-app workflow visits the actual 84 catalog sites.
 
 Test output is ignored under `artifacts/`. CI saves reports, genuine screenshots,
 exported package, exact source archive, commit SHA and standalone hash, even on

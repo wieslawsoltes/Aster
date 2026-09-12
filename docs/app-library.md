@@ -2,7 +2,7 @@
 
 ## Use the local library
 
-Open **Start → App Center**. Discover lists the 79 reviewed, lazy-loaded web
+Open **Start → App Center**. Discover lists the 84 reviewed, lazy-loaded web
 applications, Installed lists locally installed HTML apps and saved HTTPS links,
 Favorites uses your saved stars, and Built-in apps lists Aster's built-in tools.
 Search includes descriptions, category, publisher and version. Filter by category
