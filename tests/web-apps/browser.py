@@ -66,6 +66,8 @@ def main(args):
                         embedded.wait_for_function('!!document.body && (document.body.innerText.trim().length>40 || document.querySelectorAll("canvas,button,input").length>3)',timeout=20000)
                         # New catalog apps must expose an actionable UI, not just a loading screen.
                         ready={'Velsign':'Upload a document','Folio':'Share','MirevaStudio':'Preview','Orivane':'Workspace','Velora':'Present'}
+                        if app['repo']=='Orivane':
+                            embedded.get_by_text('A shared space for better ideas.',exact=True).wait_for(state='hidden',timeout=45000)
                         if app['repo'] in ready:
                             embedded.get_by_role('button',name=ready[app['repo']],exact=False).first.click(trial=True,timeout=45000)
                             row['actionableControl']=ready[app['repo']]
