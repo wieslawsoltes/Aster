@@ -9,75 +9,62 @@ concurrency:
   group: prepare-catalog-workspace-apps
   cancel-in-progress: false
 jobs:
-  regression-counts:
+  live-readiness:
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Preserve exact registration assertions across inherited suites
+      - name: Require actionable controls instead of loading-screen evidence
         run: |
           python - <<'PY'
           from pathlib import Path
           import hashlib
-          changes = [
-              ('tests/themes/browser.py','61f19c9226cc394b7bdaec1c59e672a04f4bc960689466f09215962c2726983a','b180e8755c9c2dda4a0935e695e80388e2d06322844db135e7adc390f3fcd1a0',1),
-              ('tests/desktop-features/browser.py','9ffcf3e03752f11a0a373819c6005a0f817434bef335d6243e74c56b73a2ce3f','a639460e54febd11995ee3c2d3b78b3c29dc0e5cd5f0f2116dfd510ddfb33411',2),
-              ('tests/integrated-shell/browser.py','bb0a477127f9b647a82492072e9af0fba3a63fe7c3e08750145816fa799be509','2d8583bc0d1e0e3b7ed587af21364d627930cececcb597ca825160eeafd8f453',1),
-              ('tests/web-chrome/models.cjs','b81d7264eb4803c860aaa9d7e627f6af29234f3f384441a9582201a682b2dffb','1232588bd5de328dc928fe7b05e7a19108a27a66ef289a411b751720b915efac',1)
-          ]
-          outputs=[]
-          for name,before,after,count in changes:
-              p=Path(name);data=p.read_bytes()
-              assert hashlib.sha256(data).hexdigest()==before,name
-              text=data.decode('utf-8');assert text.count('79')==count,name
-              result=text.replace('79','84').encode('utf-8')
-              assert hashlib.sha256(result).hexdigest()==after,name
-              outputs.append((p,result))
-          for p,result in outputs:p.write_bytes(result)
+          p=Path('tests/web-apps/browser.py');before=p.read_bytes()
+          assert hashlib.sha256(before).hexdigest()=='2a7192cebf9ed80d82af29151878615478b00a3a373de4336bf350350c49a16c'
+          text=before.decode('utf-8');old='                        info=embedded.evaluate('
+          new="""                        # New catalog apps must expose an actionable UI, not just a loading screen.
+                                  ready={'Velsign':'Upload a document','Folio':'Share','MirevaStudio':'Preview','Orivane':'Workspace','Velora':'Present'}
+                                  if app['repo'] in ready:
+                                      embedded.get_by_role('button',name=ready[app['repo']],exact=False).first.click(trial=True,timeout=45000)
+                                      row['actionableControl']=ready[app['repo']]
+                                  info=embedded.evaluate("""
+          # Remove only the YAML heredoc's additional indentation on continuation lines.
+          new=new.splitlines()[0]+'\n'+'\n'.join(line[10:] for line in new.splitlines()[1:])
+          assert text.count(old)==1
+          result=text.replace(old,new).encode('utf-8')
+          assert hashlib.sha256(result).hexdigest()=='bcda77d453dcf6152dc0c5a51928439697ae37672e0c979d6c27aafbaa0ca101'
+          p.write_bytes(result)
           PY
-          git show e797446a15ab51bd67d0950e2161e6e9d386f08b:.github/workflows/tests.yml > .github/workflows/tests.yml
-          python -m pip install PyYAML
-          python -m unittest discover -s tests/ci -p 'test_*.py' -v
-          python build.py
-          git diff --exit-code -- Aster.html sdk/aster-files.js sdk/aster-clipboard.js
-          node --test tests/*/models.cjs tests/integrated-shell/contracts.cjs tests/web-apps/catalog.cjs tests/themes/win32.cjs
+          python -m py_compile tests/web-apps/browser.py
           git diff --check
-      - name: Install browser
+      - name: Install browser dependencies
         run: |
           python -m pip install playwright pillow
           python -m playwright install --with-deps chromium
-      - name: Run all affected inherited HTTP and standalone suites
-        run: bash .github/scripts/browser-tests.sh chromium themes desktop-features integrated-shell
-      - name: Commit validated count updates only
+          sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers xvfb
+      - name: Launch the actual 84-app catalog and wait for the five new interfaces
+        run: xvfb-run -a -s '-screen 0 1440x1000x24' python -u tests/web-apps/browser.py --live --gpu --headed
+      - name: Commit only the verified readiness regression
         run: |
-          git checkout HEAD -- .github/workflows/tests.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add tests/themes/browser.py tests/desktop-features/browser.py tests/integrated-shell/browser.py tests/web-chrome/models.cjs
-          git commit -m 'Update inherited desktop regression counts for the 84-app catalog'
+          git add tests/web-apps/browser.py
+          git commit -m 'Wait for actionable controls in each new catalog app before recording live startup'
           git push origin HEAD:build/catalog-workspace-apps
-      - name: Preserve final source and regression reports
+      - name: Preserve actual app evidence and final prepared source
         if: always()
         run: |
-          mkdir -p /tmp/catalog-final
-          git archive --format=zip HEAD -o /tmp/catalog-final/source.zip
-          git rev-parse HEAD > /tmp/catalog-final/commit.txt
-          git diff > /tmp/catalog-final/uncommitted.diff
-          cp -R tests/ci/artifacts /tmp/catalog-final/logs 2>/dev/null || true
-          cp -R tests/themes/artifacts /tmp/catalog-final/themes 2>/dev/null || true
-          cp -R tests/desktop-features/artifacts /tmp/catalog-final/desktop-features 2>/dev/null || true
-          cp -R tests/integrated-shell/artifacts /tmp/catalog-final/integrated-shell 2>/dev/null || true
+          mkdir -p /tmp/catalog-ready
+          git archive --format=zip HEAD -o /tmp/catalog-ready/source.zip
+          git rev-parse HEAD > /tmp/catalog-ready/commit.txt
+          git diff > /tmp/catalog-ready/uncommitted.diff
+          cp -R tests/web-apps/artifacts /tmp/catalog-ready/live 2>/dev/null || true
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: catalog-regression-finalization
-          path: /tmp/catalog-final/
+          name: catalog-live-ready-evidence
+          path: /tmp/catalog-ready/
           retention-days: 14
