@@ -25,14 +25,15 @@ jobs:
           p=Path('tests/web-apps/browser.py');before=p.read_bytes()
           assert hashlib.sha256(before).hexdigest()=='2a7192cebf9ed80d82af29151878615478b00a3a373de4336bf350350c49a16c'
           text=before.decode('utf-8');old='                        info=embedded.evaluate('
-          new="""                        # New catalog apps must expose an actionable UI, not just a loading screen.
-                                  ready={'Velsign':'Upload a document','Folio':'Share','MirevaStudio':'Preview','Orivane':'Workspace','Velora':'Present'}
-                                  if app['repo'] in ready:
-                                      embedded.get_by_role('button',name=ready[app['repo']],exact=False).first.click(trial=True,timeout=45000)
-                                      row['actionableControl']=ready[app['repo']]
-                                  info=embedded.evaluate("""
-          # Remove only the YAML heredoc's additional indentation on continuation lines.
-          new=new.splitlines()[0]+'\n'+'\n'.join(line[10:] for line in new.splitlines()[1:])
+          lines=[
+              '# New catalog apps must expose an actionable UI, not just a loading screen.',
+              "ready={'Velsign':'Upload a document','Folio':'Share','MirevaStudio':'Preview','Orivane':'Workspace','Velora':'Present'}",
+              "if app['repo'] in ready:",
+              "    embedded.get_by_role('button',name=ready[app['repo']],exact=False).first.click(trial=True,timeout=45000)",
+              "    row['actionableControl']=ready[app['repo']]",
+              'info=embedded.evaluate('
+          ]
+          new='\n'.join(' '*24+line for line in lines)
           assert text.count(old)==1
           result=text.replace(old,new).encode('utf-8')
           assert hashlib.sha256(result).hexdigest()=='bcda77d453dcf6152dc0c5a51928439697ae37672e0c979d6c27aafbaa0ca101'
