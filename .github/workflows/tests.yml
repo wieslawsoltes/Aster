@@ -17,26 +17,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Require actionable controls instead of loading-screen evidence
+      - name: Wait for the actual board rather than a pointer-transparent splash
         run: |
           python - <<'PY'
           from pathlib import Path
           import hashlib
           p=Path('tests/web-apps/browser.py');before=p.read_bytes()
-          assert hashlib.sha256(before).hexdigest()=='2a7192cebf9ed80d82af29151878615478b00a3a373de4336bf350350c49a16c'
-          text=before.decode('utf-8');old='                        info=embedded.evaluate('
-          lines=[
-              '# New catalog apps must expose an actionable UI, not just a loading screen.',
-              "ready={'Velsign':'Upload a document','Folio':'Share','MirevaStudio':'Preview','Orivane':'Workspace','Velora':'Present'}",
-              "if app['repo'] in ready:",
-              "    embedded.get_by_role('button',name=ready[app['repo']],exact=False).first.click(trial=True,timeout=45000)",
-              "    row['actionableControl']=ready[app['repo']]",
-              'info=embedded.evaluate('
-          ]
-          new='\n'.join(' '*24+line for line in lines)
+          assert hashlib.sha256(before).hexdigest()=='bcda77d453dcf6152dc0c5a51928439697ae37672e0c979d6c27aafbaa0ca101'
+          text=before.decode('utf-8');old="                        if app['repo'] in ready:\n"
+          new="                        if app['repo']=='Orivane':\n                            embedded.get_by_text('A shared space for better ideas.',exact=True).wait_for(state='hidden',timeout=45000)\n"+old
           assert text.count(old)==1
           result=text.replace(old,new).encode('utf-8')
-          assert hashlib.sha256(result).hexdigest()=='bcda77d453dcf6152dc0c5a51928439697ae37672e0c979d6c27aafbaa0ca101'
+          assert hashlib.sha256(result).hexdigest()=='b82c96b5641c777f22da3675451c03d59a4c56b2cd400b44b589bb475ed19b9a'
           p.write_bytes(result)
           PY
           python -m py_compile tests/web-apps/browser.py
@@ -46,16 +38,16 @@ jobs:
           python -m pip install playwright pillow
           python -m playwright install --with-deps chromium
           sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers xvfb
-      - name: Launch the actual 84-app catalog and wait for the five new interfaces
+      - name: Actual 84-app catalog with visible new-app interfaces
         run: xvfb-run -a -s '-screen 0 1440x1000x24' python -u tests/web-apps/browser.py --live --gpu --headed
       - name: Commit only the verified readiness regression
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add tests/web-apps/browser.py
-          git commit -m 'Wait for actionable controls in each new catalog app before recording live startup'
+          git commit -m 'Wait for the Orivane board to replace its startup overlay in live catalog checks'
           git push origin HEAD:build/catalog-workspace-apps
-      - name: Preserve actual app evidence and final prepared source
+      - name: Preserve evidence and final source
         if: always()
         run: |
           mkdir -p /tmp/catalog-ready
