@@ -19,8 +19,7 @@ jobs:
     name: Select successfully tested main commit
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_repository.full_name == github.repository &&
+      (github.event.workflow_run.head_repository.full_name == github.repository &&
        (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch'))
     runs-on: ubuntu-24.04
     timeout-minutes: 3
@@ -36,9 +35,15 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo;
+            core.setOutput('deploy', 'false');
             const { data: main } = await github.rest.git.getRef({ owner, repo, ref: 'heads/main' });
             const sha = main.object.sha;
             let run = context.payload.workflow_run;
+            if (run) {
+              // A retried Pages run retains its original event payload. Always
+              // inspect the latest Tests attempt instead of that stale conclusion.
+              ({ data: run } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: run.id }));
+            }
             if (!run) {
               if (context.ref !== 'refs/heads/main') throw new Error('Manual deployment is restricted to main.');
               const { data } = await github.rest.actions.listWorkflowRuns({
@@ -55,11 +60,19 @@ jobs:
               core.setOutput('deploy', 'false');
               return;
             }
-            if (run.conclusion !== 'success' || run.head_branch !== 'main' ||
+            if (run.head_branch !== 'main' ||
                 run.path !== '.github/workflows/tests.yml' ||
                 run.head_repository?.full_name !== `${owner}/${repo}` ||
                 !['push', 'workflow_dispatch'].includes(run.event)) {
               throw new Error('Only successful Tests from this repository main branch may deploy.');
+            }
+            if (run.status !== 'completed' || run.conclusion !== 'success') {
+              const url = `https://github.com/${owner}/${repo}/actions/runs/${run.id}`;
+              const status = run.status === 'completed' ? run.conclusion : run.status;
+              await core.summary.addHeading('Pages deployment blocked by Tests')
+                .addRaw(`Commit: ${sha}\n\n[Tests run ${run.id}, attempt ${run.run_attempt}](${url}): **${status}**.\n\nFix or rerun the failed Tests jobs. A successful Tests run on current main triggers Pages automatically. Retrying this Pages run rechecks the latest Tests attempt.\n`).write();
+              core.setFailed(`Pages was not deployed: Tests are ${status}. See ${url}`);
+              return;
             }
             core.setOutput('sha', sha);
             core.setOutput('deploy', 'true');

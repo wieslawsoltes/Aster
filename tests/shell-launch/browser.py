@@ -5,7 +5,7 @@ import argparse,json,threading,time
 from pathlib import Path
 from functools import partial
 from http.server import SimpleHTTPRequestHandler,ThreadingHTTPServer
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, expect
 ROOT=Path(__file__).resolve().parents[2]
 class Quiet(SimpleHTTPRequestHandler):
     def log_message(self,*args):pass
@@ -47,7 +47,23 @@ def main(args):
                 clean();w=launch('settings',{'section':'apps'});w.get_by_text('Default apps',exact=True).locator('..').locator('..').get_by_role('button',name='Manage').click();w.get_by_label('Find a file type',exact=True).fill('.png');w.get_by_label('Default for .png',exact=True).select_option('paint');page.wait_for_function('Aster.shellLaunch.state.defaults.png==="paint"');page.screenshot(path=str(out/'default-apps.png'));js("assert(OS.windows.size===1);assert(OS.appForFile('/Pictures/association.png','image/png')==='paint');assert(OS.fileTypeApp('/Pictures/association.png','image/png')==='photos');const w=await OS.openPath('/Pictures/association.png');assert(w.appId==='paint');await w.ready;assert(w.body.querySelector('canvas')); ")
             check('Default apps stays in Settings and changes file dispatch without breaking gallery typing',settings)
             def props():
-                clean();launch('files',{'path':'/Documents/Launch'});page.locator('.file-row[data-path="/Documents/Launch/hello.html"]').click(button='right');page.get_by_role('menuitem',name='Properties',exact=True).click();d=page.get_by_role('dialog',name='hello.html Properties',exact=True);assert 'Opens with: Notepad' in d.inner_text();d.get_by_role('button',name='Change…',exact=True).click();inner=page.get_by_role('dialog',name='Choose a default app');inner.locator('[data-handler="browser"]').click();inner.get_by_role('button',name='Set default',exact=True).click();page.wait_for_function('Aster.shellLaunch.state.defaults.html==="browser"');assert 'Opens with: Orbit Browser' in d.inner_text();d.get_by_role('button',name='OK',exact=True).click();js("assert(OS.windows.size===1);await OS.shellLaunch.setDefault('html','notepad');")
+                clean()
+                launch('files', {'path': '/Documents/Launch'})
+                page.locator('.file-row[data-path="/Documents/Launch/hello.html"]').click(button='right')
+                page.get_by_role('menuitem', name='Properties', exact=True).click()
+                d = page.get_by_role('dialog', name='hello.html Properties', exact=True)
+                expect(d).to_contain_text('Opens with: Notepad')
+                d.get_by_role('button', name='Change…', exact=True).click()
+                inner = page.get_by_role('dialog', name='Choose a default app')
+                inner.locator('[data-handler="browser"]').click()
+                inner.get_by_role('button', name='Set default', exact=True).click()
+                page.wait_for_function('Aster.shellLaunch.state.defaults.html==="browser"')
+                # State changes before IndexedDB persistence and Properties rerender.
+                # Assert the visible result with retries, not a snapshot of stale DOM.
+                expect(inner).not_to_be_visible()
+                expect(d).to_contain_text('Opens with: Orbit Browser')
+                d.get_by_role('button', name='OK', exact=True).click()
+                js("assert(OS.windows.size===1);await OS.shellLaunch.setDefault('html','notepad');")
             check('File Properties changes the association without opening a separate utility app',props)
             def rundialog():
                 clean();page.locator('#start-button').click(button='right');page.get_by_role('menuitem',name='Run',exact=False).click();d=page.get_by_role('dialog',name='Run',exact=True);d.get_by_role('combobox',name='Run',exact=True).fill('javascript:alert(1)');d.get_by_role('button',name='OK',exact=True).click();assert d.is_visible() and 'cannot find' in d.inner_text();js('assert(OS.windows.size===0)');d.get_by_role('combobox',name='Run',exact=True).fill('calc');page.screenshot(path=str(out/'run-dialog.png'));d.get_by_role('button',name='OK',exact=True).click();page.wait_for_function('Aster.shellLaunch.state.runHistory.includes("calc")');js("assert(OS.windows.size===1);assert([...OS.windows.values()][0].appId==='calculator');")
