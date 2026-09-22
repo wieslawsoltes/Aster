@@ -12,7 +12,7 @@ panels by design, so opening a submenu before that event would race the shell.
 No application assertion or resize handler is disabled.
 
 Run `python tests/web-apps/browser.py --live --gpu --headed` in the documented
-Chromium/SwiftShader test environment to launch all 84 real deployed projects.
+Chromium/SwiftShader test environment to launch all 110 real deployed projects.
 This path has no fixture routing and records each app's URL, title, visible page
 content and DOM/control/canvas counts. It verifies deployed iframe startup, not
 all editing, media, file-system or graphics features of every external app.
@@ -25,3 +25,10 @@ existing Win32/native/GUI and desktop regression workflow remains enabled.
 The requested-workspace regression checks all five new Start search results and
 canonical iframe URLs without extending media permissions. The live run separately
 opens Velsign, Folio, Mireva Studio, Orivane and Velora and retains screenshots.
+
+
+For a targeted live startup check, use `python tests/web-apps/browser.py --live
+--gpu --repos ChromaForgeMaterialStudio StratumFX Auralis`. Omit `--repos` for
+the full 110-app CI gate; unknown repository names fail rather than being skipped.
+The September 22 fixture list covers all 26 requested apps in Start and App Center
+search. Host fixtures do not certify their remote editing functionality.

@@ -46,12 +46,14 @@ def main(args):
             page.wait_for_function('window.Aster?.booted');page.locator('#boot').wait_for(state='detached')
             js('await OS.ready;OS.settings.restore=false;OS.settings.motion=false;OS.settings.dnd=true;OS.applySettings();await OS.db.set("settings",OS.settings);for(const w of [...OS.windows.values()])await w.close(true);document.querySelectorAll(".toast").forEach(n=>n.remove());')
             focus_store()
-            check('Discover lists all 84 catalog apps without eager remote execution',lambda:js('assert(document.querySelectorAll("[data-library-app]").length===84);assert(!document.querySelector(".web-app-frame"));assert(OS.apps.size===113);'))
+            check('Discover lists all 110 catalog apps without eager remote execution',lambda:js('assert(document.querySelectorAll("[data-library-app]").length===110);assert(!document.querySelector(".web-app-frame"));assert(OS.apps.size===139);'))
             def discover():
                 for repo,title in [('VoltWeaveCircuitStudio','VoltWeave Circuit Studio'),('StratumIntelligence','Stratum Intelligence'),('Veldra3D','Veldra 3D + Weave'),('AvolithStudio','Avolith Studio'),('AureonStudio','Aureon Studio')]:
                     page.get_by_label('Search apps',exact=True).fill(title);assert page.locator('[data-library-app="web-'+repo.lower()+'"]').count()==1
+                for app in json.loads((ROOT/'tests/web-apps/requested-2026-09-22.json').read_text()):
+                    page.get_by_label('Search apps',exact=True).fill(app['repo']);assert page.locator('[data-library-app="web-'+app['repo'].lower()+'"]').count()==1
                 page.get_by_label('Search apps',exact=True).fill('P&ID');assert page.locator('[data-library-app="web-stratumintelligence"]').count()==1;page.get_by_label('Search apps',exact=True).fill('')
-                page.get_by_label('Filter category').select_option('CAD & Manufacturing');assert page.locator('[data-library-app]').count()==11;page.get_by_label('Filter category').select_option('')
+                page.get_by_label('Filter category').select_option('CAD & Manufacturing');assert page.locator('[data-library-app]').count()==15;page.get_by_label('Filter category').select_option('')
             check('Requested apps, descriptions and categories are searchable',discover)
             def cancel_install():
                 old=js('return (await OS.db.all()).length;')

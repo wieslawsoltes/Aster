@@ -1,0 +1,158 @@
+[
+  {
+    "repo": "Veyra",
+    "title": "Veyra Compositing Studio",
+    "category": "media",
+    "url": "https://wieslawsoltes.github.io/Veyra/"
+  },
+  {
+    "repo": "ChromaForgeMaterialStudio",
+    "title": "ChromaForge Material Studio",
+    "category": "animation",
+    "url": "https://wieslawsoltes.github.io/ChromaForgeMaterialStudio/studio/"
+  },
+  {
+    "repo": "VeyraStudio",
+    "title": "Veyra Video Studio",
+    "category": "media",
+    "url": "https://wieslawsoltes.github.io/VeyraStudio/"
+  },
+  {
+    "repo": "TesseraStudio",
+    "title": "Tessera Studio",
+    "category": "animation",
+    "url": "https://wieslawsoltes.github.io/TesseraStudio/"
+  },
+  {
+    "repo": "LumeraStudio",
+    "title": "Lumera Studio",
+    "category": "animation",
+    "url": "https://wieslawsoltes.github.io/LumeraStudio/"
+  },
+  {
+    "repo": "RelayForgeElectrical",
+    "title": "RelayForge Electrical",
+    "category": "cad",
+    "url": "https://wieslawsoltes.github.io/RelayForgeElectrical/"
+  },
+  {
+    "repo": "AstrumStudio",
+    "title": "Astrum Studio",
+    "category": "animation",
+    "url": "https://wieslawsoltes.github.io/AstrumStudio/"
+  },
+  {
+    "repo": "VectorStudio",
+    "title": "Vellum Vector Studio",
+    "category": "design",
+    "url": "https://wieslawsoltes.github.io/VectorStudio/"
+  },
+  {
+    "repo": "StratumFX",
+    "title": "Stratum FX",
+    "category": "animation",
+    "url": "https://wieslawsoltes.github.io/StratumFX/app/"
+  },
+  {
+    "repo": "CinderLab",
+    "title": "CinderLab",
+    "category": "animation",
+    "url": "https://wieslawsoltes.github.io/CinderLab/"
+  },
+  {
+    "repo": "TerraWeave",
+    "title": "TerraWeave",
+    "category": "buildings",
+    "url": "https://wieslawsoltes.github.io/TerraWeave/"
+  },
+  {
+    "repo": "ImplicitForge",
+    "title": "ImplicitForge",
+    "category": "cad",
+    "url": "https://wieslawsoltes.github.io/ImplicitForge/"
+  },
+  {
+    "repo": "PatinaStudio",
+    "title": "Patina Studio",
+    "category": "animation",
+    "url": "https://wieslawsoltes.github.io/PatinaStudio/"
+  },
+  {
+    "repo": "PigmentLab",
+    "title": "PigmentLab",
+    "category": "design",
+    "url": "https://wieslawsoltes.github.io/PigmentLab/"
+  },
+  {
+    "repo": "Orbitarium",
+    "title": "Orbitarium",
+    "category": "simulation",
+    "url": "https://wieslawsoltes.github.io/Orbitarium/"
+  },
+  {
+    "repo": "DuoStudio",
+    "title": "Duo Studio",
+    "category": "development",
+    "url": "https://wieslawsoltes.github.io/DuoStudio/"
+  },
+  {
+    "repo": "ApertureCAD",
+    "title": "Aperture CAD",
+    "category": "cad",
+    "url": "https://wieslawsoltes.github.io/ApertureCAD/"
+  },
+  {
+    "repo": "DrawingWeb",
+    "title": "DrawingWeb Studio",
+    "category": "design",
+    "url": "https://wieslawsoltes.github.io/DrawingWeb/"
+  },
+  {
+    "repo": "CounterformStudio",
+    "title": "Counterform Studio",
+    "category": "design",
+    "url": "https://wieslawsoltes.github.io/CounterformStudio/"
+  },
+  {
+    "repo": "RevectorStudio",
+    "title": "Revector Studio",
+    "category": "cad",
+    "url": "https://wieslawsoltes.github.io/RevectorStudio/"
+  },
+  {
+    "repo": "AvenorMail",
+    "title": "Avenor Mail",
+    "category": "office",
+    "url": "https://wieslawsoltes.github.io/AvenorMail/"
+  },
+  {
+    "repo": "Auralis",
+    "title": "Auralis Studio",
+    "category": "media",
+    "url": "https://wieslawsoltes.github.io/Auralis/"
+  },
+  {
+    "repo": "ClaudeCodeDesign",
+    "title": "Claude Code Design",
+    "category": "development",
+    "url": "https://wieslawsoltes.github.io/ClaudeCodeDesign/"
+  },
+  {
+    "repo": "RichTextWeb",
+    "title": "RichTextWeb Document Studio",
+    "category": "office",
+    "url": "https://wieslawsoltes.github.io/RichTextWeb/"
+  },
+  {
+    "repo": "GridWeb",
+    "title": "GridWeb Workbook Studio",
+    "category": "office",
+    "url": "https://wieslawsoltes.github.io/GridWeb/"
+  },
+  {
+    "repo": "XamoraStudio",
+    "title": "Xamora Studio",
+    "category": "development",
+    "url": "https://wieslawsoltes.github.io/XamoraStudio/"
+  }
+]

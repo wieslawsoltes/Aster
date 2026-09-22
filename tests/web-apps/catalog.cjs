@@ -7,17 +7,19 @@ const {test} = require('node:test');
 const root = path.resolve(__dirname, '../..');
 const catalog = require(root + '/src/web-app-catalog.js');
 const inventory = JSON.parse(fs.readFileSync(root + '/docs/web-app-inventory.json', 'utf8'));
+const navigation = require(root + '/src/web-navigation.js');
+const requested = JSON.parse(fs.readFileSync(root + '/tests/web-apps/requested-2026-09-22.json', 'utf8'));
 const launcher = fs.readFileSync(root + '/src/apps-web.js', 'utf8');
 function register(c = catalog) {
     const apps = new Map();
     const OS = { register: (id, spec) => { assert(!apps.has(id)); apps.set(id, spec); } };
-    vm.runInNewContext(launcher, { Aster: OS, AsterWebCatalog: c, URL }, {timeout: 1000});
+    vm.runInNewContext(launcher, { Aster: OS, AsterWebCatalog: c, AsterWebNavigation: navigation, URL }, {timeout: 1000});
     return {apps, OS};
 }
 test('Every audited web project appears exactly once; only Aster itself is excluded', () => {
-    assert.equal(inventory.repositories.length, 85);
-    assert.equal(catalog.apps.length, 84);
-    assert.equal(new Set(catalog.apps.map(a => a.id)).size, 84);
+    assert.equal(inventory.repositories.length, 111);
+    assert.equal(catalog.apps.length, 110);
+    assert.equal(new Set(catalog.apps.map(a => a.id)).size, 110);
     assert.deepEqual(catalog.apps.map(a => a.repo).sort(), inventory.repositories.filter(r => r.included).map(r => r.name).sort());
     assert.deepEqual(inventory.repositories.filter(r => !r.included).map(r => r.name), ['Aster']);
 });
@@ -45,7 +47,8 @@ test('Category submenus cover all projects and never contain an empty folder', (
 });
 test('Launch URLs, repository identity, descriptions and deployment evidence agree', () => {
     for (const app of catalog.apps) {
-        assert.equal(app.url, 'https://wieslawsoltes.github.io/' + app.repo + '/');
+        assert.equal(app.url, requested.find(row => row.repo === app.repo)?.url || 'https://wieslawsoltes.github.io/' + app.repo + '/');
+        assert.equal(navigation.reviewedURL(app), app.url);
         assert.equal(app.repository, 'https://github.com/wieslawsoltes/' + app.repo);
         assert(app.description.length > 12 && app.documentTitle);
         const repo = inventory.repositories.find(r => r.name === app.repo);
@@ -60,7 +63,7 @@ test('Catalog objects and collections are immutable', () => {
 });
 test('All projects register real mounts without DOM, network or eager iframe creation', () => {
     const {apps} = register();
-    assert.equal(apps.size, 84);
+    assert.equal(apps.size, 110);
     for (const [id, app] of apps) {
         assert.equal(app.webApp, true); assert.equal(typeof app.mount, 'function');
         assert(app.category && app.keywords && app.icon && app.color);
@@ -75,6 +78,7 @@ test('The host rejects arbitrary origins, schemes, credentials and altered paths
 });
 test('Static and standalone loaders include catalog before launcher and shell', () => {
     const html = fs.readFileSync(root + '/index.html', 'utf8');
+    assert(html.indexOf('src/web-navigation.js') < html.indexOf('src/apps-web.js'));
     assert(html.indexOf('src/web-app-catalog.js') < html.indexOf('src/apps-web.js'));
     assert(html.indexOf('src/apps-web.js') < html.indexOf('src/shell.js'));
     const sw = fs.readFileSync(root + '/sw.js', 'utf8');
@@ -128,7 +132,7 @@ test('The five requested tools are unique, categorized and searchable without ad
 test('September 10 requested additions remain unique, searchable, scoped and explicitly audited', () => {
     const {apps} = register();
     const expected = [["VoltWeaveCircuitStudio", "VoltWeave Circuit Studio", "simulation"], ["StratumIntelligence", "Stratum Intelligence", "industrial"], ["Veldra3D", "Veldra 3D + Weave", "cad"], ["AvolithStudio", "Avolith Studio", "cad"], ["AureonStudio", "Aureon Studio", "animation"]];
-    assert.equal(catalog.apps.filter(a => a.selection === "explicit-request").length, 10);
+    assert.equal(catalog.apps.filter(a => a.selection === "explicit-request").length, 36);
     for (const [repo,title,category] of expected) {
         const matches=catalog.apps.filter(a=>a.repo===repo);assert.equal(matches.length,1);
         const app=matches[0];assert.equal(app.title,title);assert.equal(app.category,category);
@@ -146,7 +150,7 @@ test('Requested workspace and design apps are unique, searchable and do not gain
         ['MirevaStudio', 'Mireva Studio', 'design'], ['Orivane', 'Orivane', 'office'],
         ['Velora', 'Velora Design Studio', 'design']
     ];
-    assert.equal(catalog.version, 4);
+    assert.equal(catalog.version, 5);
     const recording = launcher.match(/const recordingApps = new Set\(\[([^\]]+)\]\)/)[1];
     for (const [repo, title, category] of requested) {
         const matches = catalog.apps.filter(a => a.repo === repo);
@@ -164,7 +168,7 @@ test('Requested workspace and design apps are unique, searchable and do not gain
     }
 });
 
-test('The standalone embeds the exact same catalog, including all five additions', () => {
+test('The standalone embeds the exact same catalog, including every requested addition', () => {
     const standalone = fs.readFileSync(root + '/Aster.html', 'utf8');
     const marker = '/* src/web-app-catalog.js */';
     const begin = standalone.indexOf(marker);
@@ -174,4 +178,59 @@ test('The standalone embeds the exact same catalog, including all five additions
     const context = {};
     vm.runInNewContext(standalone.slice(begin, end), context, {timeout: 1000});
     assert.deepEqual(JSON.parse(JSON.stringify(context.AsterWebCatalog)), JSON.parse(JSON.stringify(catalog)));
+});
+
+
+test('All 26 September 22 apps are unique, searchable, audited and correctly categorized', () => {
+    assert.equal(requested.length, 26);
+    const {apps} = register();
+    for (const expected of requested) {
+        const matches = catalog.apps.filter(app => app.repo === expected.repo);
+        assert.equal(matches.length, 1, expected.repo);
+        const app = matches[0], audit = inventory.repositories.find(row => row.name === app.repo);
+        for (const key of ['repo', 'title', 'category', 'url']) assert.equal(app[key], expected[key]);
+        assert.equal(app.selection, 'explicit-request');
+        assert.equal(audit.selection, app.selection);
+        assert.equal(audit.addedAt, app.addedAt);
+        assert.match(audit.readmeSHA, /^[a-f0-9]{40}$/);
+        const deployment = audit.deployments[0];
+        assert.equal(deployment.finalUrl, app.url);
+        assert.equal(deployment.title, app.documentTitle);
+        assert.equal(deployment.status, 200);
+        assert.match(deployment.sha256, /^[a-f0-9]{64}$/);
+        assert.match(deployment.headers['content-type'], /text\/html/);
+        assert(deployment.bytes > 0);
+        assert(Number.isFinite(Date.parse(deployment.auditedAt)));
+        assert(apps.get(app.id).keywords.includes(app.repo));
+        assert.equal(apps.get(app.id).url, app.url);
+        assert.equal(apps.get(app.id).repository, app.repository);
+        const policy = navigation.framePolicy(app.url, catalog.apps);
+        assert(policy.trusted);
+        assert.equal(policy.allow.includes('microphone'), app.repo === 'Auralis');
+        assert(!/camera|display-capture|geolocation/.test(policy.allow));
+    }
+    assert.notEqual(catalog.apps.find(app => app.repo === 'Veyra').title,
+        catalog.apps.find(app => app.repo === 'VeyraStudio').title);
+});
+
+test('Reviewed editor subpaths cannot be changed through catalog metadata', () => {
+    for (const repo of ['ChromaForgeMaterialStudio', 'StratumFX']) {
+        const original = catalog.apps.find(app => app.repo === repo);
+        assert.equal(register({...catalog, apps: [original]}).apps.size, 1);
+        for (const url of [
+            'https://wieslawsoltes.github.io/' + repo + '/',
+            original.url + 'other/', original.url + '?token=x', original.url + '#fragment',
+            original.url.replace('github.io', 'github.io.evil.example'),
+            original.url.replace('https://', 'https://user:password@'),
+            original.url.replace('https://', 'http://'),
+            original.url.replace('/' + repo + '/', '/Aster/'),
+            original.url + '../index.html'
+        ]) {
+            const forged = {...original, url, launchPath: url, entryPath: url};
+            assert.equal(navigation.reviewedURL(forged), null);
+            assert.throws(() => register({...catalog, apps: [forged]}));
+            if (new URL(url).username) assert.throws(() => navigation.framePolicy(url, [forged]));
+            else assert.equal(navigation.framePolicy(url, [forged]).trusted, false);
+        }
+    }
 });

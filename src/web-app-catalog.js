@@ -2,7 +2,7 @@
 'use strict';
 (() => {
     const data = {
-  "version": 4,
+  "version": 5,
   "owner": "wieslawsoltes",
   "timezone": "Europe/Warsaw",
   "startInclusive": "2026-09-06T00:00:00+02:00",
@@ -846,9 +846,295 @@
       "documentTitle": "Velora — Design Studio",
       "selection": "explicit-request",
       "addedAt": "2026-09-12T11:58:34.208018+00:00"
+    },
+    {
+      "repo": "Veyra",
+      "title": "Veyra Compositing Studio",
+      "description": "Node-based compositing, editorial timelines and media review",
+      "category": "media",
+      "createdAt": "2026-09-20T11:12:35Z",
+      "url": "https://wieslawsoltes.github.io/Veyra/",
+      "documentTitle": "Veyra Studio — Compositing, Editorial & Review",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "ChromaForgeMaterialStudio",
+      "title": "ChromaForge Material Studio",
+      "description": "3D material painting, texture layers and surface authoring",
+      "category": "animation",
+      "createdAt": "2026-09-20T11:10:35Z",
+      "url": "https://wieslawsoltes.github.io/ChromaForgeMaterialStudio/studio/",
+      "documentTitle": "ChromaForge — Material Studio",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "VeyraStudio",
+      "title": "Veyra Video Studio",
+      "description": "Video editing, color grading, compositing and audio finishing",
+      "category": "media",
+      "createdAt": "2026-09-20T11:10:59Z",
+      "url": "https://wieslawsoltes.github.io/VeyraStudio/",
+      "documentTitle": "Veyra Studio — Edit, color & finish",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "TesseraStudio",
+      "title": "Tessera Studio",
+      "description": "3D texture painting, material layers and texture-set editing",
+      "category": "animation",
+      "createdAt": "2026-09-20T11:12:58Z",
+      "url": "https://wieslawsoltes.github.io/TesseraStudio/",
+      "documentTitle": "Tessera Studio — 3D texture painting",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "LumeraStudio",
+      "title": "Lumera Studio",
+      "description": "Scene assembly, lighting, look development and progressive rendering",
+      "category": "animation",
+      "createdAt": "2026-09-20T11:13:29Z",
+      "url": "https://wieslawsoltes.github.io/LumeraStudio/",
+      "documentTitle": "Lumera — Lighting & Look Development",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "RelayForgeElectrical",
+      "title": "RelayForge Electrical",
+      "description": "Electrical schematics, cabinet design and engineering interchange",
+      "category": "cad",
+      "createdAt": "2026-09-20T11:13:55Z",
+      "url": "https://wieslawsoltes.github.io/RelayForgeElectrical/",
+      "documentTitle": "RelayForge Electrical",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "AstrumStudio",
+      "title": "Astrum Studio",
+      "description": "3D modeling, motion design, animation and scene rendering",
+      "category": "animation",
+      "createdAt": "2026-09-20T11:14:23Z",
+      "url": "https://wieslawsoltes.github.io/AstrumStudio/",
+      "documentTitle": "Astrum Studio — 3D workspace",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "VectorStudio",
+      "title": "Vellum Vector Studio",
+      "description": "Vector illustration, typography and multipage page layout",
+      "category": "design",
+      "createdAt": "2026-09-20T11:14:58Z",
+      "url": "https://wieslawsoltes.github.io/VectorStudio/",
+      "documentTitle": "Vellum Vector Studio",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "StratumFX",
+      "title": "Stratum FX",
+      "description": "Procedural 3D node graphs, geometry, effects and instanced rendering",
+      "category": "animation",
+      "createdAt": "2026-09-20T11:15:24Z",
+      "url": "https://wieslawsoltes.github.io/StratumFX/app/",
+      "documentTitle": "Stratum FX — Procedural Studio",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "CinderLab",
+      "title": "CinderLab",
+      "description": "Volumetric fire, smoke and fluid effects with editable node graphs",
+      "category": "animation",
+      "createdAt": "2026-09-20T11:01:02Z",
+      "url": "https://wieslawsoltes.github.io/CinderLab/",
+      "documentTitle": "CinderLab — Real-time volumetric studio",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "TerraWeave",
+      "title": "TerraWeave",
+      "description": "Procedural terrain generation, erosion, sculpting and heightfield export",
+      "category": "buildings",
+      "createdAt": "2026-09-20T11:02:24Z",
+      "url": "https://wieslawsoltes.github.io/TerraWeave/",
+      "documentTitle": "TerraWeave — Procedural terrain studio",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "ImplicitForge",
+      "title": "ImplicitForge",
+      "description": "Implicit modeling, field-driven geometry and computational engineering",
+      "category": "cad",
+      "createdAt": "2026-09-20T11:03:07Z",
+      "url": "https://wieslawsoltes.github.io/ImplicitForge/",
+      "documentTitle": "ImplicitForge — Implicit Engineering",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "PatinaStudio",
+      "title": "Patina Studio",
+      "description": "Material texture painting, masks, procedural fills and surface export",
+      "category": "animation",
+      "createdAt": "2026-09-20T11:03:59Z",
+      "url": "https://wieslawsoltes.github.io/PatinaStudio/",
+      "documentTitle": "PatinaStudio — Give surfaces a story.",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "PigmentLab",
+      "title": "PigmentLab",
+      "description": "Natural-media painting, wet-pigment simulation and brush authoring",
+      "category": "design",
+      "createdAt": "2026-09-20T11:04:53Z",
+      "url": "https://wieslawsoltes.github.io/PigmentLab/",
+      "documentTitle": "PigmentLab — Natural media studio",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "Orbitarium",
+      "title": "Orbitarium",
+      "description": "Interactive gravity sandbox, orbital systems and universe simulation",
+      "category": "simulation",
+      "createdAt": "2026-09-20T11:05:37Z",
+      "url": "https://wieslawsoltes.github.io/Orbitarium/",
+      "documentTitle": "Orbitarium — A universe of possibilities",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "DuoStudio",
+      "title": "Duo Studio",
+      "description": "Folding-device simulator, creative apps, visual developer studio and SDK",
+      "category": "development",
+      "createdAt": "2026-09-20T20:02:39Z",
+      "url": "https://wieslawsoltes.github.io/DuoStudio/",
+      "documentTitle": "Duo Studio — A little more possibility.",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "ApertureCAD",
+      "title": "Aperture CAD",
+      "description": "Compute-rendered CAD, editable DXF blocks and graphical definition editing",
+      "category": "cad",
+      "createdAt": "2026-09-21T11:27:01Z",
+      "url": "https://wieslawsoltes.github.io/ApertureCAD/",
+      "documentTitle": "Aperture CAD · Compute workbench",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "DrawingWeb",
+      "title": "DrawingWeb Studio",
+      "description": "Data-bound diagrams, drawing controls and ribbon-based visual editing",
+      "category": "design",
+      "createdAt": "2026-09-18T21:36:39Z",
+      "url": "https://wieslawsoltes.github.io/DrawingWeb/",
+      "documentTitle": "DrawingWeb Studio",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "CounterformStudio",
+      "title": "Counterform Studio",
+      "description": "Font design, glyph outlines, masters, kerning and OpenType compilation",
+      "category": "design",
+      "createdAt": "2026-09-16T19:01:46Z",
+      "url": "https://wieslawsoltes.github.io/CounterformStudio/",
+      "documentTitle": "Counterform Studio — Make every curve count",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "RevectorStudio",
+      "title": "Revector Studio",
+      "description": "Vector PDF inspection and evidence-preserving semantic DXF conversion",
+      "category": "cad",
+      "createdAt": "2026-09-19T05:56:38Z",
+      "url": "https://wieslawsoltes.github.io/RevectorStudio/",
+      "documentTitle": "Revector Studio · PDF to semantic DXF",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "AvenorMail",
+      "title": "Avenor Mail",
+      "description": "Mail, drafts, contacts, calendars and tasks in an on-device workspace",
+      "category": "office",
+      "createdAt": "2026-09-12T18:20:27Z",
+      "url": "https://wieslawsoltes.github.io/AvenorMail/",
+      "documentTitle": "Avenor Mail",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "Auralis",
+      "title": "Auralis Studio",
+      "description": "Stereo audio editing, microphone recording, analysis and mastering",
+      "category": "media",
+      "createdAt": "2026-09-13T09:59:18Z",
+      "url": "https://wieslawsoltes.github.io/Auralis/",
+      "documentTitle": "Auralis Studio",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "ClaudeCodeDesign",
+      "title": "Claude Code Design",
+      "description": "AI coding workspace, local source editing and interactive web previews",
+      "category": "development",
+      "createdAt": "2026-09-16T18:21:01Z",
+      "url": "https://wieslawsoltes.github.io/ClaudeCodeDesign/",
+      "documentTitle": "Claude Code — A space to build",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "RichTextWeb",
+      "title": "RichTextWeb Document Studio",
+      "description": "Rich-text documents, page layout, mail merge and document-format tools",
+      "category": "office",
+      "createdAt": "2026-09-13T10:08:13Z",
+      "url": "https://wieslawsoltes.github.io/RichTextWeb/",
+      "documentTitle": "RichTextWeb · Document Studio",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "GridWeb",
+      "title": "GridWeb Workbook Studio",
+      "description": "Spreadsheet workbooks, formulas, data analysis and reusable grid controls",
+      "category": "office",
+      "createdAt": "2026-09-13T18:05:48Z",
+      "url": "https://wieslawsoltes.github.io/GridWeb/",
+      "documentTitle": "GridWeb Workbook Studio",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
+    },
+    {
+      "repo": "XamoraStudio",
+      "title": "Xamora Studio",
+      "description": "Visual XAML and HTML design, source editing and reusable UI controls",
+      "category": "development",
+      "createdAt": "2026-09-15T10:03:04Z",
+      "url": "https://wieslawsoltes.github.io/XamoraStudio/",
+      "documentTitle": "Xamora Studio — Visual UI designer",
+      "selection": "explicit-request",
+      "addedAt": "2026-09-22T20:13:32.953886+00:00"
     }
   ],
-  "updatedAt": "2026-09-12T11:58:34.208018+00:00"
+  "updatedAt": "2026-09-22T20:13:32.953886+00:00"
 };
     for (const app of data.apps) {
         app.id = 'web-' + app.repo.toLowerCase();
