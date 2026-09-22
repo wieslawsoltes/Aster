@@ -1,0 +1,33 @@
+name: Requested app interactive readiness
+on:
+  push:
+    branches: [ci/requested-app-readiness-september-22]
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: c884f657d39e174031effc634024f9f0b30e7f62
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y mesa-vulkan-drivers libvulkan1 xvfb
+      - name: Require visible actionable controls in each new app
+        run: |
+          git rev-parse HEAD
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/web-apps/browser.py --live --gpu --headed --repos Veyra ChromaForgeMaterialStudio VeyraStudio TesseraStudio LumeraStudio RelayForgeElectrical AstrumStudio VectorStudio StratumFX CinderLab TerraWeave ImplicitForge PatinaStudio PigmentLab Orbitarium DuoStudio ApertureCAD DrawingWeb CounterformStudio RevectorStudio AvenorMail Auralis ClaudeCodeDesign RichTextWeb GridWeb XamoraStudio
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: requested-app-interactive-readiness
+          path: tests/web-apps/artifacts/
+          retention-days: 14
