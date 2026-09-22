@@ -69,7 +69,14 @@ def main(args):
                         embedded.wait_for_url('https://wieslawsoltes.github.io/'+app['repo']+'/**',timeout=30000)
                         embedded.wait_for_load_state('domcontentloaded',timeout=30000)
                         embedded.wait_for_function('!!document.body && (document.body.innerText.trim().length>40 || document.querySelectorAll("canvas,button,input").length>3)',timeout=20000)
-                        # New catalog apps must expose an actionable UI, not just a loading screen.
+                        # A loading screen has body text too. Each newly requested app
+                        # must finish booting and expose a genuinely actionable control.
+                        if app['repo'] in requested_repos:
+                            embedded.wait_for_function('document.querySelectorAll("button,input,textarea,select").length > 3',timeout=60000)
+                            control=embedded.locator('button:visible:enabled, input:not([type=hidden]):visible:enabled, textarea:visible:enabled, select:visible:enabled').first
+                            control.click(trial=True,timeout=60000)
+                            row['actionableControl']=control.evaluate('(el)=>el.getAttribute("aria-label") || el.getAttribute("title") || el.innerText.trim() || el.tagName.toLowerCase()')
+                        # Keep the earlier app-specific readiness checks as well.
                         ready={'Velsign':'Upload a document','Folio':'Share','MirevaStudio':'Preview','Orivane':'Workspace','Velora':'Present'}
                         if app['repo']=='Orivane':
                             embedded.get_by_text('A shared space for better ideas.',exact=True).wait_for(state='hidden',timeout=45000)
@@ -80,7 +87,9 @@ def main(args):
                         assert not info['title'].startswith('Site not found'),info
                         row.update(status='PASS',ms=round((time.perf_counter()-begin)*1000),document=info)
                         if app['repo'] in requested_repos or app['repo'] in ['PaintXP','Vellum','Gridline','AxiomCAD','VeyraWorkspace','AsterionEDA','TwinForge','Branchglass','NotepadXP','Formalyth','Jailbreak','VoltWeaveCircuitStudio','StratumIntelligence','Veldra3D','AvolithStudio','AureonStudio','Velsign','Folio','MirevaStudio','Orivane','Velora']:page.screenshot(path=str(out/(app['repo']+'-live.png')))
-                    except Exception as e:row.update(status='FAIL',error=str(e))
+                    except Exception as e:
+                        row.update(status='FAIL',error=str(e))
+                        page.screenshot(path=str(out/(app['repo']+'-live-failure.png')))
                     finally:close_all()
                     results.append(row);print(row['status'],app['repo'],row.get('error',''),flush=True)
                 report['apps']=results;report['passed']=sum(r['status']=='PASS' for r in results)
