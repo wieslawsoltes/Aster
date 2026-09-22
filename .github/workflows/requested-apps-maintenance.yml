@@ -6,9 +6,11 @@ on:
 permissions:
   contents: read
 jobs:
-  audit:
+  integrate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v5
         with:
@@ -16,76 +18,66 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Inspect repository metadata, documentation and Pages entry points
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply the exact locally verified patch and rebuild standalone
+        run: |
+          python - <<'PY'
+          import base64, hashlib, lzma, subprocess
+          from pathlib import Path
+          patch = lzma.decompress(base64.b64decode(Path('.aster-requested-apps.patch.xz.b64').read_text()))
+          assert hashlib.sha256(patch).hexdigest() == 'b569c2dc0d1c9f0303d13a670bf7f9703e3c12bd954cd78e8c340a9ac80820b2', 'Patch integrity check failed'
+          Path('/tmp/aster-requested-apps.patch').write_bytes(patch)
+          subprocess.run(['git', 'apply', '--check', '--unidiff-zero', '/tmp/aster-requested-apps.patch'], check=True)
+          subprocess.run(['git', 'apply', '--unidiff-zero', '/tmp/aster-requested-apps.patch'], check=True)
+          PY
+          python build.py
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md Aster.html docs/app-library.md docs/web-app-inventory.json docs/web-apps.md src/apps-web.js src/web-app-catalog.js src/web-navigation.js sw.js tests/app-library/README.md tests/app-library/browser.py tests/desktop-features/browser.py tests/integrated-shell/browser.py tests/smoke.py tests/themes/browser.py tests/web-apps/README.md tests/web-apps/browser.py tests/web-apps/catalog.cjs tests/web-apps/requested-2026-09-22.json tests/web-chrome/models.cjs
+          git commit -m 'feat: add 26 reviewed web apps to Aster and verify launch integration'
+      - name: Verify source, all model suites and reproducible standalone
+        run: |
+          python -m pip install PyYAML
+          # The integration transport is temporary. Check the final two-workflow topology.
+          mv .github/workflows/requested-apps-maintenance.yml /tmp/requested-apps-maintenance.yml
+          trap 'mv /tmp/requested-apps-maintenance.yml .github/workflows/requested-apps-maintenance.yml' EXIT
+          bash .github/scripts/check-source.sh
+      - name: Push verified source to the integration branch
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p /tmp/aster-app-audit
-          cat > /tmp/audit.py <<'PY'
-          import base64, concurrent.futures, datetime, hashlib, html, json, os, re, urllib.request, urllib.error
-          from pathlib import Path
-          from urllib.parse import urlsplit
-          OUT = Path('/tmp/aster-app-audit')
-          REPOS = 'Veyra ChromaForgeMaterialStudio VeyraStudio TesseraStudio LumeraStudio RelayForgeElectrical AstrumStudio VectorStudio StratumFX CinderLab TerraWeave ImplicitForge PatinaStudio PigmentLab Orbitarium DuoStudio ApertureCAD DrawingWeb CounterformStudio RevectorStudio AvenorMail Auralis ClaudeCodeDesign RichTextWeb GridWeb XamoraStudio'.split()
-          def get(url, api=False):
-              headers = {'User-Agent': 'Aster-requested-app-audit'}
-              if api:
-                  assert urlsplit(url).netloc == 'api.github.com'
-                  headers['Authorization'] = 'Bearer ' + os.environ['GH_TOKEN']
-                  headers['Accept'] = 'application/vnd.github+json'
-              request = urllib.request.Request(url, headers=headers)
-              try:
-                  with urllib.request.urlopen(request, timeout=35) as response:
-                      return response.status, response.url, dict(response.headers.items()), response.read()
-              except urllib.error.HTTPError as error:
-                  return error.code, error.url, dict(error.headers.items()), error.read()
-          def api(path):
-              status, url, headers, body = get('https://api.github.com/' + path, True)
-              if status != 200: raise RuntimeError(f'{url}: {status}')
-              return json.loads(body)
-          def audit(name):
-              data = {'name': name, 'auditedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()}
-              try:
-                  meta = api('repos/wieslawsoltes/' + name)
-                  data['metadata'] = {key: meta.get(key) for key in ('full_name','created_at','default_branch','description','homepage','html_url','has_pages','archived','fork','visibility')}
-                  readme = api('repos/wieslawsoltes/' + name + '/readme')
-                  text = base64.b64decode(readme['content']).decode('utf-8')
-                  data['readmeSHA'] = readme['sha']
-                  data['readmePath'] = readme['path']
-                  (OUT / (name + '.md')).write_text(text)
-                  tree = api('repos/wieslawsoltes/' + name + '/git/trees/' + meta['default_branch'] + '?recursive=1')
-                  data['entryFiles'] = [item['path'] for item in tree.get('tree', []) if item['path'].endswith(('.html', '.yml', '.yaml')) and not item['path'].startswith(('node_modules/', 'vendor/'))][:200]
-                  root = 'https://wieslawsoltes.github.io/' + name + '/'
-                  candidates = [root]
-                  for candidate in [meta.get('homepage') or ''] + re.findall(r'https://wieslawsoltes\.github\.io/[^\s<>\)\]"`]+', text):
-                      candidate = candidate.rstrip('.,;')
-                      parsed = urlsplit(candidate)
-                      if parsed.scheme == 'https' and parsed.netloc == 'wieslawsoltes.github.io' and parsed.path.startswith('/' + name + '/') and not parsed.query and not parsed.fragment and candidate not in candidates:
-                          candidates.append(candidate)
-                  data['deployments'] = []
-                  for i, url in enumerate(candidates[:6]):
-                      try:
-                          status, final, headers, body = get(url)
-                          decoded = body.decode('utf-8', errors='replace')
-                          title = re.search(r'<title[^>]*>(.*?)</title>', decoded, re.I|re.S)
-                          data['deployments'].append({'url': url, 'finalUrl': final, 'status': status, 'title': html.unescape(re.sub(r'\s+', ' ', title.group(1)).strip()) if title else '', 'headers': {key.lower(): value for key, value in headers.items()}, 'bytes': len(body), 'sha256': hashlib.sha256(body).hexdigest(), 'auditedAt': datetime.datetime.now(datetime.timezone.utc).isoformat()})
-                          (OUT / (name + '-' + str(i) + '.html')).write_bytes(body)
-                      except Exception as error:
-                          data['deployments'].append({'url': url, 'error': str(error)})
-              except Exception as error:
-                  data['error'] = str(error)
-              return data
-          with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
-              results = list(pool.map(audit, REPOS))
-          (OUT / 'audit.json').write_text(json.dumps(results, indent=2) + '\n')
-          for result in results:
-              print(json.dumps(result))
-          PY
-          python /tmp/audit.py
-          git archive HEAD > /tmp/aster-app-audit/aster-source.tar
-          find . -name AGENTS.md -not -path './.git/*' -print -exec cat {} \; > /tmp/aster-app-audit/agent-instructions.txt
+          test "$GITHUB_REF" = 'refs/heads/feat/requested-web-apps-september-22'
+          test -z "$(git status --porcelain --untracked-files=no)"
+          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          echo "::add-mask::$auth"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin HEAD:refs/heads/feat/requested-web-apps-september-22
+          git rev-parse HEAD
+      - name: Install browser validation dependencies
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install -y mesa-vulkan-drivers libvulkan1 xvfb
+      - name: HTTP-hosted launcher and App Center regression suites
+        run: |
+          python tests/web-apps/browser.py
+          python tests/app-library/browser.py
+          mkdir -p /tmp/aster-validation/fixtures
+          cp -R tests/web-apps/artifacts /tmp/aster-validation/fixtures/web-apps
+          cp -R tests/app-library/artifacts /tmp/aster-validation/fixtures/app-library
+      - name: Real deployed iframe startup for all 26 requested apps
+        run: |
+          xvfb-run -a -s '-screen 0 1440x1000x24' python tests/web-apps/browser.py --live --gpu --headed --repos Veyra ChromaForgeMaterialStudio VeyraStudio TesseraStudio LumeraStudio RelayForgeElectrical AstrumStudio VectorStudio StratumFX CinderLab TerraWeave ImplicitForge PatinaStudio PigmentLab Orbitarium DuoStudio ApertureCAD DrawingWeb CounterformStudio RevectorStudio AvenorMail Auralis ClaudeCodeDesign RichTextWeb GridWeb XamoraStudio
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: requested-app-audit
-          path: /tmp/aster-app-audit
+          name: requested-app-integration-validation
+          path: |
+            tests/web-apps/artifacts/
+            tests/app-library/artifacts/
+            tests/ci/artifacts/
+            /tmp/aster-validation/
           retention-days: 7
