@@ -1,4 +1,14 @@
-## Catalog update — 84 web apps
+## Catalog update — 110 web apps
+
+Added all **26 requested creative, engineering, productivity and developer apps**
+to **Start → Your web apps** and **App Center → Discover**. Search by repository,
+app name or purpose; Start/taskbar pins, desktop shortcuts and window actions
+use the existing Aster integration. ChromaForge and Stratum FX open directly in
+their editors. Veyra Compositing Studio and Veyra Video Studio are named separately.
+The runtime catalog, audit inventory, offline cache and standalone HTML are updated
+together. [Full list, entry points, provenance and hosting limits](docs/web-apps.md#september-22-creative-engineering-and-productivity-additions).
+
+## Previous catalog update — 84 web apps
 
 Added **Velsign**, **Folio**, **Mireva Studio**, **Orivane** and **Velora Design Studio**
 to **Start → Your web apps** and **App Center → Discover**. Search by title,

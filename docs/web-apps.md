@@ -1,6 +1,6 @@
 # Your web apps in Aster
 
-Open **Start → Your web apps → a category → an app**. All 84 reviewed external
+Open **Start → Your web apps → a category → an app**. All 110 reviewed external
 projects have an entry. Search by app name, repository name, purpose or category
 from the normal Start search field. Category submenus have Back navigation,
 keyboard controls and a single-column touch layout on narrow screens.
@@ -28,7 +28,9 @@ future repositories will be discovered automatically.
 The original audit found 68 candidate repositories and included 67 external apps.
 Veyra Workspace and Asterion EDA were subsequently added at the owner's request,
 followed by TwinForge, Branchglass, Notepad XP, Formalyth and Jailbreak.
-The reviewed inventory now contains 85 repositories and the collection 84 apps.
+Further explicit batches include the workspace/design apps and the 26 additions
+listed below.
+The reviewed inventory now contains 111 repositories and the collection 110 apps.
 Their individual audit timestamps and live response evidence are retained. **Aster
 itself is intentionally excluded**, rather than recursively embedding the host
 desktop. No other candidate was dropped. Every app's deployed entry point returned
@@ -45,15 +47,15 @@ The catalog does not contact GitHub or preload any remote site when Aster starts
 
 | Submenu | Apps |
 | --- | ---: |
-| Design & Graphics | 10 |
-| 3D & Animation | 8 |
-| CAD & Manufacturing | 11 |
-| Science & Simulation | 10 |
+| Design & Graphics | 14 |
+| 3D & Animation | 15 |
+| CAD & Manufacturing | 15 |
+| Science & Simulation | 11 |
 | Process & Automation | 11 |
-| Buildings & Maps | 5 |
-| Office & Productivity | 14 |
-| Development & Data | 8 |
-| Audio & Video | 4 |
+| Buildings & Maps | 6 |
+| Office & Productivity | 17 |
+| Development & Data | 11 |
+| Audio & Video | 7 |
 | Games | 3 |
 
 ## Requested additions
@@ -105,12 +107,73 @@ verified identities or certified signatures. Export important work from the app
 before clearing its site data. These additions receive no camera, microphone,
 screen-capture or geolocation delegation.
 
+## September 22 creative, engineering and productivity additions
+
+The owner explicitly requested these 26 repositories on September 22, 2026.
+Their public repository metadata, README blobs and live HTML responses were
+inspected separately from the original date-window audit. The inventory retains
+actual response hashes, byte counts, document titles, headers and per-entry audit
+timestamps. No discovery request or remote application load is made at Aster boot.
+
+| App | Category | Repository |
+| --- | --- | --- |
+| Veyra Compositing Studio | Audio & Video | `Veyra` |
+| ChromaForge Material Studio | 3D & Animation | `ChromaForgeMaterialStudio` |
+| Veyra Video Studio | Audio & Video | `VeyraStudio` |
+| Tessera Studio | 3D & Animation | `TesseraStudio` |
+| Lumera Studio | 3D & Animation | `LumeraStudio` |
+| RelayForge Electrical | CAD & Manufacturing | `RelayForgeElectrical` |
+| Astrum Studio | 3D & Animation | `AstrumStudio` |
+| Vellum Vector Studio | Design & Graphics | `VectorStudio` |
+| Stratum FX | 3D & Animation | `StratumFX` |
+| CinderLab | 3D & Animation | `CinderLab` |
+| TerraWeave | Buildings & Maps | `TerraWeave` |
+| ImplicitForge | CAD & Manufacturing | `ImplicitForge` |
+| Patina Studio | 3D & Animation | `PatinaStudio` |
+| PigmentLab | Design & Graphics | `PigmentLab` |
+| Orbitarium | Science & Simulation | `Orbitarium` |
+| Duo Studio | Development & Data | `DuoStudio` |
+| Aperture CAD | CAD & Manufacturing | `ApertureCAD` |
+| DrawingWeb Studio | Design & Graphics | `DrawingWeb` |
+| Counterform Studio | Design & Graphics | `CounterformStudio` |
+| Revector Studio | CAD & Manufacturing | `RevectorStudio` |
+| Avenor Mail | Office & Productivity | `AvenorMail` |
+| Auralis Studio | Audio & Video | `Auralis` |
+| Claude Code Design | Development & Data | `ClaudeCodeDesign` |
+| RichTextWeb Document Studio | Office & Productivity | `RichTextWeb` |
+| GridWeb Workbook Studio | Office & Productivity | `GridWeb` |
+| Xamora Studio | Development & Data | `XamoraStudio` |
+
+ChromaForge opens `/ChromaForgeMaterialStudio/studio/` and Stratum FX opens
+`/StratumFX/app/`, bypassing their marketing homepages. These are exact reviewed
+exceptions, shared by the desktop launcher and Aster Browser; arbitrary project
+subpaths, queries, credentials and other origins are not promoted to trusted apps.
+Auralis starts at its reviewed root, which redirects to its studio. The two Veyra
+repositories have distinct launcher names: **Veyra Compositing Studio** and
+**Veyra Video Studio**. RichTextWeb, GridWeb and DrawingWeb open their published
+editor samples, not their package registries.
+
+Auralis receives **microphone-only** recording delegation, still subject to browser
+permission. None of the other 25 additions receives camera, microphone, screen
+capture or geolocation delegation. No existing app's permissions are changed.
+Aster does not connect accounts, send mail, provision collaboration servers,
+install native plug-ins, supply AI keys or grant its file/clipboard broker consent
+on an app's behalf. In particular, Avenor's on-device mode is not internet mail;
+connected mail needs its separately configured backend. Native folders, external
+services and graphics capabilities remain subject to each app and browser.
+
+These apps also appear in **App Center → Discover** with the existing Start/taskbar
+pinning, desktop shortcuts and window actions. As with the earlier entries,
+remote storage is not automatically included in Aster backups. Export important
+work inside the individual app. The single-file Aster build embeds these catalog
+entries and host code, not the remote applications or their backends.
+
 ## Hosting, permissions and trust
 
 These are independently hosted applications, not copies bundled with Aster and
 not Windows EXEs. The existing browser-only Win32 runtime remains separate.
 Loading an app needs its live site or that app's own offline cache. The standalone
-Aster HTML embeds the catalog and window host, **not all 84 application payloads**.
+Aster HTML embeds the catalog and window host, **not all 110 application payloads**.
 
 All catalog entries are fixed HTTPS URLs on `wieslawsoltes.github.io`. The host
 rejects arbitrary schemes, origins, credentials, query strings and altered launch
@@ -145,7 +208,8 @@ loading and standalone/service-worker integration.
 
 `python tests/web-apps/browser.py` checks category navigation, search, input,
 window chrome, minimize/maximize/restore, resizing, snapping, iframe/taskbar focus,
-reload, offline messaging, mobile layout, and standalone hosting/cleanup. It uses
+reload, offline messaging, mobile layout, and standalone hosting/cleanup. It also searches and launches all 26 September 22 additions and checks their
+exact entry points and microphone-only scope. It uses
 **explicit inert page fixtures** to isolate host behavior. `--inject` is a local
 fallback for managed browsers that block HTTP; it does not verify HTTP storage.
 

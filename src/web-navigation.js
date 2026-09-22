@@ -23,10 +23,22 @@
         if (!url.hostname || url.username || url.password) throw Error('Website addresses must have a hostname and must not contain credentials.');
         return url.href;
     }
+    // Only these reviewed applications launch below their project root. Keep this
+    // allowlist independent of catalog fields supplied by callers.
+    const entryPaths = Object.freeze({
+        ChromaForgeMaterialStudio: 'studio/',
+        StratumFX: 'app/'
+    });
+    function reviewedURL(app) {
+        if (!app || typeof app.repo !== 'string' || app.repo === 'Aster' ||
+            !/^[a-z\d_-]+$/i.test(app.repo)) return null;
+        const suffix = Object.hasOwn(entryPaths, app.repo) ? entryPaths[app.repo] : '';
+        const expected = 'https://wieslawsoltes.github.io/' + app.repo + '/' + suffix;
+        return app.url === expected ? expected : null;
+    }
     function catalogApp(url, apps = []) {
         const normalized = address(url, false);
-        return apps.find(app => app.repo !== 'Aster' && /^[a-z\d_-]+$/i.test(app.repo) &&
-            app.url === 'https://wieslawsoltes.github.io/' + app.repo + '/' && app.url === normalized) || null;
+        return apps.find(app => reviewedURL(app) === normalized) || null;
     }
     function framePolicy(url, apps = []) {
         const app = catalogApp(url, apps);
@@ -35,10 +47,11 @@
             sandbox: isolated + (app ? ' allow-same-origin allow-pointer-lock' : ''),
             allow: (app ? 'autoplay; fullscreen; clipboard-read; clipboard-write' : 'fullscreen') +
                 (app && media.has(app.repo) ? '; microphone; camera; display-capture' : '') +
+                (app && app.repo === 'Auralis' ? '; microphone' : '') +
                 (app && ['Wayline','MeridianGISStudio'].includes(app.repo) ? '; geolocation' : '')
         };
     }
-    const api = Object.freeze({ address, catalogApp, framePolicy });
+    const api = Object.freeze({ address, reviewedURL, catalogApp, framePolicy });
     root.AsterWebNavigation = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(globalThis);

@@ -4,16 +4,15 @@
     const OS = Aster, catalog = globalThis.AsterWebCatalog;
     if (!catalog) throw new Error('The web app catalog was not loaded.');
     const categories = new Map(catalog.categories.map(item => [item.id, item]));
-    const allowedOrigin = 'https://wieslawsoltes.github.io';
+    const navigation = globalThis.AsterWebNavigation;
+    if (!navigation) throw new Error('The web navigation policy was not loaded.');
     const recordingApps = new Set(['Frameforge', 'PulsegridStudio', 'SonoraStudio', 'SignalForgeStudio', 'VeyraWorkspace']);
     function checkedURL(app) {
-        const url = new URL(app.url);
-        if (url.origin !== allowedOrigin || url.username || url.password ||
-            url.pathname !== '/' + app.repo + '/' || url.search || url.hash ||
-            !/^[A-Za-z0-9_-]+$/.test(app.repo) || app.repo === 'Aster') {
+        const url = navigation.reviewedURL(app);
+        if (!url) {
             throw new Error('The catalog contains an unapproved web application URL.');
         }
-        return url.href;
+        return url;
     }
     const link = (href, label, icon) => OS.el('a', {
         class: 'web-app-action', href, target: '_blank', rel: 'noopener noreferrer',
@@ -66,6 +65,7 @@
                 sandbox: 'allow-scripts allow-same-origin allow-forms allow-modals allow-downloads allow-popups allow-popups-to-escape-sandbox allow-pointer-lock',
                 allow: 'autoplay; fullscreen; clipboard-read; clipboard-write' +
                     (recordingApps.has(app.repo) ? '; microphone; camera; display-capture' : '') +
+                    (app.repo === 'Auralis' ? '; microphone' : '') +
                     (['Wayline', 'MeridianGISStudio'].includes(app.repo) ? '; geolocation' : ''),
                 allowfullscreen: true, referrerpolicy: 'no-referrer'
             });
@@ -149,6 +149,7 @@
         if (!category) throw new Error('Unknown web app category: ' + app.category);
         OS.register(app.id, {
             title: app.title, description: app.description, category: category.title,
+            url: app.url, repository: app.repository,
             keywords: app.repo + ' web app ' + category.title,
             icon: category.icon, color: category.color, webApp: true,
             width: 1180, height: 760, minWidth: 320, minHeight: 260,
@@ -165,7 +166,7 @@
         const backButton = OS.el('button', { class: 'secondary web-start-back', html: OS.icon('back', 15) + 'Back', 'aria-label': category ? 'Back to web app categories' : 'Back to Start', onclick: back });
         header.append(backButton, OS.el('div', {},
             OS.el('h2', { text: category ? category.title : 'Your web apps' }),
-            OS.el('p', { text: category ? 'Web apps / ' + category.title : catalog.apps.length + ' projects · September 6–8, 2026' })));
+            OS.el('p', { text: category ? 'Web apps / ' + category.title : catalog.apps.length + ' projects · Reviewed web apps' })));
         container.append(header);
         const list = OS.el('div', { class: category ? 'web-start-list' : 'web-category-grid', role: 'group', 'aria-label': category ? category.title + ' apps' : 'Web app categories' });
         if (category) {
